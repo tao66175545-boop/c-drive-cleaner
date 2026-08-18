@@ -1,0 +1,24 @@
+# Generated reports and local results
+清理报告.csv
+清理报告.html
+清理报告.txt
+C盘清理诊断报告.html
+
+# UI test artifacts
+ui-*-preview.png
+文档配图/
+
+# Release artifacts are published through GitHub Releases, not source control
+*.zip
+*.msi
+*.exe
+
+# Local release staging produced by tools/New-ReleasePackage.ps1
+artifacts/
+.release/
+.release-check/
+
+# Local editor and PowerShell artifacts
+.playwright-cli/
+*.tmp
+*.log

@@ -53,11 +53,11 @@ versions/1.2.0 启动新版本，失败则回滚 1.1.0
 
 ## 发布流水线
 
-1. GitHub Actions 在 tag（如 `v1.2.0`）触发构建。
-2. 运行 PowerShell 解析、`-SelfTest` 与 UI 冒烟测试。
-3. 生成 ZIP、SHA-256、`release.json`，使用受保护的签名服务签名。
-4. 上传 Release 资产和更新说明。
-5. 人工复核签名、安装与回滚后再将 Release 标记为 Latest。
+1. AI 或开发者通过 Pull Request 提交已提升版本号的变更和对应 `RELEASE_NOTES_vX.Y.Z.md`。
+2. GitHub Actions 运行 PowerShell 解析、`-SelfTest` 与 UI 冒烟测试。
+3. 通过验证并合入 `main` 后，发布工作流读取 `version.json`，仅为尚未存在的 `vX.Y.Z` 自动构建。
+4. 工作流从固定白名单生成 ZIP、SHA-256、`release.json`，并上传 Release 资产和更新说明。
+5. 已发布版本绝不覆盖；修复必须递增版本号。完整的 AI 发布边界和权限规则见 `AI自动化GitHub发布工作流.md`。
 
 ## 当前阶段建议
 

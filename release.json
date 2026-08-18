@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "product": "C盘智能清理",
+  "channel": "stable",
+  "version": "1.0.0",
+  "publishedAt": "2026-08-18T08:47:20Z",
+  "releaseUrl": "https://github.com/tao66175545-boop/c-drive-cleaner/releases/tag/v1.0.0",
+  "package": {
+    "name": "C.zip",
+    "url": "https://github.com/tao66175545-boop/c-drive-cleaner/releases/download/v1.0.0/C.zip",
+    "size": 1290997,
+    "sha256": "3C97F05A9771EBA724592004579C823108BD47EA1C176BE253AFC12E6039B47A"
+  },
+  "notes": [
+    "首次公开发布。",
+    "支持安全扫描、用户自主勾选、空间分析和清理前后对比。",
+    "微信/QQ 图片与视频附件单列为谨慎选择，默认不勾选。"
+  ]
+}

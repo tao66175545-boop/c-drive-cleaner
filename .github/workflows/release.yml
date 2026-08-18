@@ -1,0 +1,86 @@
+name: Publish Release
+
+on:
+  workflow_run:
+    workflows: ["Validate C Drive Cleaner"]
+    branches: [main]
+    types: [completed]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out validated revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Decide whether this revision needs a release
+        id: release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $manifest = Get-Content .\version.json -Raw -Encoding UTF8 | ConvertFrom-Json
+          if ($manifest.version -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') {
+            throw "Invalid semantic version: $($manifest.version)"
+          }
+
+          $tag = "v$($manifest.version)"
+          gh release view $tag --repo "${{ github.repository }}" 2>$null
+          $alreadyPublished = $LASTEXITCODE -eq 0
+
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "version=$($manifest.version)" >> $env:GITHUB_OUTPUT
+          "publish=$(-not $alreadyPublished)" >> $env:GITHUB_OUTPUT
+
+      - name: Build release package
+        if: steps.release.outputs.publish == 'True'
+        shell: pwsh
+        run: |
+          $result = .\tools\New-ReleasePackage.ps1 `
+            -Version "${{ steps.release.outputs.version }}" `
+            -OutputDirectory "$env:RUNNER_TEMP\release" `
+            -Repository "${{ github.repository }}"
+
+          "PACKAGE=$($result.PackagePath)" >> $env:GITHUB_ENV
+          "CHECKSUM=$($result.ChecksumPath)" >> $env:GITHUB_ENV
+          "MANIFEST=$($result.ManifestPath)" >> $env:GITHUB_ENV
+
+      - name: Select release notes
+        if: steps.release.outputs.publish == 'True'
+        id: notes
+        shell: pwsh
+        run: |
+          $notes = "RELEASE_NOTES_v${{ steps.release.outputs.version }}.md"
+          if (-not (Test-Path -LiteralPath $notes)) {
+            throw "Missing release notes: $notes"
+          }
+          "path=$notes" >> $env:GITHUB_OUTPUT
+
+      - name: Create GitHub Release and assets
+        if: steps.release.outputs.publish == 'True'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.release.outputs.tag }}" `
+            "$env:PACKAGE" `
+            "$env:CHECKSUM" `
+            "$env:MANIFEST" `
+            --repo "${{ github.repository }}" `
+            --target "${{ github.event.workflow_run.head_sha }}" `
+            --title "C盘智能清理 v${{ steps.release.outputs.version }}" `
+            --notes-file "${{ steps.notes.outputs.path }}"
