@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "objective": "A safe, modular, responsive C-drive cleaner with an optional constrained AI copilot.",
-  "objectiveStatus": "in_progress",
-  "completedAt": null,
+  "objectiveStatus": "completed",
+  "completedAt": "2026-08-19",
   "currentPhase": "P7-incremental-scan",
   "iteration": 8,
   "phases": [
@@ -48,7 +48,7 @@
     },
     {
       "id": "P7-incremental-scan",
-      "status": "in_progress",
+      "status": "completed",
       "exitCriteria": ["native_usn_reader", "stable_id_index", "journal_delta_invalidation", "privacy_budget", "fallback_and_deletion_boundary", "warm_repeat_speedup"]
     }
   ]

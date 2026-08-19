@@ -18,3 +18,4 @@
 
 - Windows PowerShell 5.1、WinForms 和现有稳定 ID/计划/执行代理契约保持不变。
 - 不自动请求 UAC；普通权限用户无法读取 USN Journal 时仍能使用完整扫描与清理功能。
+- GitHub Windows Runner 原生集成验证已实际创建文件，并从 USN Journal 观察到对应变更记录。
