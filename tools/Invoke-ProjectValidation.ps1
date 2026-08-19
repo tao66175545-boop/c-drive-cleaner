@@ -41,6 +41,9 @@ try {
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\ScanProviderTests.ps1')
     if ($LASTEXITCODE -ne 0) { throw 'Scan provider tests failed.' }
 
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\IncrementalScanTests.ps1')
+    if ($LASTEXITCODE -ne 0) { throw 'Incremental scan tests failed.' }
+
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\ExecutionBrokerTests.ps1')
     if ($LASTEXITCODE -ne 0) { throw 'Execution broker tests failed.' }
 

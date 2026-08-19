@@ -76,6 +76,15 @@ if ([string]$phase.id -eq 'P6-shell-migration') {
     }
 }
 
+if ([string]$phase.id -eq 'P7-incremental-scan') {
+    try {
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\IncrementalScanTests.ps1') | Out-Host
+        Add-LoopCheck 'incremental_scan_contracts' ($LASTEXITCODE -eq 0) 'tests/IncrementalScanTests.ps1'
+    } catch {
+        Add-LoopCheck 'incremental_scan_contracts' $false $_.Exception.Message
+    }
+}
+
 if ($FullValidation) {
     try {
         $result = & (Join-Path $PSScriptRoot 'Invoke-ProjectValidation.ps1')

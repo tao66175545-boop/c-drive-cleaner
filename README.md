@@ -16,6 +16,8 @@ Windows C 盘扫描与清理工具。它先分析，再由用户逐项选择是�
 4. 确认预计释放空间后点击“执行所选项”。
 5. 在概览页或 HTML 报告中查看结果。
 
+“开始扫描”默认使用快速清理扫描并跳过全用户目录空间剖析。在 NTFS USN Journal 可读时，首次扫描建立不含路径的增量索引，后续只重新扫描发生变化的固定项目；普通权限无法读取 Journal 时会自动使用快速文件系统扫描，不影响功能正确性，也不会自动弹出 UAC。
+
 HTML 报告保存在 `%LOCALAPPDATA%\CDriveCleaner\reports`，不会写入程序安装目录。
 
 ## 安全边界
@@ -27,6 +29,7 @@ HTML 报告保存在 `%LOCALAPPDATA%\CDriveCleaner\reports`，不会写入程序
 - 清理计划包含规则哈希、扫描时间和大小快照；规则或用户内容发生变化时会要求重新扫描。
 - 清理必须来自本次扫描生成的选择计划，命令行直接 `-Clean` 会失败关闭；程序不会自动请求管理员权限。
 - 清理操作日志保存在 `%LOCALAPPDATA%\CDriveCleaner\journals`，仅记录稳定 ID、结果和释放量，不写入原始文件路径或文件内容。
+- 增量索引保存在 `%LOCALAPPDATA%\CDriveCleaner\scan-index-v1.json`，只记录 NTFS 文件引用号、稳定项目 ID、大小、Journal 游标和完整性哈希；微信/QQ 用户内容不进入索引，清理阶段不信任缓存结果。
 
 ## 项目结构
 

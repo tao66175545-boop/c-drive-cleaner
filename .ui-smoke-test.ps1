@@ -28,6 +28,9 @@ if ($uiSource -notmatch 'Invoke-CDriveAssistantTool' -or $uiSource -notmatch '\$
     $uiSource -notmatch 'LastProposedIds' -or $uiSource -notmatch '\$btnAssistantApply\.Add_Click') {
     throw 'Assistant UI regression: constrained tool routing or confirmation boundary is missing.'
 }
+if ($uiSource -notmatch "'-SkipProfile'" -or $uiSource -notmatch "'scan\.provider\.selected'" -or $uiSource -notmatch "'scan\.incremental\.completed'") {
+    throw 'Incremental scan UI regression: fast scan arguments or provider events are missing.'
+}
 if ($uiSource -notmatch '\$exitCode' -or $uiSource -notmatch '\$succeeded') {
     throw 'Job status regression: engine exit codes are not handled.'
 }

@@ -53,7 +53,7 @@ change reversible UI state; they cannot start the cleanup process.
 | Rules | 100% of cleanup and diagnostic targets load from a versioned schema. |
 | Events | Scan and cleanup expose versioned NDJSON events without parsing console prose. |
 | Responsiveness | UI receives progress within 500 ms and cancellation acknowledgement within 2 s. |
-| Performance | Warm repeat scan is at least 3x faster where an incremental provider is supported; fallback remains correct. |
+| Performance | Warm repeat scan is at least 3x faster where the NTFS USN provider is readable; journal reset, permission failure, oversized indexes, and unsupported volumes fall back to correct filesystem enumeration. |
 | Recovery | User-content attachments are sent to the Windows Recycle Bin and cannot be selected in the same operation as recycle-bin purging. |
 | AI | Core functionality works with AI disabled; every action is a schema-bound allowlisted tool. |
 | Privacy | Cloud mode sends no raw path, user name, log, or file content unless separately previewed and approved. |
@@ -68,11 +68,26 @@ change reversible UI state; they cannot start the cleanup process.
 5. P4 Read-only copilot: explain results and answer questions from local data.
 6. P5 Constrained agent: scan and selection tools; UI confirmation remains final.
 7. P6 Shell migration: move proven core boundaries to .NET only where metrics justify it.
+8. P7 Incremental scan: consume NTFS USN deltas through a bounded, path-free stable-ID index and preserve full-scan and deletion-time verification fallbacks.
 
 P6 currently defers a full rewrite. Directory sizing and child-process control
 already use focused C# implementations, while the PowerShell contracts retain
 the tested rule, plan, journal, and cleanup safeguards. The measurable triggers
 and rollback paths for any future migration are in `migration-decision.json`.
+
+## Incremental scan boundary
+
+- The first eligible scan records NTFS file reference numbers against stable
+  cleanup item IDs. The index stores no path, file name, user name, or content.
+- A repeat scan reads USN records from the saved cursor and rescans only item
+  IDs whose indexed file or parent reference changed.
+- User-content rules are never indexed. Cleanup mode never reuses cached sizes;
+  it rescans the selected stable IDs before the execution broker can delete.
+- The index is integrity hashed and bounded to 64 MB, 100 entries, 250,000
+  identities per item, and 1,000,000 identities total.
+- Missing privileges, non-NTFS volumes, journal replacement or wrap, unsupported
+  records, corrupt indexes, and budget overflow fail closed to the fast normal
+  filesystem provider. The application does not request automatic elevation.
 
 ## Architecture loop
 
