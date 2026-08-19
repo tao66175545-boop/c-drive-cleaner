@@ -35,10 +35,11 @@ Validate 工作流：脚本解析 + 安全自检
         |
         v
 Publish Release 工作流
-  - 读取 version.json
+  - 只读构建任务读取 version.json
   - 确认 vX.Y.Z 尚未发布
   - 固定白名单打包
   - 生成 SHA256SUMS.txt 与 release.json
+  - 最小写权限任务只下载已验证产物
   - 创建 tag 与 GitHub Release，上传全部资产
         |
         v
@@ -49,8 +50,8 @@ GitHub Releases / 客户端检查更新
 
 | 文件 | 职责 |
 | --- | --- |
-| `.github/workflows/validate.yml` | 对 `main` 和 PR 做 PowerShell 解析及清理安全自检。 |
-| `.github/workflows/release.yml` | 当 `main` 的验证工作流成功时，自动发布尚未存在的版本号。 |
+| `.github/workflows/validate.yml` | 对 `main` 和 PR 做 PowerShell 解析、安全自检、计划契约测试、UI 烟测和发布包试构建。 |
+| `.github/workflows/release.yml` | 当 `main` 验证成功时，由只读任务构建；写权限任务不执行仓库代码，只发布已验证产物。 |
 | `tools/New-ReleasePackage.ps1` | 仅从发布白名单构建 ZIP，并生成 SHA-256、发布清单。 |
 | `version.json` | 唯一版本来源，格式为 SemVer，例如 `1.1.0`。 |
 | `RELEASE_NOTES_v1.1.0.md` | 必需的本次发布说明。 |
@@ -71,7 +72,7 @@ AI 每次完成一个可发布的变更时，应执行以下确定性动作：
 
 ## 权限与完全自动化的配置
 
-在 GitHub 仓库的 `Settings -> Actions -> General` 中设置工作流权限为 **Read and write permissions**，并允许 GitHub Actions 创建和批准 pull request（仅在启用自动合并时需要）。`release.yml` 使用临时的 `GITHUB_TOKEN`，不需要将个人 Token 写入代码或脚本。
+GitHub Actions 的默认工作流权限保持 **Read repository contents**。只有 `release.yml` 的最终发布任务显式申请 `contents: write`；它不会检出或执行仓库代码。工作流使用临时 `GITHUB_TOKEN`，不需要将个人 Token 写入代码或脚本。若启用 PR 自动合并，再单独允许 GitHub Actions 创建和批准 pull request。
 
 在 `Settings -> Branches` 为 `main` 创建规则：
 

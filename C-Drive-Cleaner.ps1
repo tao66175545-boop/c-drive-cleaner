@@ -35,13 +35,18 @@ param(
     [double]$MinSizeMB = 100,       # 大文件最小阈值(MB)
     [switch]$FullScan,              # 是否剖析整个 C 盘（默认仅用户目录）
     [string]$Profile = "",          # 指定要剖析的根目录（覆盖默认；如 -Profile "C:\Users\admin\Downloads"）
-    [switch]$Report,                # 扫描结束后导出 HTML 诊断报告（写到脚本同目录）
+    [switch]$Report,                # 扫描结束后导出 HTML 诊断报告（写到用户本地数据目录）
     [string]$SelectionFile = "",    # UI 已勾选的项目 ID 清单；仅清理这些固定目标
     [string]$SelectionOutput = "",  # 扫描结果导出为 JSON，供 UI 展示与用户选择
     [switch]$SelfTest               # 仅运行安全闸自检后退出（不扫描、不删除）
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
+
+# 程序目录保持可替换；报告等可变数据写入用户本地数据目录。
+$localDataRoot = if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'CDriveCleaner' } else { Join-Path $env:TEMP 'CDriveCleaner' }
+$reportDirectory = Join-Path $localDataRoot 'reports'
+$reportPath = Join-Path $reportDirectory 'C盘清理诊断报告.html'
 
 # ---------- 工具函数 ----------
 function Format-Bytes {
@@ -287,54 +292,54 @@ function Find-DuplicateDirGroups {
 # RequiresAdmin   : 是否必须管理员权限
 $CleanupTargets = @(
     # ---- 用户级（无需管理员）----
-    @{ Name = "用户临时文件";       Type = "FolderContents"; Path = $env:TEMP; RequiresAdmin = $false }
-    @{ Name = "本地临时文件";       Type = "FolderContents"; Path = "$env:LOCALAPPDATA\Temp"; RequiresAdmin = $false }
-    @{ Name = "用户崩溃转储";       Type = "FolderContents"; Path = "$env:LOCALAPPDATA\CrashDumps"; RequiresAdmin = $false }
-    @{ Name = "缩略图缓存";         Type = "FolderContents"; Path = "$env:LOCALAPPDATA\Microsoft\Windows\Explorer"; RequiresAdmin = $false }
-    @{ Name = "Chrome 缓存";        Type = "PatternCache";   Path = "$env:LOCALAPPDATA\Google\Chrome\User Data"; SubDirs = "Cache,Code Cache,GPUCache"; RequiresAdmin = $false }
-    @{ Name = "Edge 缓存";          Type = "PatternCache";   Path = "$env:LOCALAPPDATA\Microsoft\Edge\User Data"; SubDirs = "Cache,Code Cache,GPUCache"; RequiresAdmin = $false }
-    @{ Name = "Firefox 缓存";       Type = "PatternCache";   Path = "$env:LOCALAPPDATA\Mozilla\Firefox\Profiles"; SubDirs = "cache2"; RequiresAdmin = $false }
-    @{ Name = "npm 缓存";           Type = "FolderContents"; Path = "$env:LOCALAPPDATA\npm-cache"; RequiresAdmin = $false }
-    @{ Name = "pip 缓存";           Type = "FolderContents"; Path = "$env:LOCALAPPDATA\pip\Cache"; RequiresAdmin = $false }
-    @{ Name = "NuGet 包仓库";       Type = "Detect";         Path = "$env:USERPROFILE\.nuget\packages"; RequiresAdmin = $false; Hint = "这是 NuGet 包仓库而非临时缓存。清空后需重新 restore；请自行确认后再手动删除。" }
-    @{ Name = "Yarn 缓存";          Type = "FolderContents"; Path = "$env:LOCALAPPDATA\Yarn\Cache"; RequiresAdmin = $false }
-    @{ Name = "DirectX 着色器缓存"; Type = "FolderContents"; Path = "$env:LOCALAPPDATA\D3DSCache"; RequiresAdmin = $false }
-    @{ Name = "NVIDIA DXCache";     Type = "FolderContents"; Path = "$env:LOCALAPPDATA\NVIDIA\DXCache"; RequiresAdmin = $false }
-    @{ Name = "NVIDIA GLCache";     Type = "FolderContents"; Path = "$env:LOCALAPPDATA\NVIDIA\GLCache"; RequiresAdmin = $false }
-    @{ Name = "NVIDIA NV_Cache";    Type = "FolderContents"; Path = "$env:LOCALAPPDATA\NVIDIA Corporation\NV_Cache"; RequiresAdmin = $false }
-    @{ Name = "Windows 错误报告";   Type = "FolderContents"; Path = "$env:LOCALAPPDATA\Microsoft\Windows\WER"; RequiresAdmin = $false }
-    @{ Name = "剪贴板历史";         Type = "FolderContents"; Path = "$env:LOCALAPPDATA\Microsoft\Windows\Clipboard"; RequiresAdmin = $false }
-    @{ Name = "微信文件";           Type = "Detect";         Path = "$env:USERPROFILE\Documents\WeChat Files"; RequiresAdmin = $false; Hint = "建议用微信内置：设置->文件管理->清理，避免误删聊天记录" }
-    @{ Name = "QQ 文件";            Type = "Detect";         Path = "$env:USERPROFILE\Documents\Tencent Files"; RequiresAdmin = $false; Hint = "建议用 QQ 内置清理，或手动删除不再需要的已接收文件" }
+    @{ Id = "user-temp"; Name = "用户临时文件";       Type = "FolderContents"; Path = $env:TEMP; RequiresAdmin = $false }
+    @{ Id = "local-temp"; Name = "本地临时文件";       Type = "FolderContents"; Path = "$env:LOCALAPPDATA\Temp"; RequiresAdmin = $false }
+    @{ Id = "user-crash-dumps"; Name = "用户崩溃转储";       Type = "FolderContents"; Path = "$env:LOCALAPPDATA\CrashDumps"; RequiresAdmin = $false }
+    @{ Id = "thumbnail-cache"; Name = "缩略图缓存";         Type = "FolderContents"; Path = "$env:LOCALAPPDATA\Microsoft\Windows\Explorer"; RequiresAdmin = $false }
+    @{ Id = "chrome-cache"; Name = "Chrome 缓存";        Type = "PatternCache";   Path = "$env:LOCALAPPDATA\Google\Chrome\User Data"; SubDirs = "Cache,Code Cache,GPUCache"; RequiresAdmin = $false }
+    @{ Id = "edge-cache"; Name = "Edge 缓存";          Type = "PatternCache";   Path = "$env:LOCALAPPDATA\Microsoft\Edge\User Data"; SubDirs = "Cache,Code Cache,GPUCache"; RequiresAdmin = $false }
+    @{ Id = "firefox-cache"; Name = "Firefox 缓存";       Type = "PatternCache";   Path = "$env:LOCALAPPDATA\Mozilla\Firefox\Profiles"; SubDirs = "cache2"; RequiresAdmin = $false }
+    @{ Id = "npm-cache"; Name = "npm 缓存";           Type = "FolderContents"; Path = "$env:LOCALAPPDATA\npm-cache"; RequiresAdmin = $false }
+    @{ Id = "pip-cache"; Name = "pip 缓存";           Type = "FolderContents"; Path = "$env:LOCALAPPDATA\pip\Cache"; RequiresAdmin = $false }
+    @{ Id = "nuget-packages"; Name = "NuGet 包仓库";          Type = "Detect";         Path = "$env:USERPROFILE\.nuget\packages"; RequiresAdmin = $false; Hint = "这是 NuGet 包仓库而非临时缓存。清空后需重新 restore；请自行确认后再手动删除。" }
+    @{ Id = "yarn-cache"; Name = "Yarn 缓存";          Type = "FolderContents"; Path = "$env:LOCALAPPDATA\Yarn\Cache"; RequiresAdmin = $false }
+    @{ Id = "directx-shader-cache"; Name = "DirectX 着色器缓存"; Type = "FolderContents"; Path = "$env:LOCALAPPDATA\D3DSCache"; RequiresAdmin = $false }
+    @{ Id = "nvidia-dx-cache"; Name = "NVIDIA DXCache";     Type = "FolderContents"; Path = "$env:LOCALAPPDATA\NVIDIA\DXCache"; RequiresAdmin = $false }
+    @{ Id = "nvidia-gl-cache"; Name = "NVIDIA GLCache";     Type = "FolderContents"; Path = "$env:LOCALAPPDATA\NVIDIA\GLCache"; RequiresAdmin = $false }
+    @{ Id = "nvidia-nv-cache"; Name = "NVIDIA NV_Cache";    Type = "FolderContents"; Path = "$env:LOCALAPPDATA\NVIDIA Corporation\NV_Cache"; RequiresAdmin = $false }
+    @{ Id = "windows-error-reports"; Name = "Windows 错误报告";   Type = "FolderContents"; Path = "$env:LOCALAPPDATA\Microsoft\Windows\WER"; RequiresAdmin = $false }
+    @{ Id = "clipboard-history"; Name = "剪贴板历史";         Type = "FolderContents"; Path = "$env:LOCALAPPDATA\Microsoft\Windows\Clipboard"; RequiresAdmin = $false }
+    @{ Id = "wechat-files-diagnostic"; Name = "微信文件";           Type = "Detect";         Path = "$env:USERPROFILE\Documents\WeChat Files"; RequiresAdmin = $false; Hint = "建议用微信内置：设置->文件管理->清理，避免误删聊天记录" }
+    @{ Id = "qq-files-diagnostic"; Name = "QQ 文件";            Type = "Detect";         Path = "$env:USERPROFILE\Documents\Tencent Files"; RequiresAdmin = $false; Hint = "建议用 QQ 内置清理，或手动删除不再需要的已接收文件" }
     # 用户内容：只覆盖应用已分离的图片/视频附件目录；默认不勾选，绝不触及聊天数据库、FileRecv 或整个账号目录。
     @{ Id = "user-wechat-media"; Name = "微信图片与视频附件"; Type = "PatternCache"; Path = "$env:USERPROFILE\Documents\WeChat Files"; SubDirs = "FileStorage\Image,FileStorage\Video"; UserContent = $true; RequiresAdmin = $false; Advice = "包含微信聊天中的图片和视频附件。删除后不可恢复；请先在微信内确认不再需要。不会处理聊天记录、数据库或 FileRecv 文件。" }
     @{ Id = "user-qq-media"; Name = "QQ 图片与视频附件"; Type = "PatternCache"; Path = "$env:USERPROFILE\Documents\Tencent Files"; SubDirs = "Image,Video"; UserContent = $true; RequiresAdmin = $false; Advice = "包含 QQ 聊天中的图片和视频附件。删除后不可恢复；请先在 QQ 内确认不再需要。不会处理聊天记录或 FileRecv 文件。" }
-    @{ Name = "回收站";             Type = "RecycleBin";     Path = ""; RequiresAdmin = $false }
-    @{ Name = "DNS 缓存";           Type = "DNSCache";       Path = ""; RequiresAdmin = $false }
+    @{ Id = "recycle-bin"; Name = "回收站";             Type = "RecycleBin";     Path = ""; RequiresAdmin = $false }
+    @{ Id = "dns-cache"; Name = "DNS 缓存";           Type = "DNSCache";       Path = ""; RequiresAdmin = $false }
 
     # ---- 系统级（需管理员）----
-    @{ Name = "Windows 临时文件";   Type = "FolderContents"; Path = "C:\Windows\Temp"; RequiresAdmin = $true }
-    @{ Name = "Windows 更新缓存";   Type = "FolderContents"; Path = "C:\Windows\SoftwareDistribution\Download"; RequiresAdmin = $true }
-    @{ Name = "预读取文件 Prefetch"; Type = "FolderContents"; Path = "C:\Windows\Prefetch"; RequiresAdmin = $true }
-    @{ Name = "交付优化缓存";       Type = "FolderContents"; Path = "C:\Windows\SoftwareDistribution\DeliveryOptimization"; RequiresAdmin = $true }
-    @{ Name = "系统崩溃转储";       Type = "FolderContents"; Path = "C:\Windows\Minidump"; RequiresAdmin = $true }
-    @{ Name = "内存转储 MEMORY.DMP"; Type = "Remove";        Path = "C:\Windows\MEMORY.DMP"; RequiresAdmin = $true }
-    @{ Name = "Windows.old 旧系统"; Type = "Detect";         Path = "C:\Windows.old"; RequiresAdmin = $true; Hint = "磁盘清理(cleanmgr)->清理系统文件->勾选'以前的 Windows 安装'" }
-    @{ Name = "休眠文件 hiberfil.sys"; Type = "Detect";      Path = "C:\hiberfil.sys"; RequiresAdmin = $true; Hint = "管理员运行 powercfg /h off 可关闭休眠并释放约等于内存大小的空间" }
-    @{ Name = "页面文件 pagefile.sys"; Type = "Detect";      Path = "C:\pagefile.sys"; RequiresAdmin = $true; Hint = "系统虚拟内存文件，不建议删除，可缩小或移至其他盘" }
+    @{ Id = "windows-temp"; Name = "Windows 临时文件";   Type = "FolderContents"; Path = "C:\Windows\Temp"; RequiresAdmin = $true }
+    @{ Id = "windows-update-cache"; Name = "Windows 更新缓存";   Type = "FolderContents"; Path = "C:\Windows\SoftwareDistribution\Download"; RequiresAdmin = $true }
+    @{ Id = "prefetch"; Name = "预读取文件 Prefetch"; Type = "FolderContents"; Path = "C:\Windows\Prefetch"; RequiresAdmin = $true }
+    @{ Id = "delivery-optimization-cache"; Name = "交付优化缓存";       Type = "FolderContents"; Path = "C:\Windows\SoftwareDistribution\DeliveryOptimization"; RequiresAdmin = $true }
+    @{ Id = "system-minidump"; Name = "系统崩溃转储";       Type = "FolderContents"; Path = "C:\Windows\Minidump"; RequiresAdmin = $true }
+    @{ Id = "memory-dump"; Name = "内存转储 MEMORY.DMP"; Type = "Remove";        Path = "C:\Windows\MEMORY.DMP"; RequiresAdmin = $true }
+    @{ Id = "windows-old"; Name = "Windows.old 旧系统"; Type = "Detect";         Path = "C:\Windows.old"; RequiresAdmin = $true; Hint = "磁盘清理(cleanmgr)->清理系统文件->勾选'以前的 Windows 安装'" }
+    @{ Id = "hibernation-file"; Name = "休眠文件 hiberfil.sys"; Type = "Detect";      Path = "C:\hiberfil.sys"; RequiresAdmin = $true; Hint = "管理员运行 powercfg /h off 可关闭休眠并释放约等于内存大小的空间" }
+    @{ Id = "page-file"; Name = "页面文件 pagefile.sys"; Type = "Detect";       Path = "C:\pagefile.sys"; RequiresAdmin = $true; Hint = "系统虚拟内存文件，不建议删除，可缩小或移至其他盘" }
 
     # ---- 空间大户诊断（仅诊断+处方，绝不自动删除）----
     # Pattern 支持通配符；Category=分类；Risk=风险分级（需人工决策 / 可重建）；Advice=处方
-    @{ Name = "Claude Desktop 虚拟机磁盘"; Type = "SpaceHog"; Pattern = "$env:LOCALAPPDATA\Packages\Claude_*\LocalCache\Roaming\Claude\vm_bundles"; Category = "应用资源"; Risk = "需人工决策"; Advice = "Claude Desktop 的 Linux 虚拟机磁盘（rootfs.vhdx 等）。若不再使用，请通过'设置→应用'卸载 Claude Desktop 回收；仍在使用请勿删除。"; RequiresAdmin = $false }
-    @{ Name = "Windows 字体缓存";          Type = "SpaceHog"; Pattern = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"; Category = "系统资源"; Risk = "需人工决策"; Advice = "Windows 字体缓存（约 2.7GB，含字体副本）。系统字体请勿直接删除；管理字体请用'设置→个性化→字体'。"; RequiresAdmin = $false }
-    @{ Name = "剪映 JianyingPro";          Type = "SpaceHog"; Pattern = "$env:LOCALAPPDATA\JianyingPro"; Category = "应用资源"; Risk = "需人工决策"; Advice = "剪映客户端（含 CUDA 依赖约 2.4GB）。若不再使用建议卸载；或用剪映内置的缓存清理。"; RequiresAdmin = $false }
-    @{ Name = "MiniConda3 环境";           Type = "SpaceHog"; Pattern = "$env:USERPROFILE\MiniConda3"; Category = "开发环境"; Risk = "需人工决策"; Advice = "MiniConda Python 环境。清理请用 conda clean，卸载请用官方卸载器；请勿直接删除目录。"; RequiresAdmin = $false }
-    @{ Name = "下载目录";                  Type = "SpaceHog"; Pattern = "$env:USERPROFILE\Downloads"; Category = "用户数据"; Risk = "需人工决策"; Advice = "下载目录（含安装包等）。请手动确认后删除不再需要的文件。"; RequiresAdmin = $false }
-    @{ Name = "Codex 运行时";              Type = "SpaceHog"; Pattern = "$env:USERPROFILE\.codex"; Category = "应用资源"; Risk = "需人工决策"; Advice = "OpenAI Codex CLI 及插件运行时（约 2.3GB）。若不再使用 Codex 建议卸载。"; RequiresAdmin = $false }
-    @{ Name = "开发工具缓存 .cache";       Type = "SpaceHog"; Pattern = "$env:USERPROFILE\.cache"; Category = "可重建缓存"; Risk = "可重建"; Advice = "开发工具缓存（codex-runtimes 等）。可安全删除，工具下次使用时重建；删除后首次运行会重新下载。"; RequiresAdmin = $false }
-    @{ Name = "Cursor 编辑器缓存";         Type = "SpaceHog"; Pattern = "$env:USERPROFILE\.cursor"; Category = "可重建缓存"; Risk = "可重建"; Advice = "Cursor 编辑器缓存/扩展。缓存可删除，扩展会随使用重建。"; RequiresAdmin = $false }
-    @{ Name = "Gemini 浏览器录制数据";     Type = "SpaceHog"; Pattern = "$env:USERPROFILE\.gemini\*\browser_recordings"; Category = "录制数据"; Risk = "需人工决策"; Advice = "Gemini 的浏览器录制数据（antigravity 等多份副本）。可手动删除不再需要的录制；删除后历史录制不可恢复。"; RequiresAdmin = $false }
-    @{ Name = "LM Studio 本地模型";        Type = "SpaceHog"; Pattern = "$env:USERPROFILE\.lmstudio"; Category = "应用资源"; Risk = "需人工决策"; Advice = "LM Studio 本地大模型运行环境（模型文件较大）。若不再使用建议卸载并删除模型。"; RequiresAdmin = $false }
+    @{ Id = "claude-vm-disk"; Name = "Claude Desktop 虚拟机磁盘"; Type = "SpaceHog"; Pattern = "$env:LOCALAPPDATA\Packages\Claude_*\LocalCache\Roaming\Claude\vm_bundles"; Category = "应用资源"; Risk = "需人工决策"; Advice = "Claude Desktop 的 Linux 虚拟机磁盘（rootfs.vhdx 等）。若不再使用，请通过'设置→应用'卸载 Claude Desktop 回收；仍在使用请勿删除。"; RequiresAdmin = $false }
+    @{ Id = "windows-font-cache"; Name = "Windows 字体缓存";          Type = "SpaceHog"; Pattern = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"; Category = "系统资源"; Risk = "需人工决策"; Advice = "Windows 字体缓存（约 2.7GB，含字体副本）。系统字体请勿直接删除；管理字体请用'设置→个性化→字体'。"; RequiresAdmin = $false }
+    @{ Id = "jianying-data"; Name = "剪映 JianyingPro";          Type = "SpaceHog"; Pattern = "$env:LOCALAPPDATA\JianyingPro"; Category = "应用资源"; Risk = "需人工决策"; Advice = "剪映客户端（含 CUDA 依赖约 2.4GB）。若不再使用建议卸载；或用剪映内置的缓存清理。"; RequiresAdmin = $false }
+    @{ Id = "miniconda-environment"; Name = "MiniConda3 环境";           Type = "SpaceHog"; Pattern = "$env:USERPROFILE\MiniConda3"; Category = "开发环境"; Risk = "需人工决策"; Advice = "MiniConda Python 环境。清理请用 conda clean，卸载请用官方卸载器；请勿直接删除目录。"; RequiresAdmin = $false }
+    @{ Id = "downloads"; Name = "下载目录";                  Type = "SpaceHog"; Pattern = "$env:USERPROFILE\Downloads"; Category = "用户数据"; Risk = "需人工决策"; Advice = "下载目录（含安装包等）。请手动确认后删除不再需要的文件。"; RequiresAdmin = $false }
+    @{ Id = "codex-runtime"; Name = "Codex 运行时";              Type = "SpaceHog"; Pattern = "$env:USERPROFILE\.codex"; Category = "应用资源"; Risk = "需人工决策"; Advice = "OpenAI Codex CLI 及插件运行时（约 2.3GB）。若不再使用 Codex 建议卸载。"; RequiresAdmin = $false }
+    @{ Id = "developer-cache"; Name = "开发工具缓存 .cache";       Type = "SpaceHog"; Pattern = "$env:USERPROFILE\.cache"; Category = "可重建缓存"; Risk = "可重建"; Advice = "开发工具缓存（codex-runtimes 等）。可安全删除，工具下次使用时重建；删除后首次运行会重新下载。"; RequiresAdmin = $false }
+    @{ Id = "cursor-data"; Name = "Cursor 编辑器缓存";         Type = "SpaceHog"; Pattern = "$env:USERPROFILE\.cursor"; Category = "可重建缓存"; Risk = "可重建"; Advice = "Cursor 编辑器缓存/扩展。缓存可删除，扩展会随使用重建。"; RequiresAdmin = $false }
+    @{ Id = "gemini-recordings"; Name = "Gemini 浏览器录制数据";     Type = "SpaceHog"; Pattern = "$env:USERPROFILE\.gemini\*\browser_recordings"; Category = "录制数据"; Risk = "需人工决策"; Advice = "Gemini 的浏览器录制数据（antigravity 等多份副本）。可手动删除不再需要的录制；删除后历史录制不可恢复。"; RequiresAdmin = $false }
+    @{ Id = "lmstudio-models"; Name = "LM Studio 本地模型";        Type = "SpaceHog"; Pattern = "$env:USERPROFILE\.lmstudio"; Category = "应用资源"; Risk = "需人工决策"; Advice = "LM Studio 本地大模型运行环境（模型文件较大）。若不再使用建议卸载并删除模型。"; RequiresAdmin = $false }
 )
 
 # ---------- 清单校验与去重（fail fast，避免拼写错误静默误删 / 重复统计）----------
@@ -358,14 +363,44 @@ foreach ($t in $CleanupTargets) {
 }
 $CleanupTargets = $deduped
 
-# 为 UI 与命令行选择提供稳定 ID。选择文件只允许携带这些 ID，绝不接收路径或删除规则。
-$targetIndex = 0
-foreach ($t in $CleanupTargets) {
-    $targetIndex++
-    if (-not $t.Id) { $t.Id = ('clean-{0:D2}' -f $targetIndex) }
+# 为 UI 与命令行选择提供稳定 ID。所有目标必须显式声明 ID，禁止按列表位置生成。
+$missingIds = @($CleanupTargets | Where-Object { [string]::IsNullOrWhiteSpace([string]$_['Id']) })
+if ($missingIds.Count -gt 0) {
+    Write-Host ('错误：清理目标缺少稳定 ID：' + (($missingIds | ForEach-Object Name) -join '、')) -ForegroundColor Red
+    exit 1
+}
+$idCounts = @{}
+foreach ($target in $CleanupTargets) {
+    $id = [string]$target['Id']
+    if (-not $idCounts.ContainsKey($id)) { $idCounts[$id] = 0 }
+    $idCounts[$id]++
+}
+$duplicateIds = @($idCounts.GetEnumerator() | Where-Object Value -gt 1 | ForEach-Object Key)
+if ($duplicateIds.Count -gt 0) {
+    Write-Host ('错误：清理目标存在重复 ID：' + ($duplicateIds -join '、')) -ForegroundColor Red
+    exit 1
 }
 $cleanupTargetById = @{}
-foreach ($t in $CleanupTargets) { $cleanupTargetById[[string]$t.Id] = $t }
+foreach ($t in $CleanupTargets) { $cleanupTargetById[[string]$t['Id']] = $t }
+
+$targetManifest = @($CleanupTargets | ForEach-Object {
+    [ordered]@{
+        Id = [string]$_['Id']
+        Type = [string]$_['Type']
+        Path = [string]$_['Path']
+        Pattern = [string]$_['Pattern']
+        SubDirs = [string]$_['SubDirs']
+        RequiresAdmin = [bool]$_['RequiresAdmin']
+    }
+} | ConvertTo-Json -Depth 5 -Compress)
+$sha256 = [System.Security.Cryptography.SHA256]::Create()
+try {
+    $targetManifestHashBytes = $sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($targetManifest))
+    $targetManifestHash = -join @($targetManifestHashBytes | ForEach-Object { $_.ToString('x2') })
+} finally {
+    $sha256.Dispose()
+}
+$scanId = [guid]::NewGuid().ToString('N')
 
 function Get-CleanupRecommendation {
     param($Target)
@@ -385,6 +420,7 @@ function Get-CleanupRecommendation {
 }
 
 $selectedTargetIds = $null
+$expectedSizeById = @{}
 if ($SelectionFile) {
     if (-not (Test-Path -LiteralPath $SelectionFile)) {
         Write-Host ('错误：找不到选择清单：' + $SelectionFile) -ForegroundColor Red
@@ -392,9 +428,38 @@ if ($SelectionFile) {
     }
     try {
         $selectionPayload = Get-Content -LiteralPath $SelectionFile -Raw -Encoding UTF8 | ConvertFrom-Json
+        if ([int]$selectionPayload.SchemaVersion -ne 2) {
+            throw '[PLAN_SCHEMA] 清理计划版本不受支持，请重新扫描。'
+        }
+        if ([string]$selectionPayload.ManifestHash -ne $targetManifestHash) {
+            throw '[PLAN_MANIFEST] 清理计划与当前清理规则不一致，请重新扫描。'
+        }
+        if ([string]$selectionPayload.ScanId -notmatch '^[a-fA-F0-9]{32}$') {
+            throw '[PLAN_SCAN_ID] 清理计划缺少扫描编号，请重新扫描。'
+        }
+        $scannedAt = [DateTimeOffset]::MinValue
+        if (-not [DateTimeOffset]::TryParse([string]$selectionPayload.ScannedAt, [ref]$scannedAt)) {
+            throw '[PLAN_SCANNED_AT] 清理计划缺少有效的扫描时间，请重新扫描。'
+        }
+        $nowUtc = [DateTimeOffset]::UtcNow
+        if ($scannedAt.ToUniversalTime() -gt $nowUtc.AddMinutes(5)) {
+            throw '[PLAN_CLOCK] 清理计划时间晚于当前系统时间，请检查时钟并重新扫描。'
+        }
+        if ($nowUtc - $scannedAt.ToUniversalTime() -gt [TimeSpan]::FromMinutes(30)) {
+            throw '[PLAN_EXPIRED] 清理计划已超过 30 分钟，请重新扫描以确认当前内容。'
+        }
         $requestedIds = @($selectionPayload.SelectedIds | Where-Object { $_ })
         $selectedTargetIds = @{}
         foreach ($id in $requestedIds) { $selectedTargetIds[[string]$id] = $true }
+        foreach ($item in @($selectionPayload.Items)) {
+            if ($item.Id -and $null -ne $item.Size -and [double]$item.Size -ge 0) {
+                $expectedSizeById[[string]$item.Id] = [double]$item.Size
+            }
+        }
+        $missingSnapshots = @($requestedIds | Where-Object { -not $expectedSizeById.ContainsKey([string]$_) })
+        if ($missingSnapshots.Count -gt 0) {
+            throw ('[PLAN_SNAPSHOT] 清理计划缺少项目快照：' + ($missingSnapshots -join ', '))
+        }
     } catch {
         Write-Host ('错误：选择清单格式无效：' + $_.Exception.Message) -ForegroundColor Red
         exit 1
@@ -548,6 +613,20 @@ if ($SelfTest) {
     if (-not $mediaOk) { $fail++ }
     $mediaMark = if ($mediaOk) { 'OK' } else { 'FAIL' }
     Write-Host ("[{0}] 用户图片/视频候选项  count={1}  bounded={2}" -f $mediaMark, $mediaTargets.Count, $mediaOk)
+    $stableIdsOk = ($missingIds.Count -eq 0) -and ($duplicateIds.Count -eq 0) -and
+        (@($CleanupTargets | Where-Object { [string]$_['Id'] -notmatch '^[a-z0-9]+(?:-[a-z0-9]+)*$' }).Count -eq 0)
+    if (-not $stableIdsOk) { $fail++ }
+    $stableIdsMark = if ($stableIdsOk) { 'OK' } else { 'FAIL' }
+    Write-Host ("[{0}] 稳定清理目标 ID  count={1}  unique={2}" -f $stableIdsMark, $CleanupTargets.Count, ($duplicateIds.Count -eq 0))
+    $manifestOk = $targetManifestHash -match '^[a-f0-9]{64}$'
+    if (-not $manifestOk) { $fail++ }
+    $manifestMark = if ($manifestOk) { 'OK' } else { 'FAIL' }
+    Write-Host ("[{0}] 清理规则清单哈希  sha256={1}" -f $manifestMark, $targetManifestHash)
+    $dataPathOk = $reportPath.StartsWith($localDataRoot, [System.StringComparison]::OrdinalIgnoreCase) -and
+        -not $reportPath.StartsWith($PSScriptRoot, [System.StringComparison]::OrdinalIgnoreCase)
+    if (-not $dataPathOk) { $fail++ }
+    $dataPathMark = if ($dataPathOk) { 'OK' } else { 'FAIL' }
+    Write-Host ("[{0}] 报告目录与程序目录分离  path={1}" -f $dataPathMark, $reportPath)
     if ($fail -gt 0) { Write-Host ("SelfTest 失败 {0} 项" -f $fail) -ForegroundColor Red; exit 1 }
     Write-Host "SelfTest 通过" -ForegroundColor Green
     exit 0
@@ -578,6 +657,7 @@ $dupResults     = @()
 $profileData    = [PSCustomObject]@{ Root = ''; FileCount = 0; TopDirs = @(); TopFiles = @() }
 
 $scanResults = @()
+$planMismatches = @()
 
 # ---------- 阶段 1：扫描 ----------
 foreach ($t in $CleanupTargets) {
@@ -601,6 +681,21 @@ foreach ($t in $CleanupTargets) {
     }
 
     $r = & $handler $t 'scan'
+
+    if ($Clean -and $expectedSizeById.ContainsKey([string]$t.Id)) {
+        $expectedSize = [double]$expectedSizeById[[string]$t.Id]
+        $actualSize = [double]$r.Size
+        if ($t.UserContent -and $expectedSize -ne $actualSize) {
+            $planMismatches += [PSCustomObject]@{
+                Id = [string]$t.Id
+                Name = [string]$t.Name
+                Expected = $expectedSize
+                Actual = $actualSize
+            }
+        } elseif ($expectedSize -ne $actualSize) {
+            Write-Host ('    提示：扫描后大小由 {0} 变化为 {1}，已按当前固定缓存范围重新核验。' -f (Format-Bytes $expectedSize), (Format-Bytes $actualSize)) -ForegroundColor DarkGray
+        }
+    }
 
     # 空间大户：独立输出（分类 + 风险 + 处方 + 匹配路径），仅诊断不删除
     if ($t.Type -eq 'SpaceHog') {
@@ -671,7 +766,9 @@ if ($SelectionOutput) {
                 }
             })
         $selectionExport = [PSCustomObject]@{
-            SchemaVersion = 1
+            SchemaVersion = 2
+            ScanId        = $scanId
+            ManifestHash  = $targetManifestHash
             ScannedAt     = (Get-Date).ToString('o')
             Items         = $selectionItems
         }
@@ -681,6 +778,15 @@ if ($SelectionOutput) {
     } catch {
         Write-Host ('  ⚠ 导出可选清理项失败：' + $_.Exception.Message) -ForegroundColor Yellow
     }
+}
+
+if ($Clean -and $planMismatches.Count -gt 0) {
+    Write-Host ''
+    Write-Host '清理计划已变化，出于安全考虑本次未执行删除。请重新扫描后再选择。' -ForegroundColor Yellow
+    foreach ($mismatch in $planMismatches) {
+        Write-Host ('  [{0}] 扫描时 {1}，当前 {2}' -f $mismatch.Name, (Format-Bytes $mismatch.Expected), (Format-Bytes $mismatch.Actual)) -ForegroundColor DarkYellow
+    }
+    exit 2
 }
 
 # ---------- 空间剖析：目录（任意层级）+ 大文件 ----------
@@ -928,8 +1034,8 @@ if ($Report) {
         FreeAfter      = $driveFreeAfter
     }
     $html = Get-ReportHtml $scanResults $profileData $meta $dupResults
-    $reportPath = Join-Path $PSScriptRoot "C盘清理诊断报告.html"
     try {
+        New-Item -ItemType Directory -Path $reportDirectory -Force | Out-Null
         [System.IO.File]::WriteAllText($reportPath, $html, (New-Object System.Text.UTF8Encoding($true)))
         Write-Host ""
         Write-Host ("  诊断报告已导出：{0}" -f $reportPath) -ForegroundColor Green

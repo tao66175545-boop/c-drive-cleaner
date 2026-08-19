@@ -11,12 +11,12 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Parse PowerShell scripts
         shell: powershell
         run: |
-          $files = @('C-Drive-Cleaner.ps1', 'C-Drive-Cleaner-UI.ps1')
+          $files = @('C-Drive-Cleaner.ps1', 'C-Drive-Cleaner-UI.ps1', 'tools\New-ReleasePackage.ps1', 'tests\PlanContractTests.ps1', '.ui-smoke-test.ps1')
           foreach ($file in $files) {
             $tokens = $null
             $errors = $null
@@ -27,6 +27,14 @@ jobs:
       - name: Run safety self-test
         shell: powershell
         run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\C-Drive-Cleaner.ps1 -SelfTest
+
+      - name: Validate cleanup plan contract
+        shell: powershell
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\PlanContractTests.ps1
+
+      - name: Run UI smoke test
+        shell: powershell
+        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.ui-smoke-test.ps1
 
       - name: Dry-run release package
         shell: powershell

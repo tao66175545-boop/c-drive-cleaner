@@ -2,7 +2,7 @@
 
 ## 结论
 
-可以通过 GitHub Releases 向用户分发最新版本。公开仓库的 Release 附件可匿名下载，客户端可使用 GitHub API 的 `releases/latest` 查询最新版本。
+可以通过 GitHub Releases 向用户分发最新版本。公开仓库的 Release 附件可匿名下载，客户端使用 GitHub API 的 `releases/latest` 查询最新版本，并下载该 Release 内的 `release.json`；仓库根目录不维护容易过期的最新版本副本。
 
 但当前项目是以 `C盘清理.bat` 启动的 PowerShell 脚本集合，尚缺少版本标识、发布清单、代码签名、独立更新器和回滚机制。现阶段适合“手动下载最新 ZIP”；在完成下述安全能力前，不应做静默自动覆盖更新。
 
@@ -37,7 +37,7 @@ versions/1.2.0 启动新版本，失败则回滚 1.1.0
 ## 更新流程
 
 1. 用户点击“检查更新”，默认不在后台自动联网。
-2. 客户端读取 GitHub Release 的 `release.json`，比较语义版本号。
+2. 客户端请求 GitHub `releases/latest`，定位该 Release 的 `release.json` 资产并比较语义版本号。
 3. 验证 `release.json.sig`，再下载 ZIP 并校验 SHA-256。
 4. 显示版本号、体积、更新说明与“立即更新/稍后更新”选择。
 5. `Updater.exe` 等待主窗口退出，将解压后的新版本写入新版本目录。
@@ -54,10 +54,11 @@ versions/1.2.0 启动新版本，失败则回滚 1.1.0
 ## 发布流水线
 
 1. AI 或开发者通过 Pull Request 提交已提升版本号的变更和对应 `RELEASE_NOTES_vX.Y.Z.md`。
-2. GitHub Actions 运行 PowerShell 解析、`-SelfTest` 与 UI 冒烟测试。
-3. 通过验证并合入 `main` 后，发布工作流读取 `version.json`，仅为尚未存在的 `vX.Y.Z` 自动构建。
-4. 工作流从固定白名单生成 ZIP、SHA-256、`release.json`，并上传 Release 资产和更新说明。
-5. 已发布版本绝不覆盖；修复必须递增版本号。完整的 AI 发布边界和权限规则见 `AI自动化GitHub发布工作流.md`。
+2. GitHub Actions 运行 PowerShell 解析、`-SelfTest`、发布包试构建与 UI 冒烟测试。
+3. 通过验证并合入 `main` 后，只读构建任务读取 `version.json`，仅为尚未存在的 `vX.Y.Z` 自动构建。
+4. 构建任务从固定白名单生成 ZIP、SHA-256、`release.json` 并上传短期内部构建产物。
+5. 独立发布任务拥有最小 `contents: write` 权限，不检出或执行仓库代码，只下载已验证产物并创建 Release。
+6. 已发布版本绝不覆盖；修复必须递增版本号。完整的 AI 发布边界和权限规则见 `AI自动化GitHub发布工作流.md`。
 
 ## 当前阶段建议
 

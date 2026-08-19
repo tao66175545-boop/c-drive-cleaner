@@ -4,7 +4,7 @@ Windows C 盘扫描与清理工具。它先分析，再由用户逐项选择是�
 
 ## 下载与运行
 
-从 [Releases](https://github.com/tao66175545-boop/c-drive-cleaner/releases) 下载最新的 `C.zip`，解压后双击 `C盘清理.bat`。
+从 [Releases](https://github.com/tao66175545-boop/c-drive-cleaner/releases) 下载最新版本的工具包 ZIP，解压后双击 `C盘清理.bat`。
 
 运行环境：Windows 10/11、Windows PowerShell 5.1、Windows Forms。
 
@@ -16,12 +16,15 @@ Windows C 盘扫描与清理工具。它先分析，再由用户逐项选择是�
 4. 确认预计释放空间后点击“执行所选项”。
 5. 在概览页或 HTML 报告中查看结果。
 
+HTML 报告保存在 `%LOCALAPPDATA%\CDriveCleaner\reports`，不会写入程序安装目录。
+
 ## 安全边界
 
 - 空间大户、重复目录、聊天数据库、文件接收目录、休眠文件和页面文件只诊断，不自动删除。
 - 微信/QQ 的图片与视频附件单列为“谨慎选择”，默认不勾选；不处理聊天数据库、`FileRecv` 或整个账号目录。
 - 清理器拒绝盘根、Windows、用户主目录和脚本目录等保护路径，并跳过 junction/symlink 重解析点。
 - 清理清单只传递固定项目 ID，不接受用户输入的删除路径。
+- 清理计划包含规则哈希、扫描时间和大小快照；规则或用户内容发生变化时会要求重新扫描。
 
 ## 项目结构
 
@@ -41,7 +44,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\C-Drive-Cleaner.ps1 -S
 
 ## 版本与更新
 
-当前稳定版本为 `v1.0.0`。项目已准备版本清单和在线升级架构；自动更新将在代码签名、独立更新器和回滚机制完成后启用。
+当前稳定版本由 [Releases](https://github.com/tao66175545-boop/c-drive-cleaner/releases/latest) 提供。发布包与 `release.json` 由 GitHub Actions 同一次构建生成；客户端自动更新将在代码签名、独立更新器和回滚机制完成后启用。
 
 ## 许可证
 

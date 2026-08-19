@@ -7,7 +7,9 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$OutputDirectory,
 
-    [string]$Repository = ''
+    [string]$Repository = '',
+
+    [switch]$KeepStage
 )
 
 $ErrorActionPreference = 'Stop'
@@ -99,6 +101,10 @@ $releaseJson = $releaseManifest | ConvertTo-Json -Depth 5
     $releaseJson,
     [System.Text.UTF8Encoding]::new($false)
 )
+
+if (-not $KeepStage -and (Test-Path -LiteralPath $stagePath)) {
+    Remove-Item -LiteralPath $stagePath -Recurse -Force
+}
 
 [PSCustomObject]@{
     PackagePath = $packagePath

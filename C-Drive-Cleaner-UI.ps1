@@ -194,7 +194,8 @@ public class CDriveRoundedButton : Control {
 $scriptDir = $PSScriptRoot
 if (-not $scriptDir) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path }
 $mainScript = Join-Path $scriptDir 'C-Drive-Cleaner.ps1'
-$reportPath = Join-Path $scriptDir 'C盘清理诊断报告.html'
+$localDataRoot = if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'CDriveCleaner' } else { Join-Path $env:TEMP 'CDriveCleaner' }
+$reportPath = Join-Path (Join-Path $localDataRoot 'reports') 'C盘清理诊断报告.html'
 $spriteSheetPath = Join-Path $scriptDir 'assets\cleaning-sprite-source.png'
 $logoSvgPath = Join-Path $scriptDir 'assets\logo-animated.svg'
 $logoSpritePath = Join-Path $scriptDir 'assets\logo-animated-sprite.png'
@@ -923,8 +924,8 @@ $workspace.Controls.AddRange(@($contentHost, $topBar))
 $form.Controls.AddRange(@($workspace, $sideBar))
 
 $buttons = @($btnScan, $btnReport, $btnClean, $btnExit)
-$jobState = @{ Job = $null; LastLen = 0; LogFile = ''; SelectionOutput = '' }
-$dashboardState = @{ CleanBeforeFree = $null; CleanAfterFree = $null; IsCleaning = $false; LastAction = '尚未执行操作'; LastFinished = $null; SelectionItems = @(); SelectedIds = @{}; SelectionCheckboxes = @() }
+$jobState = @{ Job = $null; LastLen = 0; LogFile = ''; SelectionOutput = ''; SelectionFile = '' }
+$dashboardState = @{ CleanBeforeFree = $null; CleanAfterFree = $null; IsCleaning = $false; LastAction = '尚未执行操作'; LastFinished = $null; SelectionItems = @(); SelectedIds = @{}; SelectionCheckboxes = @(); ScanId = ''; ManifestHash = ''; ScannedAt = '' }
 $navigationState = @{ View = 'overview' }
 
 $toolTips = New-Object System.Windows.Forms.ToolTip
@@ -1087,8 +1088,11 @@ function Show-CleanupSelection {
     param([string]$Path)
     try {
         $payload = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json
-        if ([int]$payload.SchemaVersion -ne 1) { throw '不支持的清单版本。' }
+        if ([int]$payload.SchemaVersion -ne 2) { throw '不支持的清单版本，请重新扫描。' }
         $dashboardState.SelectionItems = @($payload.Items | Where-Object { $_.Id })
+        $dashboardState.ScanId = [string]$payload.ScanId
+        $dashboardState.ManifestHash = [string]$payload.ManifestHash
+        $dashboardState.ScannedAt = [string]$payload.ScannedAt
         $dashboardState.SelectedIds = @{}
         $dashboardState.SelectionCheckboxes = @()
         foreach ($control in @($selectionItemsPanel.Controls)) { $control.Dispose() }
@@ -1119,7 +1123,17 @@ function New-SelectedCleanupFile {
     $selectedIds = @($dashboardState.SelectedIds.Keys | Sort-Object)
     if ($selectedIds.Count -eq 0) { return $null }
     $path = Join-Path $env:TEMP ('cdc-selection-{0}.json' -f [guid]::NewGuid().ToString('N'))
-    $payload = [PSCustomObject]@{ SchemaVersion = 1; SelectedIds = $selectedIds }
+    $selectedItems = @($dashboardState.SelectionItems | Where-Object { $dashboardState.SelectedIds.ContainsKey([string]$_.Id) } | ForEach-Object {
+        [PSCustomObject]@{ Id = [string]$_.Id; Size = [double]$_.Size }
+    })
+    $payload = [PSCustomObject]@{
+        SchemaVersion = 2
+        ScanId = $dashboardState.ScanId
+        ManifestHash = $dashboardState.ManifestHash
+        ScannedAt = $dashboardState.ScannedAt
+        SelectedIds = $selectedIds
+        Items = $selectedItems
+    }
     [System.IO.File]::WriteAllText($path, ($payload | ConvertTo-Json -Depth 3), (New-Object System.Text.UTF8Encoding($false)))
     return $path
 }
@@ -1291,8 +1305,12 @@ $poll.Add_Tick({
     $j = $jobState.Job
     if ($j -and $j.State -in @('Completed', 'Failed', 'Stopped')) {
         $poll.Stop()
-        try { Receive-Job $j -ErrorAction SilentlyContinue | Out-Null } catch {}
+        $jobOutput = @()
+        try { $jobOutput = @(Receive-Job $j -ErrorAction SilentlyContinue) } catch {}
+        $exitCode = if ($jobOutput.Count -gt 0 -and $jobOutput[-1] -is [int]) { [int]$jobOutput[-1] } else { 1 }
+        $succeeded = ($j.State -eq 'Completed') -and ($exitCode -eq 0)
         $selectionOutput = $jobState.SelectionOutput
+        $selectionFile = $jobState.SelectionFile
         Stop-UiJob
         Set-UiBusy $false
         if ($animationState.Active) { Stop-CleanAnimation }
@@ -1300,29 +1318,37 @@ $poll.Add_Tick({
         if ($dashboardState.IsCleaning) {
             $dashboardState.CleanAfterFree = (Get-CDriveMetrics).Free
             $dashboardState.IsCleaning = $false
-            $dashboardState.LastAction = '清理完成'
+            $dashboardState.LastAction = if ($succeeded) { '清理完成' } else { '清理已中止或失败' }
         } else {
-            $dashboardState.LastAction = '扫描完成（未删除文件）'
+            $dashboardState.LastAction = if ($succeeded) { '扫描完成（未删除文件）' } else { '扫描失败' }
         }
         $dashboardState.LastFinished = Get-Date
         Update-Dashboard
-        if (-not $dashboardState.IsCleaning -and $selectionOutput -and (Test-Path -LiteralPath $selectionOutput)) {
+        if ($succeeded -and $selectionOutput -and (Test-Path -LiteralPath $selectionOutput)) {
             Show-CleanupSelection $selectionOutput
         }
         $jobState.SelectionOutput = ''
-        Append-Log $log '--- 完成 ---'
-        if (Test-Path -LiteralPath $reportPath) {
+        $jobState.SelectionFile = ''
+        Append-Log $log $(if ($succeeded) { '--- 完成 ---' } else { ('--- 已中止或失败（退出码 {0}）---' -f $exitCode) })
+        if ($succeeded -and (Test-Path -LiteralPath $reportPath)) {
             Append-Log $log ('报告：' + $reportPath)
         }
+        foreach ($temporaryPath in @($selectionOutput, $selectionFile, $jobState.LogFile)) {
+            if ($temporaryPath -and (Test-Path -LiteralPath $temporaryPath)) {
+                try { Remove-Item -LiteralPath $temporaryPath -Force -ErrorAction SilentlyContinue } catch {}
+            }
+        }
+        $jobState.LogFile = ''
     }
 })
 
 function Invoke-Main {
-    param([string]$ExtraArgs, [string]$StatusText, [bool]$IsCleaning = $false, [string]$SelectionOutput = '')
+    param([string]$ExtraArgs, [string]$StatusText, [bool]$IsCleaning = $false, [string]$SelectionOutput = '', [string]$SelectionFile = '')
     if ($jobState.Job) { return }
     $jobState.LogFile = Join-Path $env:TEMP ('cdc-ui-{0}.log' -f [guid]::NewGuid().ToString('N'))
     $jobState.LastLen = 0
     $jobState.SelectionOutput = $SelectionOutput
+    $jobState.SelectionFile = $SelectionFile
     Set-Content -LiteralPath $jobState.LogFile -Value '' -Encoding Default
     Set-UiBusy $true
     $status.Text = $StatusText
@@ -1400,7 +1426,7 @@ $btnClean.Add_Click({
     if (-not $selectionFile) { return }
     Start-CleanAnimation
     $args = '-Clean -Force -Report -SelectionFile "{0}"' -f $selectionFile
-    Invoke-Main -ExtraArgs $args -StatusText '正在清理已选项目…' -IsCleaning $true
+    Invoke-Main -ExtraArgs $args -StatusText '正在清理已选项目…' -IsCleaning $true -SelectionFile $selectionFile
 })
 
 $btnExit.Add_Click({ $form.Close() })
@@ -1410,6 +1436,11 @@ $form.Add_FormClosing({
     Stop-LogoAnimation
     Stop-CleanAnimation
     Stop-UiJob
+    foreach ($temporaryPath in @($jobState.SelectionOutput, $jobState.SelectionFile, $jobState.LogFile)) {
+        if ($temporaryPath -and (Test-Path -LiteralPath $temporaryPath)) {
+            try { Remove-Item -LiteralPath $temporaryPath -Force -ErrorAction SilentlyContinue } catch {}
+        }
+    }
     foreach ($frame in $spriteFrames) { try { $frame.Dispose() } catch {} }
     if ($spriteSheet) { try { $spriteSheet.Dispose() } catch {} }
     foreach ($frame in $logoFrames) { try { $frame.Dispose() } catch {} }

@@ -16,7 +16,7 @@ ui-*-preview.png
 # Local release staging produced by tools/New-ReleasePackage.ps1
 artifacts/
 .release/
-.release-check/
+.release-check*/
 
 # Local editor and PowerShell artifacts
 .playwright-cli/
