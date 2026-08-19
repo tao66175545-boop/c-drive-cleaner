@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "requiredFiles": [
+    "AGENTS.md",
     ".gitattributes",
     ".gitignore",
     ".ui-smoke-test.ps1",

@@ -51,7 +51,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\C-Drive-Cleaner.ps1 -S
 .\tools\Submit-UpdateCandidate.ps1
 ```
 
-脚本会执行完整验证、检查本地/远端漂移、生成源码指纹并创建候选 PR。维护者只需在 PR 中确认一次 Merge；合并后的验证、Release 构建、校验和生成与发布后一致性验收均由 GitHub Actions 自动完成。详细规则见 [AI自动化GitHub发布工作流.md](AI自动化GitHub发布工作流.md)。
+脚本会执行完整验证、检查本地/远端漂移、生成源码指纹并创建候选 PR。Codex 等待验证通过后会在对话中给出候选摘要；维护者只需在 Codex 对话回复“同意”，Codex 随后自动合并、监控 GitHub Actions 并完成发布一致性验收，不需要再打开 GitHub 操作。详细规则见 [AI自动化GitHub发布工作流.md](AI自动化GitHub发布工作流.md)。
 
 ## 版本与更新
 

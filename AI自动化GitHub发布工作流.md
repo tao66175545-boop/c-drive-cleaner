@@ -34,7 +34,13 @@ Validate 工作流：脚本解析 + 安全自检
         +-- 失败：自动阻断，AI 根据日志修复 PR
         |
         v
-人工点击一次 Merge（唯一批准点）
+Codex 对话展示版本、PR、提交 SHA、源码指纹和验证结果
+        |
+        v
+用户在 Codex 对话回复“同意”（唯一批准点）
+        |
+        v
+Complete-ApprovedCandidate.ps1 校验批准未过期并自动合并
         |
         v
 受保护 main（禁止绕过 PR 直接推送）
@@ -61,7 +67,9 @@ GitHub Releases / 客户端检查更新
 | `.github/workflows/consistency.yml` | Release 完成后重新下载 ZIP，核验版本、SHA-256、发布清单和包内 `version.json`。 |
 | `tools/New-ReleasePackage.ps1` | 仅从发布白名单构建 ZIP，并生成 SHA-256、发布清单。 |
 | `tools/Submit-UpdateCandidate.ps1` | 检查远端漂移、执行本地验证、计算指纹并创建或更新候选 PR。 |
+| `tools/Complete-ApprovedCandidate.ps1` | 在 Codex 获得明确同意后，绑定候选 SHA/指纹完成合并、监控和最终验收。 |
 | `tools/Enable-GitHubWorkflowGuard.ps1` | 一次性保护 `main`，禁止直接推送并要求 PR 验证通过。 |
+| `AGENTS.md` | 让后续 Codex 任务自动遵守“对话批准、批准后全自动”的发布协议。 |
 | `source-policy.json` | 定义允许公开同步的文件与产品版本敏感路径。 |
 | `source-manifest.json` | 记录版本、基线提交、文件 SHA-256/Git Blob 哈希和整体源码指纹。 |
 | `version.json` | 唯一版本来源，格式为 SemVer，例如 `1.1.0`。 |
@@ -82,8 +90,19 @@ AI 每次完成变更时执行以下确定性动作：
 .\tools\Submit-UpdateCandidate.ps1
 ```
 
-5. 用户只在脚本输出的 PR 页面点击一次 Merge；这是唯一人工批准动作。
-6. PR 合入 `main` 后不再打包或手动上传。Actions 自动完成验证、Release 和发布后验收。
+5. Codex 等待 PR 验证通过，并在对话中展示 PR 号、版本、完整提交 SHA、源码指纹和变更摘要。
+6. 用户在 Codex 对话回复“同意”；这是唯一人工批准动作，不需要打开 GitHub。
+7. Codex 将批准绑定到刚才展示的 SHA 和指纹，运行以下收尾命令。若候选已发生变化，命令拒绝合并并要求重新批准。
+
+```powershell
+.\tools\Complete-ApprovedCandidate.ps1 `
+  -PullRequest <PR号> `
+  -ExpectedHeadSha <40位提交SHA> `
+  -ExpectedFingerprint <64位源码指纹> `
+  -UserApproved
+```
+
+8. 收尾脚本自动 squash 合并、删除候选分支，等待 Validate、Publish Release、Verify Published Release，并最终核对远端 `main` 指纹与 Release。Codex 将结果直接回复到当前对话。
 
 首次部署本机制时使用 `-Bootstrap`；之后禁止再使用该参数：
 
@@ -101,7 +120,18 @@ AI 每次完成变更时执行以下确定性动作：
 .\tools\Enable-GitHubWorkflowGuard.ps1 -Apply
 ```
 
-它要求所有变更通过 PR，`powershell-validation` 成功后才允许合并，同时禁止管理员绕过、强推和删除 `main`。仓库仍由用户亲自点击 Merge，不让 AI 自动批准自身变更。
+它要求所有变更通过 PR，`powershell-validation` 成功后才允许合并，同时禁止管理员绕过、强推和删除 `main`。AI 不能自行批准：只有用户在 Codex 对话明确回复“同意”后，Codex 才能调用批准收尾器完成 GitHub 操作。
+
+## 对话批准的有效性
+
+批准不是对未来任意版本的长期授权，只对对话中刚刚展示的一组候选标识有效：
+
+1. PR 编号。
+2. 版本号。
+3. PR 完整 head commit SHA。
+4. `source-manifest.json` 源码指纹。
+
+`继续`、询问状态、同意其他方案都不算发布批准。用户回复“同意”后，Codex 会立即重新读取 GitHub；只要提交 SHA、指纹或验证状态变化，旧批准自动失效。批准后若只是网络或 Actions 瞬时失败，可自动重试；若必须修改任何候选内容，则重新生成摘要并再次等待“同意”。
 
 GitHub Actions 默认只读。只有 `release.yml` 的最终发布任务显式申请 `contents: write`；该任务不检出或执行仓库代码。所有 Actions 使用临时 `GITHUB_TOKEN`，个人 Token 不写入项目。
 

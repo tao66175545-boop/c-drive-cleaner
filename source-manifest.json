@@ -2,8 +2,8 @@
     "schemaVersion":  1,
     "version":  "1.1.2",
     "baseCommit":  "1927efbfb1f4c6bf457331f99c441d1f3d1df773",
-    "sourceFingerprint":  "567bed74fb9f2d5feeaca00d9789e0b80a90fb6c52ee402fb68c5e72f454eb78",
-    "generatedAt":  "2026-08-19T01:53:51.0351500Z",
+    "sourceFingerprint":  "323c010d2f0eb12a6d601023c1100641eb1ed4cf85ad1cfd94b16df3e1de04f4",
+    "generatedAt":  "2026-08-19T02:03:39.3677722Z",
     "files":  [
                   {
                       "path":  ".gitattributes",
@@ -42,10 +42,16 @@
                       "size":  9625
                   },
                   {
+                      "path":  "AGENTS.md",
+                      "sha256":  "2bca61160cb6d2892c204d33d281c15dd0019740a333ad3447ab07a855682340",
+                      "gitBlobSha1":  "38199d9d1a93926072b718f826fb99c2853cc4c9",
+                      "size":  1971
+                  },
+                  {
                       "path":  "AI自动化GitHub发布工作流.md",
-                      "sha256":  "4e8a056794c7860d2f9cc9ab9deaf8034f402918551b397df5902f655d770896",
-                      "gitBlobSha1":  "fb318da13d4643bcfdf361874091f0698ae1bd6b",
-                      "size":  6501
+                      "sha256":  "8d8e70a1ea4365b72833146cba8ff8afb62d2a002491dd13df5d9aca302ea3fc",
+                      "gitBlobSha1":  "23b81bdf9658466eb94901e2284eb5f8968a0a6d",
+                      "size":  8204
                   },
                   {
                       "path":  "assets/cleaning-sprite-source.png",
@@ -97,9 +103,9 @@
                   },
                   {
                       "path":  "README.md",
-                      "sha256":  "ca996686324a833e7c39406da2684b22ddc96c33f5cb1ca765bd776e207be9e3",
-                      "gitBlobSha1":  "c959542890e224a3377981c9abea3f84f254fd48",
-                      "size":  2892
+                      "sha256":  "72371a2f494e1fffa29fcbb54d914c3bc69ecf20d2d53e1fe9efbee144a78cdc",
+                      "gitBlobSha1":  "21e9cf48ae81ccaf7bbeda33cc945f19fd841361",
+                      "size":  2961
                   },
                   {
                       "path":  "README-使用说明.txt",
@@ -133,15 +139,21 @@
                   },
                   {
                       "path":  "source-policy.json",
-                      "sha256":  "f330f772bfb611a78185403906d82276b5f510e03a6c6165f3b8eca414403143",
-                      "gitBlobSha1":  "dd279f7e4225e503ed7492c3ec89b0b7b35eebf7",
-                      "size":  656
+                      "sha256":  "4792dec1a48d7f6a63f1c8a9af5b871b90f041be8d7856393062fe5e46026d02",
+                      "gitBlobSha1":  "dff54bd360b89e1953ab53a636cb6988383fa962",
+                      "size":  673
                   },
                   {
                       "path":  "tests/PlanContractTests.ps1",
                       "sha256":  "54b4492b9003e9cbe13657d1da8e8537226d80422366de64004172d96197c7bb",
                       "gitBlobSha1":  "096fa900ab27790ce5416db3528777ecf8bf6bad",
                       "size":  2734
+                  },
+                  {
+                      "path":  "tools/Complete-ApprovedCandidate.ps1",
+                      "sha256":  "171ed5c6f67dea61aa56626f102251ca07a81f88c95f9498e50b3d795e814def",
+                      "gitBlobSha1":  "86be1f99bd4c291b2e55e65c3ff4dc6e1af9b0f0",
+                      "size":  8478
                   },
                   {
                       "path":  "tools/Enable-GitHubWorkflowGuard.ps1",
@@ -169,9 +181,9 @@
                   },
                   {
                       "path":  "tools/Submit-UpdateCandidate.ps1",
-                      "sha256":  "3478326248784098b7abcd56f7d91e81b6acc551106a64ca11e628ec848c33b6",
-                      "gitBlobSha1":  "6e66a353ae89d7e4b699224fcf7ca1d0dd6a1eaa",
-                      "size":  13179
+                      "sha256":  "7a6b5b477110e9cecb61e43e11c321fcb033a4a7d970487f17db44e17407e46d",
+                      "gitBlobSha1":  "cf9ae27eeab5004f6722adc61492d32514bc5644",
+                      "size":  13218
                   },
                   {
                       "path":  "tools/Test-VersionPolicy.ps1",

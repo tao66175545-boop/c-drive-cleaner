@@ -263,7 +263,7 @@ try {
                 "- Source fingerprint: $($manifestResult.SourceFingerprint)"
                 '- Local validation: passed'
                 ''
-                'Merging this PR is the single manual approval. GitHub Actions will validate, publish a new version when needed, and verify the Release artifacts.'
+                'Approval is collected in the Codex conversation. After approval, Codex revalidates these exact identifiers, merges this PR, monitors GitHub Actions, and verifies the Release artifacts.'
             ) -join "`n"
         }
         $pullRequest = Invoke-GhApi "repos/$Repository/pulls" -Method POST -Body @{
