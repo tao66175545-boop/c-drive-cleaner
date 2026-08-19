@@ -1,9 +1,9 @@
 {
     "schemaVersion":  1,
-    "version":  "1.2.0",
-    "baseCommit":  "78ed8e5173ea90bcc2645028b755ab1e07bafaaf",
-    "sourceFingerprint":  "e63f40d92ef5d2f0208392e4714a168a40d274fe2341739b8d51d68ad671861e",
-    "generatedAt":  "2026-08-19T03:53:30.4130075Z",
+    "version":  "1.3.0",
+    "baseCommit":  "f317c50fbb35c7fe6f07f933db863e9854f8304e",
+    "sourceFingerprint":  "fd6ce7dc9f169b19297b071551146bc097ac7aea29b983fcea475a082d5ceb76",
+    "generatedAt":  "2026-08-19T06:46:28.8044325Z",
     "files":  [
                   {
                       "path":  ".gitattributes",
@@ -37,9 +37,9 @@
                   },
                   {
                       "path":  ".ui-smoke-test.ps1",
-                      "sha256":  "0cbcfc1bbaf681e4efe91a248ce89b7222d1db23a8f240bbe0e0fde1e7721052",
-                      "gitBlobSha1":  "aa40a1942740b9258a5e4377a154a5abf32a4724",
-                      "size":  11080
+                      "sha256":  "213d8e32ba031d7ef7251b39165096efa869d92aa357862c3a614463d73981c8",
+                      "gitBlobSha1":  "4478a3d6b7f019321fe10e3bb9788a5f6930de77",
+                      "size":  11332
                   },
                   {
                       "path":  "AGENTS.md",
@@ -55,15 +55,15 @@
                   },
                   {
                       "path":  "ARCHITECTURE.md",
-                      "sha256":  "f60e489897a9ff94c1fe2f9da4d9566358e04e09d05de7e62325f632ced4d5a6",
-                      "gitBlobSha1":  "ba5f04155d62c8e3b9f4073425fe267db996770d",
-                      "size":  5897
+                      "sha256":  "cfe6c6278ca2200757a3b1bc25a1227cdebfb795469cfd4b5d944abf33fef2aa",
+                      "gitBlobSha1":  "ae2579cc5abcda2957ad8a33569040f442a6ed52",
+                      "size":  6993
                   },
                   {
                       "path":  "architecture-loop.json",
-                      "sha256":  "67cfa08581996a05f32549d139f49f64f9e27d8a776e64c10f90402418609da7",
-                      "gitBlobSha1":  "bf6ff6729669ab9573bf9ad248a4736cb1b68b33",
-                      "size":  1520
+                      "sha256":  "f635701d744de09535377fce8c12105a3b3e93b2f0210e7df7a45ee3234753b7",
+                      "gitBlobSha1":  "83aae0b349e6bd23ee822c80bff9264c895ca46a",
+                      "size":  1766
                   },
                   {
                       "path":  "assets/cleaning-sprite-source.png",
@@ -91,15 +91,15 @@
                   },
                   {
                       "path":  "C-Drive-Cleaner.ps1",
-                      "sha256":  "7c77823533845f1b13199fe7216f31ee27098b4881d036411370e6ae8d258235",
-                      "gitBlobSha1":  "916152b885cc34e024f5501e0a91ee97b89cd8fa",
-                      "size":  52710
+                      "sha256":  "03cacdc30681d930c91f12ee96af22aae77eb489bba2fef6587cd2b2cffc2c37",
+                      "gitBlobSha1":  "a4430c97e3268373ddd8b1f5972a4854e40c04a8",
+                      "size":  54518
                   },
                   {
                       "path":  "C-Drive-Cleaner-UI.ps1",
-                      "sha256":  "9a5117933817f4236fdf39cc13a7fbee5cd94a64b730087e394f6e3742027a87",
-                      "gitBlobSha1":  "1b88299349a5a0a8444a40f9e040452a71f53e5e",
-                      "size":  91379
+                      "sha256":  "9510ccf89a6fb2be0c1125c4bc83b21fe8682854f4e59ad0e1fee76866f54119",
+                      "gitBlobSha1":  "f6c16d8ee218d8a63784f6b77be2f3a9da58cd8c",
+                      "size":  92074
                   },
                   {
                       "path":  "contracts/assistant-tools.json",
@@ -132,6 +132,12 @@
                       "size":  7203
                   },
                   {
+                      "path":  "core/IncrementalScanIndex.ps1",
+                      "sha256":  "0b7ea3dd95b8fd7791fa06635fed388200a4b24262f4722b8749452760c38ef5",
+                      "gitBlobSha1":  "404003cfdb454495628b032d2db793f489ea0335",
+                      "size":  12989
+                  },
+                  {
                       "path":  "core/OperationJournal.ps1",
                       "sha256":  "066ff17db3428f74779521b73be0ffbccb517afd64741da879ad0cad72f36c65",
                       "gitBlobSha1":  "7d483e94070fc76a6601cc4ab153488ab818b3cc",
@@ -151,9 +157,9 @@
                   },
                   {
                       "path":  "core/ScanProvider.ps1",
-                      "sha256":  "385d3c50011c958510ecc2b0423d97fcba92786f19525966ec36687f411e9c3e",
-                      "gitBlobSha1":  "6d81a0afd3cc7da72ba41e355b94d10b7497cc5a",
-                      "size":  4313
+                      "sha256":  "adce9691d4db085d518a58e680bd9dd61dca5173bcdbea3fd1cbaa8f154e2c49",
+                      "gitBlobSha1":  "47f610937b200306204f1635d5b07e9cf90e1e46",
+                      "size":  15316
                   },
                   {
                       "path":  "C盘清理.bat",
@@ -163,9 +169,9 @@
                   },
                   {
                       "path":  "migration-decision.json",
-                      "sha256":  "ebed2ee075164dc1684851df0f12e3de5c6e90dcf97f400418c7ac2dce2d821b",
-                      "gitBlobSha1":  "af4c488fb5c6411b6fd496065ba7dd8a9c56d504",
-                      "size":  1527
+                      "sha256":  "f0a130793e259fbbdae0cedf0ed73b41a400e85921e34a0ffe0e4aeda90a6a08",
+                      "gitBlobSha1":  "476f6deab2bf784b50e56e467336304dab6c5da1",
+                      "size":  1561
                   },
                   {
                       "path":  "OTA-在线升级方案.md",
@@ -175,15 +181,15 @@
                   },
                   {
                       "path":  "README.md",
-                      "sha256":  "915ac3819ff1250f4fd1447803a7af80b34258b9f4912b56b86e654a68145fae",
-                      "gitBlobSha1":  "63140b08689fb682e701a74d1ef46621cc997937",
-                      "size":  4756
+                      "sha256":  "7c37e5b13be5018b2d063e62d4f7640f36a28874080d0ab2c65161b750fc9d65",
+                      "gitBlobSha1":  "681916c841dea468c1ac92cbdc493636a49eb64a",
+                      "size":  5358
                   },
                   {
                       "path":  "README-使用说明.txt",
-                      "sha256":  "a04c1dd56e4ec8732f6758811f3db320ac82a273f9f4c20c12f638a4c7409eff",
-                      "gitBlobSha1":  "d93a53cd31faf2b6195fe847462964531187d12a",
-                      "size":  2748
+                      "sha256":  "f42b8d0341a8a0270ba416284910a398c9a3dc4d9190cf3c5988175eb2e68043",
+                      "gitBlobSha1":  "2b0267ac23ff5aa54341a58ee00acc7002f8b15b",
+                      "size":  3160
                   },
                   {
                       "path":  "RELEASE_NOTES_v1.0.0.md",
@@ -214,6 +220,12 @@
                       "sha256":  "c7b905497fb8e9e8a2b13e64d0cfe1731875984b222f9eaae31332a1fcb49bc1",
                       "gitBlobSha1":  "b4ab918c7d029204cc31a8917ee907b4e7114b43",
                       "size":  1771
+                  },
+                  {
+                      "path":  "RELEASE_NOTES_v1.3.0.md",
+                      "sha256":  "0ba1ce5ed8cd7d92fed29b1113221d75ea7a9a145a9ec19bc2baec19527e0a86",
+                      "gitBlobSha1":  "ec04a4022ec5d3f108abc6efe5497143dfddf3ea",
+                      "size":  1479
                   },
                   {
                       "path":  "rules/cleanup-rules.json",
@@ -252,10 +264,16 @@
                       "size":  3142
                   },
                   {
+                      "path":  "tests/IncrementalScanTests.ps1",
+                      "sha256":  "6fa06c4b658c341676ea6998727fee6702f9867bde7d81859ac035a458a58837",
+                      "gitBlobSha1":  "7d6ce49f973e5c0fd8e9f2c4d0a4e6cd043bbeef",
+                      "size":  8026
+                  },
+                  {
                       "path":  "tests/MigrationDecisionTests.ps1",
-                      "sha256":  "7d9f15d52d4049c74842bfa7dfac64baaf000d34b4c406c6af8659d8b1e5db82",
-                      "gitBlobSha1":  "7564cba7eb62f5530c16663bed13951ddbf6dc46",
-                      "size":  2444
+                      "sha256":  "2c0187c756b8ac0fa84b9d4cc8431e3f647c6265e751092ff8433df4e8218dd4",
+                      "gitBlobSha1":  "119ba2fb0e7b6c4e44c978daa1e05acb49a65311",
+                      "size":  2472
                   },
                   {
                       "path":  "tests/PlanContractTests.ps1",
@@ -295,15 +313,15 @@
                   },
                   {
                       "path":  "tools/Invoke-ArchitectureLoop.ps1",
-                      "sha256":  "1f2ad6ccb5f204a27306a6c05d69801ca22a1202a65d6edb6e1b7b78d8024d97",
-                      "gitBlobSha1":  "607769c4d748bcdf107c24b681e7bb6e7c21ec69",
-                      "size":  4715
+                      "sha256":  "3a9d38e274e59b6e66e54a414e2de94e687a907d3cd1f49b18a1f145f84f9949",
+                      "gitBlobSha1":  "7300ac011c77cb6a9d380176cd4cd7f125e63cf6",
+                      "size":  5119
                   },
                   {
                       "path":  "tools/Invoke-ProjectValidation.ps1",
-                      "sha256":  "3411fc5148378cf2ada1a2f77702e084248ad7e61d682dcd06baea8fcf373886",
-                      "gitBlobSha1":  "8f3c42d9f44e3166a776c9e5376850b567fa1a5e",
-                      "size":  4449
+                      "sha256":  "fe87524193c9a0bf153b28cb86ea03f4debe287536669f77c8f0eb0734cb5968",
+                      "gitBlobSha1":  "da7d84cb27eaa30c21d56faafaca3a4436b4f274",
+                      "size":  4642
                   },
                   {
                       "path":  "tools/New-ReleasePackage.ps1",
@@ -331,8 +349,8 @@
                   },
                   {
                       "path":  "version.json",
-                      "sha256":  "dceb350daa079e385cc88700fd8e8b427f8b7c57c5b529b143f7636e5dbf1791",
-                      "gitBlobSha1":  "fe06387472dcb73dc749cb5d0e4949cc24c9aa43",
+                      "sha256":  "fcd87d5182d8437774e5c6da0e72dd1fe0bfcb7e8c1299adae6bded511f6f51f",
+                      "gitBlobSha1":  "8efa905ccbe167668443eae59e3f3a3ddbc88890",
                       "size":  178
                   }
               ]

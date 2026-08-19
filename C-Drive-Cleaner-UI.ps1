@@ -1454,6 +1454,18 @@ function Read-OperationEvents {
                 'scan.item.started' {
                     $status.Text = ('正在扫描 {0}/{1}：{2}' -f $event.data.index, $event.data.total, $event.data.name)
                 }
+                'scan.provider.selected' {
+                    $status.Text = switch ([string]$event.data.provider) {
+                        'Incremental' { '正在使用增量扫描…' }
+                        'Baseline' { '正在建立增量扫描索引…' }
+                        default { '正在使用快速兼容扫描…' }
+                    }
+                }
+                'scan.incremental.completed' {
+                    if ([int]$event.data.reusedItems -gt 0) {
+                        Append-Log $log ('增量扫描：复用 {0} 项，重新扫描 {1} 项。' -f $event.data.reusedItems, $event.data.updatedItems)
+                    }
+                }
                 'cleanup.item.completed' {
                     $status.Text = ('正在清理：已完成 {0}' -f $event.data.itemId)
                 }
@@ -1653,7 +1665,7 @@ function Invoke-AssistantQuery {
 
 $btnScan.Add_Click({
     $selectionOutput = Join-Path $env:TEMP ('cdc-scan-selection-{0}.json' -f [guid]::NewGuid().ToString('N'))
-    $arguments = @('-Report', '-SelectionOutput', $selectionOutput)
+    $arguments = @('-Report', '-SkipProfile', '-SelectionOutput', $selectionOutput)
     Invoke-Main -Arguments $arguments -StatusText '正在扫描（不删除任何文件）…' -IsCleaning $false -SelectionOutput $selectionOutput
 })
 

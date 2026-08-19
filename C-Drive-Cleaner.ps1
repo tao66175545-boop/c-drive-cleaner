@@ -39,6 +39,7 @@ param(
     [string]$SelectionFile = "",    # UI 已勾选的项目 ID 清单；仅清理这些固定目标
     [string]$SelectionOutput = "",  # 扫描结果导出为 JSON，供 UI 展示与用户选择
     [string]$EventOutput = "",      # 版本化 NDJSON 事件流，供 UI/自动化读取结构化进度
+    [switch]$SkipProfile,            # 快速清理扫描：跳过用户目录空间剖析，仅扫描固定规则项
     [switch]$SelfTest               # 仅运行安全闸自检后退出（不扫描、不删除）
 )
 
@@ -52,10 +53,11 @@ $operationId = [guid]::NewGuid().ToString('N')
 $ruleCatalogModule = Join-Path $PSScriptRoot 'core\RuleCatalog.ps1'
 $eventProtocolModule = Join-Path $PSScriptRoot 'core\EventProtocol.ps1'
 $scanProviderModule = Join-Path $PSScriptRoot 'core\ScanProvider.ps1'
+$incrementalScanModule = Join-Path $PSScriptRoot 'core\IncrementalScanIndex.ps1'
 $operationJournalModule = Join-Path $PSScriptRoot 'core\OperationJournal.ps1'
 $executionBrokerModule = Join-Path $PSScriptRoot 'core\ExecutionBroker.ps1'
 if (-not (Test-Path -LiteralPath $ruleCatalogModule) -or -not (Test-Path -LiteralPath $eventProtocolModule) -or
-    -not (Test-Path -LiteralPath $scanProviderModule) -or -not (Test-Path -LiteralPath $operationJournalModule) -or
+    -not (Test-Path -LiteralPath $scanProviderModule) -or -not (Test-Path -LiteralPath $incrementalScanModule) -or -not (Test-Path -LiteralPath $operationJournalModule) -or
     -not (Test-Path -LiteralPath $executionBrokerModule)) {
     Write-Host '错误：缺少核心契约模块，程序无法安全启动。' -ForegroundColor Red
     exit 1
@@ -63,6 +65,7 @@ if (-not (Test-Path -LiteralPath $ruleCatalogModule) -or -not (Test-Path -Litera
 . $ruleCatalogModule
 . $eventProtocolModule
 . $scanProviderModule
+. $incrementalScanModule
 . $operationJournalModule
 . $executionBrokerModule
 Initialize-CDriveEventStream $EventOutput $operationId
@@ -602,6 +605,11 @@ if ($SelfTest) {
 }
 
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+$incrementalSession = $null
+if (-not $Clean) {
+    $incrementalSession = New-CDriveIncrementalSession (Join-Path $localDataRoot 'scan-index-v1.json') $targetManifestHash 'C:'
+    Write-CDriveEvent 'scan.provider.selected' @{ provider = [string]$incrementalSession.Mode; reason = [string]$incrementalSession.Reason }
+}
 $operationJournal = $null
 $executionContext = $null
 if ($Clean) {
@@ -672,7 +680,13 @@ foreach ($t in $CleanupTargets) {
         continue
     }
 
-    $r = & $handler $t 'scan'
+    $cachedSize = if (-not $Clean) { Get-CDriveIncrementalCachedSize $incrementalSession ([string]$t.Id) } else { $null }
+    if ($null -ne $cachedSize) {
+        $r = [PSCustomObject]@{ Size = [double]$cachedSize; Freed = 0.0; Failed = 0; Detected = $false; Hint = ''; Note = '增量索引未发现变化，已复用上次结果'; IncrementalReused = $true }
+    } else {
+        $r = & $handler $t 'scan'
+        if (-not $Clean -and -not $r.Detected) { Update-CDriveIncrementalEntry $incrementalSession $t ([double]$r.Size) }
+    }
 
     if ($Clean -and $expectedSizeById.ContainsKey([string]$t.Id)) {
         $expectedSize = [double]$expectedSizeById[[string]$t.Id]
@@ -740,6 +754,17 @@ foreach ($t in $CleanupTargets) {
     Write-CDriveEvent 'scan.item.completed' @{ itemId = [string]$t.Id; size = [double]$r.Size; status = $(if ($r.Detected) { 'diagnostic' } else { 'cleanable' }) }
 }
 
+if (-not $Clean -and $incrementalSession) {
+    $indexSaved = Save-CDriveIncrementalSession $incrementalSession
+    Write-CDriveEvent 'scan.incremental.completed' @{
+        mode = [string]$incrementalSession.Mode
+        reason = [string]$incrementalSession.Reason
+        reusedItems = [int]$incrementalSession.ReusedIds.Count
+        updatedItems = [int]$incrementalSession.UpdatedIds.Count
+        indexSaved = [bool]$indexSaved
+    }
+}
+
 # 仅导出已扫描到的固定安全目标，供图形界面展示、勾选和回传 ID。
 if ($SelectionOutput) {
     try {
@@ -791,15 +816,19 @@ Write-Host "=====================================================" -ForegroundCo
 Write-Host "  空间剖析（找出空间具体被什么占用）" -ForegroundColor Cyan
 Write-Host "=====================================================" -ForegroundColor Cyan
 
-# 确定剖析根目录
+# 确定剖析根目录。UI 快速清理扫描显式跳过，深度诊断仍可通过 -Profile / -FullScan 使用。
 $profileRoots = @()
-if ($Profile) {
-    $profileRoots += $Profile
-} elseif ($FullScan) {
-    $profileRoots += "C:\"
-    Write-Host "  已启用全盘剖析（建议管理员身份，否则系统目录大小不准确）" -ForegroundColor Yellow
+if (-not $SkipProfile) {
+    if ($Profile) {
+        $profileRoots += $Profile
+    } elseif ($FullScan) {
+        $profileRoots += "C:\"
+        Write-Host "  已启用全盘剖析（建议管理员身份，否则系统目录大小不准确）" -ForegroundColor Yellow
+    } else {
+        $profileRoots += $env:USERPROFILE
+    }
 } else {
-    $profileRoots += $env:USERPROFILE
+    Write-Host "  已启用快速清理扫描，空间剖析已跳过。" -ForegroundColor DarkGray
 }
 
 foreach ($root in $profileRoots) {

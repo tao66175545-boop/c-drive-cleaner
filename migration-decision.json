@@ -17,6 +17,7 @@
       "PlanContractTests.ps1",
       "ProcessContractTests.ps1",
       "ScanProviderTests.ps1",
+      "IncrementalScanTests.ps1",
       "ExecutionBrokerTests.ps1",
       "CopilotTests.ps1",
       "AssistantToolTests.ps1",
