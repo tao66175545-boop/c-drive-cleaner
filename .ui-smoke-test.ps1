@@ -111,6 +111,26 @@ if ($dashboardState.SelectionItems.Count -ne 2 -or $navigationState.View -ne 'se
 if ($contentHost.Top -ne $topBar.Bottom -or $contentHost.ClientSize.Height -lt 1) { throw 'Content host is not positioned below the top bar.' }
 if ([Math]::Abs(($btnSelectSuggested.Top * 2 + $btnSelectSuggested.Height) - $selectionActionBar.ClientSize.Height) -gt 1) { throw 'Suggested-selection button is not vertically centered.' }
 if ([Math]::Abs(($btnClearSelection.Top * 2 + $btnClearSelection.Height) - $selectionActionBar.ClientSize.Height) -gt 1) { throw 'Clear-selection button is not vertically centered.' }
+$selectionRows = @($selectionItemsPanel.Controls | Where-Object { $_ -is [CDriveRoundedPanel] -and $null -ne $_.Tag.SizeLabel })
+if ($selectionRows.Count -ne 2) { throw 'Selection row components were not created for every scanned item.' }
+foreach ($row in $selectionRows) {
+    $sizeLabel = $row.Tag.SizeLabel
+    if ($sizeLabel.Top -lt 8) { throw 'Selection row size label intrudes into the rounded top-edge safe area.' }
+    $rightInset = $row.ClientSize.Width - $sizeLabel.Right
+    if ($rightInset -ne 14) { throw ('Selection row size label right inset is inconsistent: ' + $rightInset) }
+    if ($sizeLabel.BackColor.A -ne 0) { throw 'Selection row size label must keep the rounded card surface visible.' }
+
+    $rowPreview = [System.Drawing.Bitmap]::new($row.Width, $row.Height)
+    try {
+        $row.DrawToBitmap($rowPreview, [System.Drawing.Rectangle]::new(0, 0, $rowPreview.Width, $rowPreview.Height))
+        $edgePixel = $rowPreview.GetPixel([Math]::Floor($sizeLabel.Left + ($sizeLabel.Width / 2)), 0)
+        if ($edgePixel.ToArgb() -eq [System.Drawing.Color]::White.ToArgb()) {
+            throw 'Selection row top border is obscured above the size label.'
+        }
+    } finally {
+        $rowPreview.Dispose()
+    }
+}
 if ($btnClean.Enabled) { throw 'Clean action must remain disabled before user selection.' }
 $onClick = [CDriveRoundedButton].GetMethod('OnClick', [System.Reflection.BindingFlags]'Instance,NonPublic')
 [void]$onClick.Invoke($btnSelectSuggested, [object[]]@([EventArgs]::Empty))
