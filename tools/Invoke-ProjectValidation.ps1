@@ -11,6 +11,7 @@ try {
         Get-Item -LiteralPath (Join-Path $projectRoot 'C-Drive-Cleaner.ps1')
         Get-Item -LiteralPath (Join-Path $projectRoot 'C-Drive-Cleaner-UI.ps1')
         Get-Item -LiteralPath (Join-Path $projectRoot '.ui-smoke-test.ps1')
+        Get-ChildItem -LiteralPath (Join-Path $projectRoot 'core') -Filter '*.ps1' -File
         Get-ChildItem -LiteralPath (Join-Path $projectRoot 'tools') -Filter '*.ps1' -File
         Get-ChildItem -LiteralPath (Join-Path $projectRoot 'tests') -Filter '*.ps1' -File
     ) | Sort-Object FullName -Unique
@@ -30,6 +31,27 @@ try {
 
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\PlanContractTests.ps1')
     if ($LASTEXITCODE -ne 0) { throw 'Cleanup plan contract tests failed.' }
+
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\ArchitectureContractTests.ps1')
+    if ($LASTEXITCODE -ne 0) { throw 'Architecture contract tests failed.' }
+
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\ProcessContractTests.ps1')
+    if ($LASTEXITCODE -ne 0) { throw 'Process contract tests failed.' }
+
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\ScanProviderTests.ps1')
+    if ($LASTEXITCODE -ne 0) { throw 'Scan provider tests failed.' }
+
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\ExecutionBrokerTests.ps1')
+    if ($LASTEXITCODE -ne 0) { throw 'Execution broker tests failed.' }
+
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\CopilotTests.ps1')
+    if ($LASTEXITCODE -ne 0) { throw 'Read-only copilot tests failed.' }
+
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\AssistantToolTests.ps1')
+    if ($LASTEXITCODE -ne 0) { throw 'Constrained assistant tool tests failed.' }
+
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\MigrationDecisionTests.ps1')
+    if ($LASTEXITCODE -ne 0) { throw 'Shell migration decision tests failed.' }
 
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot '.ui-smoke-test.ps1')
     if ($LASTEXITCODE -ne 0) { throw 'UI smoke test failed.' }

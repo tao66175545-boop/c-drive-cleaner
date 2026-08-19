@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "decision": "defer-full-shell-migration",
+  "rationale": "Measured hotspots are already isolated behind C# providers; a full UI or engine rewrite has no demonstrated user benefit and would replace tested cleanup safeguards.",
+  "currentBoundaries": {
+    "uiHost": "windows-powershell-5.1-winforms",
+    "rulePlanJournal": "powershell-contract-modules",
+    "directorySizing": "csharp-fast-provider-with-powershell-fallback",
+    "childProcess": "csharp-managed-process-wrapper"
+  },
+  "evidence": {
+    "warmScanMinimumSpeedup": 3.0,
+    "cancellationMaximumMilliseconds": 2000,
+    "fullValidationRequired": true,
+    "contractParitySuites": [
+      "ArchitectureContractTests.ps1",
+      "PlanContractTests.ps1",
+      "ProcessContractTests.ps1",
+      "ScanProviderTests.ps1",
+      "ExecutionBrokerTests.ps1",
+      "CopilotTests.ps1",
+      "AssistantToolTests.ps1",
+      ".ui-smoke-test.ps1"
+    ]
+  },
+  "migrationTriggers": {
+    "coldStartupP95Milliseconds": 1500,
+    "uiThreadStallP95Milliseconds": 250,
+    "engineDefectsPerRelease": 2,
+    "requiresTwoConsecutiveMeasuredReleases": true
+  },
+  "rollback": {
+    "scanProvider": "Set CDRIVE_SCAN_PROVIDER=legacy to restore filesystem enumeration.",
+    "moduleBoundary": "Each core module is dot-sourced and can be reverted independently while preserving stable IDs and event schemas.",
+    "release": "Rollback is a new semantic version built from the last validated contracts; published tags and releases are never overwritten."
+  }
+}

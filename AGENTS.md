@@ -18,3 +18,11 @@
 - Cleanup must execute only stable item IDs selected by the user; never accept arbitrary deletion paths from UI input.
 - WeChat and QQ media remain separate cautious items and are unchecked by default.
 - Run `tools/Invoke-ProjectValidation.ps1` for changes that can affect runtime, packaging, workflows, or release behavior.
+
+## Architecture loop
+
+- Read `ARCHITECTURE.md` and `architecture-loop.json` before advancing an architecture phase.
+- Use the sequence OBSERVE, CHALLENGE, SELECT, IMPLEMENT, VERIFY, MEASURE, DECIDE.
+- Do not advance a phase while `tools/Invoke-ArchitectureLoop.ps1 -FullValidation` fails or an exit metric lacks evidence.
+- Preserve the filesystem enumeration fallback; NTFS MFT/USN acceleration is optional.
+- AI must remain optional and outside the deletion trust boundary. It may propose stable item IDs, but it may not supply paths, commands, or final cleanup approval.

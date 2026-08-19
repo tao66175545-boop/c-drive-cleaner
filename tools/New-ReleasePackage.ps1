@@ -40,10 +40,15 @@ $packageFiles = @(
     'README.md',
     'README-使用说明.txt',
     'UI-DESIGN-RULES.md',
-    'OTA-在线升级方案.md'
+    'OTA-在线升级方案.md',
+    'ARCHITECTURE.md',
+    'architecture-loop.json',
+    'migration-decision.json'
 )
 
-foreach ($relativePath in $packageFiles + 'assets') {
+$packageDirectories = @('assets', 'contracts', 'core', 'rules')
+
+foreach ($relativePath in $packageFiles + $packageDirectories) {
     $sourcePath = Join-Path $repositoryRoot $relativePath
     if (-not (Test-Path -LiteralPath $sourcePath)) {
         throw "Required release content is missing: $relativePath"
@@ -63,7 +68,9 @@ New-Item -ItemType Directory -Path $stagePath -Force | Out-Null
 foreach ($relativePath in $packageFiles) {
     Copy-Item -LiteralPath (Join-Path $repositoryRoot $relativePath) -Destination $stagePath -Force
 }
-Copy-Item -LiteralPath (Join-Path $repositoryRoot 'assets') -Destination $stagePath -Recurse -Force
+foreach ($relativeDirectory in $packageDirectories) {
+    Copy-Item -LiteralPath (Join-Path $repositoryRoot $relativeDirectory) -Destination $stagePath -Recurse -Force
+}
 
 # GitHub 会清洗非 ASCII Release 资产名，导致清单 URL 与实际文件名不一致。
 $packageName = "C-Drive-Cleaner-v$Version.zip"
