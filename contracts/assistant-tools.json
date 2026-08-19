@@ -1,64 +1,136 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "policy": {
     "aiOptional": true,
     "finalCleanupApproval": "user-interface-only",
     "rawPathsAllowed": false,
-    "shellCommandsAllowed": false
+    "shellCommandsAllowed": false,
+    "strictToolSchemas": true,
+    "maxModelCallsPerTurn": 6,
+    "maxToolCallsPerTurn": 8
   },
   "tools": [
     {
-      "name": "start_scan",
+      "name": "get_app_state",
+      "description": "Read the current application view, scan state, selection count, and whether a fresh plan can be prepared.",
       "risk": "read-only",
+      "parameters": { "type": "object", "properties": {}, "required": [], "additionalProperties": false }
+    },
+    {
+      "name": "navigate_view",
+      "description": "Navigate to an allowlisted application view without changing cleanup data.",
+      "risk": "reversible-ui-state",
       "parameters": {
-        "scope": ["recommended", "user-profile", "full-diagnostic"]
+        "type": "object",
+        "properties": { "view": { "type": "string", "enum": ["overview", "selection", "logs", "assistant"] } },
+        "required": ["view"],
+        "additionalProperties": false
       }
     },
     {
+      "name": "start_scan",
+      "description": "Request a read-only scan from the application UI.",
+      "risk": "read-only-task",
+      "parameters": {
+        "type": "object",
+        "properties": { "scope": { "type": "string", "enum": ["recommended", "user-profile", "full-diagnostic"] } },
+        "required": ["scope"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "cancel_scan",
+      "description": "Cancel the current scan. This cannot cancel or approve cleanup.",
+      "risk": "task-control",
+      "parameters": { "type": "object", "properties": {}, "required": [], "additionalProperties": false }
+    },
+    {
       "name": "get_scan_summary",
+      "description": "Read a field-allowlisted scan summary with stable IDs and sizes only.",
       "risk": "read-only",
-      "parameters": {}
+      "parameters": { "type": "object", "properties": {}, "required": [], "additionalProperties": false }
     },
     {
       "name": "explain_item",
+      "description": "Explain one cataloged stable cleanup item ID.",
       "risk": "read-only",
       "parameters": {
-        "itemId": "stable-rule-id"
+        "type": "object",
+        "properties": { "itemId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" } },
+        "required": ["itemId"],
+        "additionalProperties": false
       }
     },
     {
       "name": "propose_selection",
+      "description": "Propose stable IDs according to a bounded goal and risk level without changing UI state.",
       "risk": "advisory",
       "parameters": {
-        "goal": ["free-space", "low-risk", "developer-cache"],
-        "riskLevel": ["recommended-only", "include-review"]
+        "type": "object",
+        "properties": {
+          "goal": { "type": "string", "enum": ["free-space", "low-risk", "developer-cache"] },
+          "riskLevel": { "type": "string", "enum": ["recommended-only", "include-review"] }
+        },
+        "required": ["goal", "riskLevel"],
+        "additionalProperties": false
       }
     },
     {
       "name": "set_selection",
+      "description": "Apply a reversible selection of stable IDs from the current scan. This never starts cleanup.",
       "risk": "reversible-ui-state",
       "parameters": {
-        "itemIds": "stable-rule-id-array"
+        "type": "object",
+        "properties": {
+          "itemIds": {
+            "type": "array",
+            "maxItems": 100,
+            "items": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+          }
+        },
+        "required": ["itemIds"],
+        "additionalProperties": false
       }
+    },
+    {
+      "name": "clear_selection",
+      "description": "Clear the current reversible cleanup selection.",
+      "risk": "reversible-ui-state",
+      "parameters": { "type": "object", "properties": {}, "required": [], "additionalProperties": false }
     },
     {
       "name": "show_cleanup_confirmation",
+      "description": "Open the native cleanup confirmation for a fresh validated plan. The user must click the final approval button.",
       "risk": "user-confirmation-required",
       "parameters": {
-        "planId": "validated-plan-id"
-      }
-    },
-    {
-      "name": "open_system_settings",
-      "risk": "navigation",
-      "parameters": {
-        "settingId": "allowlisted-setting-id"
+        "type": "object",
+        "properties": { "planId": { "type": "string", "pattern": "^[a-fA-F0-9]{32}$" } },
+        "required": ["planId"],
+        "additionalProperties": false
       }
     },
     {
       "name": "compare_cleanup_results",
+      "description": "Read measured before and after free-space values from the latest completed cleanup.",
       "risk": "read-only",
-      "parameters": {}
+      "parameters": { "type": "object", "properties": {}, "required": [], "additionalProperties": false }
+    },
+    {
+      "name": "open_latest_report",
+      "description": "Ask the application to open its latest generated HTML report.",
+      "risk": "navigation",
+      "parameters": { "type": "object", "properties": {}, "required": [], "additionalProperties": false }
+    },
+    {
+      "name": "open_system_settings",
+      "description": "Open one allowlisted Windows settings page.",
+      "risk": "navigation",
+      "parameters": {
+        "type": "object",
+        "properties": { "settingId": { "type": "string", "enum": ["storage", "apps", "temporary-files"] } },
+        "required": ["settingId"],
+        "additionalProperties": false
+      }
     }
   ],
   "forbiddenCapabilities": [
@@ -66,7 +138,11 @@
     "execute_shell",
     "execute_powershell",
     "approve_cleanup",
+    "click_confirmation",
     "download_and_execute",
-    "write_rule_pack"
+    "write_rule_pack",
+    "change_provider_url",
+    "read_file_content",
+    "read_raw_log"
   ]
 }

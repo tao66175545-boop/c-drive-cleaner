@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "objective": "Add an optional conversational AI Agent that can operate allowlisted C Drive Cleaner UI workflows without entering the deletion trust boundary.",
+  "status": "completed",
+  "decision": {
+    "runtime": "isolated-agent-host",
+    "ipc": "versioned-ndjson",
+    "providerStrategy": "capability-based-openai-compatible-adapters",
+    "secretStorage": "windows-dpapi-current-user",
+    "finalCleanupApproval": "native-user-interface-only",
+    "multiAgent": "deferred",
+    "mcp": "deferred-until-external-integration"
+  },
+  "invariants": [
+    "no_raw_paths_to_model",
+    "no_shell_or_script_tools",
+    "stable_ids_only",
+    "fresh_validated_plan_required",
+    "agent_cannot_approve_cleanup",
+    "offline_core_remains_available",
+    "api_key_never_stored_in_plaintext"
+  ],
+  "phases": [
+    {
+      "id": "P8-provider-foundation",
+      "status": "completed",
+      "exitCriteria": [
+        "credential_store",
+        "provider_configuration",
+        "agent_host_ndjson",
+        "timeout_and_cancel",
+        "non_blocking_ui"
+      ]
+    },
+    {
+      "id": "P9-streaming-readonly-chat",
+      "status": "completed",
+      "exitCriteria": [
+        "streaming_ui",
+        "explicit_cloud_consent",
+        "privacy_http_snapshot",
+        "offline_fallback"
+      ]
+    },
+    {
+      "id": "P10-readonly-tool-calling",
+      "status": "completed",
+      "exitCriteria": [
+        "strict_tool_schema_v2",
+        "readonly_tools",
+        "provider_capability_detection",
+        "invalid_tool_rejection"
+      ]
+    },
+    {
+      "id": "P11-reversible-ui-agent",
+      "status": "completed",
+      "exitCriteria": [
+        "ui_action_broker",
+        "navigation_tools",
+        "scan_control_tools",
+        "reversible_selection",
+        "idempotent_tool_execution"
+      ]
+    },
+    {
+      "id": "P12-confirmation-bridge",
+      "status": "completed",
+      "exitCriteria": [
+        "validated_plan_bridge",
+        "native_confirmation_only",
+        "no_agent_execution_broker_path",
+        "post_cleanup_readonly_comparison"
+      ]
+    },
+    {
+      "id": "P13-hardening-public-release",
+      "status": "completed",
+      "exitCriteria": [
+        "prompt_injection_corpus",
+        "privacy_zero_leak",
+        "provider_compatibility_matrix",
+        "rate_and_cost_limits",
+        "credential_removal",
+        "full_project_validation"
+      ]
+    }
+  ],
+  "metrics": {
+    "maxUiThreadBlockMs": 100,
+    "uiCancelFeedbackMs": 200,
+    "agentCancelAckMs": 2000,
+    "maxModelCallsPerTurn": 6,
+    "maxToolCallsPerTurn": 8,
+    "forbiddenToolAcceptance": 0,
+    "privacyLeakCount": 0,
+    "directAgentCleanupPaths": 0
+  }
+}

@@ -8,7 +8,7 @@ if ([int]$decision.schemaVersion -ne 1 -or [string]$decision.decision -ne 'defer
 if ([double]$decision.evidence.warmScanMinimumSpeedup -lt 3 -or [int]$decision.evidence.cancellationMaximumMilliseconds -gt 2000) {
     throw 'Migration evidence thresholds weakened the architecture targets.'
 }
-$requiredSuites = @('ArchitectureContractTests.ps1', 'PlanContractTests.ps1', 'ProcessContractTests.ps1', 'ScanProviderTests.ps1', 'IncrementalScanTests.ps1', 'ExecutionBrokerTests.ps1', 'CopilotTests.ps1', 'AssistantToolTests.ps1', '.ui-smoke-test.ps1')
+$requiredSuites = @('ArchitectureContractTests.ps1', 'PlanContractTests.ps1', 'ProcessContractTests.ps1', 'ScanProviderTests.ps1', 'IncrementalScanTests.ps1', 'ExecutionBrokerTests.ps1', 'CopilotTests.ps1', 'AssistantToolTests.ps1', 'AgentRuntimeTests.ps1', '.ui-smoke-test.ps1')
 foreach ($suite in $requiredSuites) {
     if (@($decision.evidence.contractParitySuites) -notcontains $suite) { throw "Contract parity omits: $suite" }
 }

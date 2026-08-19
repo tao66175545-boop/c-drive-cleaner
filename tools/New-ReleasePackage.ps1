@@ -35,6 +35,7 @@ if ($Repository -notmatch '^[^/\s]+/[^/\s]+$') {
 $packageFiles = @(
     'C-Drive-Cleaner.ps1',
     'C-Drive-Cleaner-UI.ps1',
+    'AgentHost.ps1',
     'C盘清理.bat',
     'version.json',
     'README.md',
@@ -42,6 +43,8 @@ $packageFiles = @(
     'UI-DESIGN-RULES.md',
     'OTA-在线升级方案.md',
     'ARCHITECTURE.md',
+    'AI-AGENT-架构方案.md',
+    'agent-roadmap.json',
     'architecture-loop.json',
     'migration-decision.json'
 )

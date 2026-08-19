@@ -3,8 +3,8 @@
   "objective": "A safe, modular, responsive C-drive cleaner with an optional constrained AI copilot.",
   "objectiveStatus": "completed",
   "completedAt": "2026-08-19",
-  "currentPhase": "P7-incremental-scan",
-  "iteration": 8,
+  "currentPhase": "P13-agent-hardening",
+  "iteration": 14,
   "phases": [
     {
       "id": "P0-contracts",
@@ -50,6 +50,36 @@
       "id": "P7-incremental-scan",
       "status": "completed",
       "exitCriteria": ["native_usn_reader", "stable_id_index", "journal_delta_invalidation", "privacy_budget", "fallback_and_deletion_boundary", "warm_repeat_speedup"]
+    },
+    {
+      "id": "P8-provider-foundation",
+      "status": "completed",
+      "exitCriteria": ["dpapi_credential_store", "provider_configuration", "agent_host_ndjson", "timeout_and_cancel", "non_blocking_ui"]
+    },
+    {
+      "id": "P9-streaming-readonly-chat",
+      "status": "completed",
+      "exitCriteria": ["streaming_ui", "explicit_cloud_consent", "privacy_request_snapshot", "offline_fallback"]
+    },
+    {
+      "id": "P10-readonly-tool-calling",
+      "status": "completed",
+      "exitCriteria": ["strict_tool_schema_v2", "readonly_tools", "provider_capability_tiers", "invalid_tool_rejection"]
+    },
+    {
+      "id": "P11-reversible-ui-agent",
+      "status": "completed",
+      "exitCriteria": ["ui_action_broker", "navigation_tools", "scan_control_tools", "reversible_selection", "replay_rejection"]
+    },
+    {
+      "id": "P12-confirmation-bridge",
+      "status": "completed",
+      "exitCriteria": ["current_scan_id_bridge", "native_confirmation_only", "no_agent_execution_broker_path", "post_cleanup_readonly_comparison"]
+    },
+    {
+      "id": "P13-agent-hardening",
+      "status": "completed",
+      "exitCriteria": ["prompt_injection_corpus", "privacy_zero_leak", "provider_compatibility_tiers", "rate_and_cost_limits", "credential_removal", "full_project_validation"]
     }
   ]
 }

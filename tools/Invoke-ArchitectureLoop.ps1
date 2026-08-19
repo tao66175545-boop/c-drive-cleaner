@@ -85,6 +85,21 @@ if ([string]$phase.id -eq 'P7-incremental-scan') {
     }
 }
 
+if ([string]$phase.id -match '^P(?:8|9|10|11|12|13)-') {
+    try {
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\AgentRuntimeTests.ps1') | Out-Host
+        Add-LoopCheck 'agent_runtime_contracts' ($LASTEXITCODE -eq 0) 'tests/AgentRuntimeTests.ps1'
+    } catch {
+        Add-LoopCheck 'agent_runtime_contracts' $false $_.Exception.Message
+    }
+    try {
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot '.ui-smoke-test.ps1') | Out-Host
+        Add-LoopCheck 'agent_ui_smoke' ($LASTEXITCODE -eq 0) '.ui-smoke-test.ps1'
+    } catch {
+        Add-LoopCheck 'agent_ui_smoke' $false $_.Exception.Message
+    }
+}
+
 if ($FullValidation) {
     try {
         $result = & (Join-Path $PSScriptRoot 'Invoke-ProjectValidation.ps1')

@@ -198,6 +198,10 @@ $processOrchestrator = Join-Path $scriptDir 'core\ProcessOrchestrator.ps1'
 $ruleCatalogModule = Join-Path $scriptDir 'core\RuleCatalog.ps1'
 $copilotModule = Join-Path $scriptDir 'core\Copilot.ps1'
 $assistantRouterModule = Join-Path $scriptDir 'core\AssistantToolRouter.ps1'
+$agentConfigModule = Join-Path $scriptDir 'core\AgentConfig.ps1'
+$agentProtocolModule = Join-Path $scriptDir 'core\AgentProtocol.ps1'
+$uiActionBrokerModule = Join-Path $scriptDir 'core\UiActionBroker.ps1'
+$agentHostScript = Join-Path $scriptDir 'AgentHost.ps1'
 $assistantContractPath = Join-Path $scriptDir 'contracts\assistant-tools.json'
 $localDataRoot = if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'CDriveCleaner' } else { Join-Path $env:TEMP 'CDriveCleaner' }
 $reportPath = Join-Path (Join-Path $localDataRoot 'reports') 'C盘清理诊断报告.html'
@@ -212,6 +216,8 @@ if (-not (Test-Path -LiteralPath $mainScript)) {
 }
 if (-not (Test-Path -LiteralPath $processOrchestrator) -or -not (Test-Path -LiteralPath $ruleCatalogModule) -or
     -not (Test-Path -LiteralPath $copilotModule) -or -not (Test-Path -LiteralPath $assistantRouterModule) -or
+    -not (Test-Path -LiteralPath $agentConfigModule) -or -not (Test-Path -LiteralPath $agentProtocolModule) -or
+    -not (Test-Path -LiteralPath $uiActionBrokerModule) -or -not (Test-Path -LiteralPath $agentHostScript) -or
     -not (Test-Path -LiteralPath $assistantContractPath)) {
     [System.Windows.Forms.MessageBox]::Show('缺少核心模块或助手契约，程序无法安全启动。', 'C盘清理', 'OK', 'Error') | Out-Null
     exit 1
@@ -220,6 +226,9 @@ if (-not (Test-Path -LiteralPath $processOrchestrator) -or -not (Test-Path -Lite
 . $ruleCatalogModule
 . $copilotModule
 . $assistantRouterModule
+. $agentConfigModule
+. $agentProtocolModule
+. $uiActionBrokerModule
 $copilotTargets = @(Get-CDriveCleanupTargets)
 
 function Get-CFreeText {
@@ -967,7 +976,7 @@ $assistantTitle.ForeColor = [System.Drawing.Color]::FromArgb(35, 46, 55)
 $assistantTitle.Location = New-Object System.Drawing.Point(0, 2)
 $assistantTitle.AutoSize = $true
 $assistantStatus = New-Object System.Windows.Forms.Label
-$assistantStatus.Text = 'LOCAL  ·  READ ONLY'
+$assistantStatus.Text = 'LOCAL  ·  SAFE MODE'
 $assistantStatus.Font = New-Object System.Drawing.Font('Segoe UI', 8, [System.Drawing.FontStyle]::Bold)
 $assistantStatus.ForeColor = [System.Drawing.Color]::FromArgb(181, 30, 40)
 $assistantStatus.Location = New-Object System.Drawing.Point(92, 7)
@@ -1017,11 +1026,22 @@ $btnAssistantApply.Size = New-Object System.Drawing.Size(92, 32)
 Set-ActionButtonStyle $btnAssistantApply ([System.Drawing.Color]::White) ([System.Drawing.Color]::FromArgb(181, 30, 40)) ([System.Drawing.Color]::FromArgb(214, 222, 228)) ([System.Drawing.Color]::FromArgb(252, 236, 237)) ([System.Drawing.Color]::FromArgb(247, 220, 223))
 $btnAssistantApply.Enabled = $false
 
+$btnAssistantSettings = New-Object CDriveRoundedButton
+$btnAssistantSettings.Text = '配置'
+$btnAssistantSettings.Size = New-Object System.Drawing.Size(58, 32)
+Set-ActionButtonStyle $btnAssistantSettings ([System.Drawing.Color]::White) ([System.Drawing.Color]::FromArgb(97, 112, 123)) ([System.Drawing.Color]::FromArgb(214, 222, 228)) ([System.Drawing.Color]::FromArgb(244, 247, 249)) ([System.Drawing.Color]::FromArgb(235, 240, 243))
+
+$btnAssistantStop = New-Object CDriveRoundedButton
+$btnAssistantStop.Text = '停止'
+$btnAssistantStop.Size = New-Object System.Drawing.Size(58, 32)
+Set-ActionButtonStyle $btnAssistantStop ([System.Drawing.Color]::White) ([System.Drawing.Color]::FromArgb(181, 30, 40)) ([System.Drawing.Color]::FromArgb(235, 194, 198)) ([System.Drawing.Color]::FromArgb(252, 236, 237)) ([System.Drawing.Color]::FromArgb(247, 220, 223))
+$btnAssistantStop.Visible = $false
+
 $btnAssistantSend = New-Object CDriveRoundedButton
 $btnAssistantSend.Text = '发送'
 $btnAssistantSend.Size = New-Object System.Drawing.Size(72, 32)
 Set-ActionButtonStyle $btnAssistantSend ([System.Drawing.Color]::FromArgb(181, 30, 40)) ([System.Drawing.Color]::White) ([System.Drawing.Color]::FromArgb(181, 30, 40)) ([System.Drawing.Color]::FromArgb(160, 26, 35)) ([System.Drawing.Color]::FromArgb(140, 21, 30))
-$assistantComposer.Controls.AddRange(@($assistantInput, $btnAssistantApply, $btnAssistantSend))
+$assistantComposer.Controls.AddRange(@($assistantInput, $btnAssistantSettings, $btnAssistantStop, $btnAssistantApply, $btnAssistantSend))
 
 $assistantLayout.Controls.Add($assistantHeader, 0, 0)
 $assistantLayout.Controls.Add($assistantShell, 0, 1)
@@ -1046,7 +1066,25 @@ $buttons = @($btnScan, $btnReport, $btnClean, $btnExit)
 $jobState = @{ Process = $null; LastLen = 0; EventLines = 0; LogFile = ''; EventFile = ''; SelectionOutput = ''; SelectionFile = '' }
 $dashboardState = @{ CleanBeforeFree = $null; CleanAfterFree = $null; IsCleaning = $false; LastAction = '尚未执行操作'; LastFinished = $null; SelectionItems = @(); SelectedIds = @{}; SelectionCheckboxes = @(); ScanId = ''; ManifestHash = ''; ScannedAt = '' }
 $navigationState = @{ View = 'overview' }
-$assistantState = @{ LastProposedIds = @() }
+$agentDataRoot = Join-Path $localDataRoot 'agent'
+$agentConfigPath = Join-Path $agentDataRoot 'provider.json'
+$assistantState = @{
+    LastProposedIds = @()
+    Process = $null
+    EventFile = ''
+    EventLines = 0
+    LogFile = ''
+    TurnFile = ''
+    TurnId = ''
+    Messages = New-Object System.Collections.Generic.List[object]
+    ReplayCache = @{}
+    ModelCalls = 0
+    ToolCalls = 0
+    AssistantBubbleOpen = $false
+    Config = $null
+    FixtureResponsePath = ''
+    FixtureSsePath = ''
+}
 
 $toolTips = New-Object System.Windows.Forms.ToolTip
 $toolTips.InitialDelay = 350
@@ -1088,7 +1126,11 @@ function Update-AssistantComposerLayout {
     $btnAssistantSend.Top = [Math]::Max(0, [int][Math]::Floor(($assistantComposer.ClientSize.Height - $btnAssistantSend.Height) / 2))
     $btnAssistantApply.Left = [Math]::Max(12, $btnAssistantSend.Left - 8 - $btnAssistantApply.Width)
     $btnAssistantApply.Top = $btnAssistantSend.Top
-    $assistantInput.Width = [Math]::Max(80, $btnAssistantApply.Left - 26)
+    $btnAssistantStop.Left = [Math]::Max(12, $btnAssistantApply.Left - 8 - $btnAssistantStop.Width)
+    $btnAssistantStop.Top = $btnAssistantSend.Top
+    $btnAssistantSettings.Left = [Math]::Max(12, $btnAssistantStop.Left - 8 - $btnAssistantSettings.Width)
+    $btnAssistantSettings.Top = $btnAssistantSend.Top
+    $assistantInput.Width = [Math]::Max(80, $btnAssistantSettings.Left - 26)
 }
 
 $assistantComposer.Add_Resize({ Update-AssistantComposerLayout })
@@ -1592,6 +1634,194 @@ function Add-AssistantMessage {
     $assistantTranscript.ScrollToCaret()
 }
 
+function Add-AssistantDelta {
+    param([string]$Text)
+    if ([string]::IsNullOrEmpty($Text)) { return }
+    if (-not $assistantState.AssistantBubbleOpen) {
+        $assistantTranscript.SelectionStart = $assistantTranscript.TextLength
+        $assistantTranscript.SelectionColor = [System.Drawing.Color]::FromArgb(56, 70, 80)
+        $assistantTranscript.SelectionFont = New-Object System.Drawing.Font('Microsoft YaHei UI', 9, [System.Drawing.FontStyle]::Bold)
+        $assistantTranscript.AppendText('助手  ')
+        $assistantTranscript.SelectionFont = New-Object System.Drawing.Font('Microsoft YaHei UI', 9)
+        $assistantState.AssistantBubbleOpen = $true
+    }
+    $assistantTranscript.AppendText($Text)
+    $assistantTranscript.SelectionStart = $assistantTranscript.TextLength
+    $assistantTranscript.ScrollToCaret()
+}
+
+function Complete-AssistantDelta {
+    if (-not $assistantState.AssistantBubbleOpen) { return }
+    $assistantTranscript.AppendText([Environment]::NewLine + [Environment]::NewLine)
+    $assistantTranscript.SelectionStart = $assistantTranscript.TextLength
+    $assistantTranscript.ScrollToCaret()
+    $assistantState.AssistantBubbleOpen = $false
+}
+
+function Update-AgentMode {
+    $assistantState.Config = $null
+    try {
+        $config = Get-CDriveAgentConfig $agentConfigPath
+        if ($null -ne $config -and (Test-CDriveAgentCloudConsent $config)) {
+            $credential = Get-CDriveAgentCredential ([string]$config.credentialId) $agentDataRoot
+            if (-not [string]::IsNullOrWhiteSpace($credential)) {
+                $assistantState.Config = $config
+                $assistantStatus.Text = 'CLOUD · READY'
+                $assistantDescription.Text = '云端 Agent 可调用受控工具；最终清理由你确认。'
+                $toolTips.SetToolTip($assistantStatus, ('模型：' + [string]$config.model))
+                $credential = $null
+                return
+            }
+        }
+    } catch {
+        Append-Log $log ('Agent 配置未启用：' + $_.Exception.Message)
+    }
+    $assistantStatus.Text = 'LOCAL · SAFE MODE'
+    $assistantDescription.Text = '本地助手可解释扫描结果并调整勾选；最终清理由你确认。'
+    $toolTips.SetToolTip($assistantStatus, '未配置云端模型，当前不发送网络请求')
+}
+
+function Show-AgentSettingsDialog {
+    $current = $null
+    try { $current = Get-CDriveAgentConfig $agentConfigPath } catch {}
+
+    $dialog = New-Object System.Windows.Forms.Form
+    $dialog.Text = 'AI Agent 配置'
+    $dialog.StartPosition = 'CenterParent'
+    $dialog.FormBorderStyle = 'FixedDialog'
+    $dialog.MaximizeBox = $false
+    $dialog.MinimizeBox = $false
+    $dialog.ShowInTaskbar = $false
+    $dialog.ClientSize = New-Object System.Drawing.Size(500, 350)
+    $dialog.BackColor = [System.Drawing.Color]::FromArgb(248, 249, 250)
+    $dialog.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 9)
+
+    $labels = @('API 基础地址', '模型名称', '接口协议', 'API Key')
+    for ($i = 0; $i -lt $labels.Count; $i++) {
+        $label = New-Object System.Windows.Forms.Label
+        $label.Text = $labels[$i]
+        $label.Location = New-Object System.Drawing.Point(24, (28 + ($i * 58)))
+        $label.Size = New-Object System.Drawing.Size(100, 22)
+        $label.ForeColor = [System.Drawing.Color]::FromArgb(70, 82, 91)
+        $dialog.Controls.Add($label)
+    }
+
+    $baseUrlBox = New-Object System.Windows.Forms.TextBox
+    $baseUrlBox.Location = New-Object System.Drawing.Point(130, 25)
+    $baseUrlBox.Size = New-Object System.Drawing.Size(340, 28)
+    $baseUrlBox.Text = if ($current) { [string]$current.baseUrl } else { 'https://api.openai.com/v1' }
+
+    $modelBox = New-Object System.Windows.Forms.TextBox
+    $modelBox.Location = New-Object System.Drawing.Point(130, 83)
+    $modelBox.Size = New-Object System.Drawing.Size(340, 28)
+    $modelBox.Text = if ($current) { [string]$current.model } else { '' }
+
+    $protocolBox = New-Object System.Windows.Forms.ComboBox
+    $protocolBox.Location = New-Object System.Drawing.Point(130, 141)
+    $protocolBox.Size = New-Object System.Drawing.Size(210, 28)
+    $protocolBox.DropDownStyle = 'DropDownList'
+    [void]$protocolBox.Items.AddRange(@('responses', 'chat-completions', 'text-only'))
+    $protocolBox.SelectedItem = if ($current) { [string]$current.protocol } else { 'responses' }
+
+    $keyBox = New-Object System.Windows.Forms.TextBox
+    $keyBox.Location = New-Object System.Drawing.Point(130, 199)
+    $keyBox.Size = New-Object System.Drawing.Size(340, 28)
+    $keyBox.UseSystemPasswordChar = $true
+    $keyBox.Text = ''
+
+    $keyHint = New-Object System.Windows.Forms.Label
+    $keyHint.Text = '留空会保留已保存的 Key；程序不会回显或写入项目文件。'
+    $keyHint.Location = New-Object System.Drawing.Point(130, 229)
+    $keyHint.Size = New-Object System.Drawing.Size(340, 22)
+    $keyHint.ForeColor = [System.Drawing.Color]::FromArgb(122, 137, 149)
+    $keyHint.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 8)
+
+    $streamBox = New-Object System.Windows.Forms.CheckBox
+    $streamBox.Text = '启用流式响应'
+    $streamBox.Location = New-Object System.Drawing.Point(130, 258)
+    $streamBox.Size = New-Object System.Drawing.Size(140, 24)
+    $streamBox.Checked = if ($current) { [bool]$current.stream } else { $true }
+
+    $saveButton = New-Object System.Windows.Forms.Button
+    $saveButton.Text = '保存并启用'
+    $saveButton.Location = New-Object System.Drawing.Point(350, 300)
+    $saveButton.Size = New-Object System.Drawing.Size(120, 34)
+    $saveButton.DialogResult = 'None'
+
+    $cancelButton = New-Object System.Windows.Forms.Button
+    $cancelButton.Text = '取消'
+    $cancelButton.Location = New-Object System.Drawing.Point(260, 300)
+    $cancelButton.Size = New-Object System.Drawing.Size(80, 34)
+    $cancelButton.DialogResult = 'Cancel'
+
+    $disableButton = New-Object System.Windows.Forms.Button
+    $disableButton.Text = '禁用并移除凭据'
+    $disableButton.Location = New-Object System.Drawing.Point(24, 300)
+    $disableButton.Size = New-Object System.Drawing.Size(140, 34)
+    $disableButton.Enabled = ($null -ne $current)
+
+    $dialog.Controls.AddRange(@($baseUrlBox, $modelBox, $protocolBox, $keyBox, $keyHint, $streamBox, $saveButton, $cancelButton, $disableButton))
+    $dialog.CancelButton = $cancelButton
+
+    $disableButton.Add_Click({
+        $confirmation = [System.Windows.Forms.MessageBox]::Show('将删除本机保存的 Agent 配置和加密 API Key，离线助手仍可继续使用。是否继续？', '禁用云端 Agent', 'YesNo', 'Warning', 'Button2')
+        if ($confirmation -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+        try {
+            Remove-CDriveAgentCredential 'default' $agentDataRoot
+            if (Test-Path -LiteralPath $agentConfigPath -PathType Leaf) { Remove-Item -LiteralPath $agentConfigPath -Force }
+            $dialog.DialogResult = [System.Windows.Forms.DialogResult]::OK
+            $dialog.Close()
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show($_.Exception.Message, '无法禁用云端 Agent', 'OK', 'Warning') | Out-Null
+        }
+    })
+
+    $saveButton.Add_Click({
+        try {
+            $candidate = [PSCustomObject]@{
+                schemaVersion = 1
+                providerId = 'custom-openai-compatible'
+                protocol = [string]$protocolBox.SelectedItem
+                baseUrl = ([string]$baseUrlBox.Text).Trim()
+                model = ([string]$modelBox.Text).Trim()
+                stream = [bool]$streamBox.Checked
+                timeoutSeconds = 90
+                maxOutputTokens = 2048
+                credentialId = 'default'
+                cloudConsent = $null
+            }
+            $null = Assert-CDriveAgentConfig $candidate
+            $existingKey = Get-CDriveAgentCredential 'default' $agentDataRoot
+            if ([string]::IsNullOrWhiteSpace([string]$keyBox.Text) -and [string]::IsNullOrWhiteSpace($existingKey)) {
+                throw '请输入 API Key。'
+            }
+            $consentText = '云端模式会发送你输入的问题，以及清理项稳定 ID、大小、风险和恢复方式；不会发送原始路径、用户名、机器名、文件内容或运行日志。是否同意按此范围发送数据？'
+            $consent = [System.Windows.Forms.MessageBox]::Show($consentText, '云端数据授权', 'YesNo', 'Question', 'Button2')
+            if ($consent -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+            if (-not [string]::IsNullOrWhiteSpace([string]$keyBox.Text)) {
+                $null = Set-CDriveAgentCredential ([string]$keyBox.Text) 'default' $agentDataRoot
+            }
+            $candidate = Grant-CDriveAgentCloudConsent $candidate
+            $null = Save-CDriveAgentConfig $candidate $agentConfigPath
+            $keyBox.Clear()
+            $dialog.DialogResult = [System.Windows.Forms.DialogResult]::OK
+            $dialog.Close()
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show($_.Exception.Message, '配置未保存', 'OK', 'Warning') | Out-Null
+        }
+    })
+
+    if ($dialog.ShowDialog($form) -eq [System.Windows.Forms.DialogResult]::OK) {
+        Update-AgentMode
+        if ($null -ne $assistantState.Config) {
+            Add-AssistantMessage '助手' '云端 Agent 已启用。所有页面操作仍受工具白名单约束，清理前必须由你在原生确认框中同意。'
+        } else {
+            Add-AssistantMessage '助手' '云端 Agent 已禁用，本机凭据已移除，当前使用本地安全助手。'
+        }
+    }
+    $dialog.Dispose()
+}
+
 function Get-AssistantScanPayload {
     return [PSCustomObject]@{
         SchemaVersion = 2
@@ -1619,11 +1849,14 @@ function Get-AssistantToolContext {
     }
 }
 
-function Invoke-AssistantQuery {
-    $question = [string]$assistantInput.Text
+function Invoke-OfflineAssistantQuery {
+    param([string]$Question = '', [bool]$ShowUser = $true)
+    $question = if ([string]::IsNullOrWhiteSpace($Question)) { [string]$assistantInput.Text } else { $Question }
     if ([string]::IsNullOrWhiteSpace($question)) { return }
-    Add-AssistantMessage '你' $question
-    $assistantInput.Clear()
+    if ($ShowUser) {
+        Add-AssistantMessage '你' $question
+        $assistantInput.Clear()
+    }
     if (@($dashboardState.SelectionItems).Count -eq 0) {
         Add-AssistantMessage '助手' '还没有可分析的扫描结果。请先点击“开始扫描”。扫描过程不会删除文件。'
         return
@@ -1663,6 +1896,317 @@ function Invoke-AssistantQuery {
     }
 }
 
+function Set-AgentBusy {
+    param([bool]$Busy)
+    $btnAssistantSend.Enabled = -not $Busy
+    $btnAssistantSettings.Enabled = -not $Busy
+    $btnAssistantStop.Visible = $Busy
+    $assistantInput.Enabled = -not $Busy
+    Update-AssistantComposerLayout
+}
+
+function Remove-AgentTurnFiles {
+    foreach ($path in @($assistantState.EventFile, $assistantState.LogFile, $assistantState.TurnFile)) {
+        if ($path -and (Test-Path -LiteralPath $path -PathType Leaf)) {
+            try { Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue } catch {}
+        }
+    }
+    $assistantState.EventFile = ''
+    $assistantState.LogFile = ''
+    $assistantState.TurnFile = ''
+    $assistantState.EventLines = 0
+}
+
+function Stop-AgentTurn {
+    param([bool]$ShowMessage = $false)
+    $agentPoll.Stop()
+    if ($assistantState.Process) {
+        try {
+            if (-not $assistantState.Process.HasExited) { $null = $assistantState.Process.Cancel(2000) }
+            else { $assistantState.Process.Dispose() }
+        } catch {
+            Append-Log $log ('停止 Agent 失败：' + $_.Exception.Message)
+        }
+        $assistantState.Process = $null
+    }
+    Complete-AssistantDelta
+    Remove-AgentTurnFiles
+    Set-AgentBusy $false
+    if ($ShowMessage) { Add-AssistantMessage '助手' '本次 Agent 请求已停止，扫描和清理任务不受影响。' }
+}
+
+function Get-AgentSystemPrompt {
+    return @'
+你是 C 盘智能清理工具内的受控助手。只使用提供的工具和稳定项目 ID。
+不得请求、推断或输出原始路径、用户名、文件内容、命令、脚本、API Key 或运行日志。
+扫描是只读操作。选择项目是可撤销的界面状态，不能视为用户同意清理。
+如需执行清理，只能打开原生确认框，并明确最终决定必须由用户点击。
+微信、QQ 等用户媒体应谨慎说明，默认不要建议选择。
+回答简洁、使用中文，并优先解释当前界面和扫描结果。
+'@
+}
+
+function Convert-AgentToolResultText {
+    param($Result)
+    if ($null -eq $Result) { return '{"ok":true}' }
+    return ($Result | ConvertTo-Json -Depth 12 -Compress)
+}
+
+function Invoke-AgentUiTool {
+    param($Call)
+    $arguments = [PSCustomObject]@{}
+    try {
+        if (-not [string]::IsNullOrWhiteSpace([string]$Call.argumentsJson)) {
+            $arguments = [string]$Call.argumentsJson | ConvertFrom-Json
+        }
+    } catch {
+        throw '[AGENT_TOOL_ARGUMENTS] 工具参数不是有效 JSON。'
+    }
+
+    $handlers = @{
+        get_app_state = {
+            param($a, $c)
+            [PSCustomObject]@{
+                schemaVersion = 1
+                view = [string]$navigationState.View
+                scanRunning = ($null -ne $jobState.Process -and -not $dashboardState.IsCleaning)
+                cleanupRunning = [bool]$dashboardState.IsCleaning
+                scanId = [string]$dashboardState.ScanId
+                candidateCount = @($dashboardState.SelectionItems).Count
+                selectedCount = @($dashboardState.SelectedIds.Keys).Count
+                canPrepareCleanup = ((-not $jobState.Process) -and @($dashboardState.SelectedIds.Keys).Count -gt 0)
+            }
+        }
+        navigate_view = {
+            param($a, $c)
+            Set-DashboardView ([string]$a.view)
+            [PSCustomObject]@{ schemaVersion = 1; view = [string]$navigationState.View; reversibleUiState = $true }
+        }
+        start_scan = {
+            param($a, $c)
+            if ($jobState.Process) { throw '[AGENT_SCAN_BUSY] 当前已有扫描或清理任务。' }
+            $selectionOutput = Join-Path $env:TEMP ('cdc-agent-scan-' + [guid]::NewGuid().ToString('N') + '.json')
+            $argumentsForScan = switch ([string]$a.scope) {
+                'recommended' { @('-Report', '-SkipProfile', '-SelectionOutput', $selectionOutput) }
+                'user-profile' { @('-Report', '-SelectionOutput', $selectionOutput) }
+                'full-diagnostic' { @('-Report', '-FullScan', '-SelectionOutput', $selectionOutput) }
+                default { throw '[AGENT_SCAN_SCOPE] 不支持的扫描范围。' }
+            }
+            Invoke-Main -Arguments $argumentsForScan -StatusText 'Agent 已请求只读扫描…' -IsCleaning $false -SelectionOutput $selectionOutput
+            [PSCustomObject]@{ schemaVersion = 1; action = 'scan-started'; scope = [string]$a.scope; readOnly = $true; completed = $false }
+        }
+        cancel_scan = {
+            param($a, $c)
+            if (-not $jobState.Process -or $dashboardState.IsCleaning) { throw '[AGENT_SCAN_NOT_RUNNING] 当前没有可取消的扫描。' }
+            $poll.Stop()
+            $elapsed = Stop-UiJob $true
+            Set-UiBusy $false
+            $dashboardState.LastAction = '扫描已取消'
+            $dashboardState.LastFinished = Get-Date
+            foreach ($temporaryPath in @($jobState.SelectionOutput, $jobState.SelectionFile, $jobState.LogFile, $jobState.EventFile)) {
+                if ($temporaryPath -and (Test-Path -LiteralPath $temporaryPath)) {
+                    try { Remove-Item -LiteralPath $temporaryPath -Force -ErrorAction SilentlyContinue } catch {}
+                }
+            }
+            $jobState.SelectionOutput = ''
+            $jobState.SelectionFile = ''
+            $jobState.LogFile = ''
+            $jobState.EventFile = ''
+            $jobState.EventLines = 0
+            Update-Dashboard
+            [PSCustomObject]@{ schemaVersion = 1; action = 'scan-cancelled'; elapsedMilliseconds = $elapsed; cleanupAffected = $false }
+        }
+        set_selection = {
+            param($a, $c)
+            $selection = Invoke-CDriveAssistantTool 'set_selection' $a $c $assistantContractPath
+            foreach ($choice in @($dashboardState.SelectionCheckboxes)) {
+                $choice.Checked = @($selection.selectedItemIds) -contains [string]$choice.Tag.Id
+            }
+            Update-CleanupSelectionSummary
+            [PSCustomObject]@{ schemaVersion = 1; selectedItemIds = @($selection.selectedItemIds); selectedCount = @($selection.selectedItemIds).Count; reversibleUiState = $true; cleanupStarted = $false }
+        }
+        clear_selection = {
+            param($a, $c)
+            foreach ($choice in @($dashboardState.SelectionCheckboxes)) { $choice.Checked = $false }
+            Update-CleanupSelectionSummary
+            [PSCustomObject]@{ schemaVersion = 1; selectedItemIds = @(); reversibleUiState = $true; cleanupStarted = $false }
+        }
+        show_cleanup_confirmation = {
+            param($a, $c)
+            if ([string]::IsNullOrWhiteSpace([string]$dashboardState.ScanId) -or [string]$a.planId -ne [string]$dashboardState.ScanId) {
+                throw '[AGENT_PLAN_STALE] 确认请求不属于当前扫描。'
+            }
+            if (@(Get-SelectedCleanupItems).Count -eq 0) { throw '[AGENT_SELECTION_EMPTY] 尚未选择清理项。' }
+            Set-DashboardView 'selection'
+            Invoke-SelectedCleanupConfirmation
+            [PSCustomObject]@{ schemaVersion = 1; planId = [string]$a.planId; action = 'native-confirmation-shown'; cleanupStarted = [bool]$dashboardState.IsCleaning; userApprovalRequired = $true }
+        }
+        open_latest_report = {
+            param($a, $c)
+            if (-not (Test-Path -LiteralPath $reportPath -PathType Leaf)) { throw '[AGENT_REPORT_MISSING] 还没有可打开的报告。' }
+            Start-Process -FilePath $reportPath
+            [PSCustomObject]@{ schemaVersion = 1; action = 'report-opened' }
+        }
+        open_system_settings = {
+            param($a, $c)
+            $uri = switch ([string]$a.settingId) {
+                'storage' { 'ms-settings:storagesense' }
+                'apps' { 'ms-settings:appsfeatures' }
+                'temporary-files' { 'ms-settings:storagerecommendations' }
+                default { throw '[AGENT_SETTING_ID] 不支持的设置页。' }
+            }
+            Start-Process -FilePath $uri
+            [PSCustomObject]@{ schemaVersion = 1; action = 'setting-opened'; settingId = [string]$a.settingId }
+        }
+    }
+
+    return Invoke-CDriveUiActionBroker ([string]$Call.callId) ([string]$Call.name) $arguments (Get-AssistantToolContext) $assistantContractPath $handlers $assistantState.ReplayCache
+}
+
+function Start-AgentModelCall {
+    if ($assistantState.Process) { return }
+    if ($assistantState.ModelCalls -ge 6) {
+        Add-AssistantMessage '助手' '本轮已达到模型调用上限。请检查当前界面状态后再发起新问题。'
+        Set-AgentBusy $false
+        return
+    }
+    $assistantState.ModelCalls++
+    $assistantState.TurnId = [guid]::NewGuid().ToString('N')
+    $assistantState.TurnFile = Join-Path $env:TEMP ('cdc-agent-turn-' + $assistantState.TurnId + '.json')
+    $assistantState.EventFile = Join-Path $env:TEMP ('cdc-agent-events-' + $assistantState.TurnId + '.ndjson')
+    $assistantState.LogFile = Join-Path $env:TEMP ('cdc-agent-host-' + $assistantState.TurnId + '.log')
+    $assistantState.EventLines = 0
+    $turn = [PSCustomObject]@{ schemaVersion = 1; turnId = $assistantState.TurnId; messages = $assistantState.Messages.ToArray() }
+    $null = Assert-CDriveAgentTurn $turn
+    [System.IO.File]::WriteAllText($assistantState.TurnFile, ($turn | ConvertTo-Json -Depth 20), [System.Text.UTF8Encoding]::new($false))
+    try {
+        $arguments = @('-ConfigPath', $agentConfigPath, '-TurnPath', $assistantState.TurnFile, '-ToolContractPath', $assistantContractPath, '-EventOutput', $assistantState.EventFile, '-CredentialRoot', $agentDataRoot)
+        if ($assistantState.FixtureResponsePath) { $arguments += @('-FixtureResponsePath', [string]$assistantState.FixtureResponsePath) }
+        if ($assistantState.FixtureSsePath) { $arguments += @('-FixtureSsePath', [string]$assistantState.FixtureSsePath) }
+        $assistantState.Process = Start-CDriveEngineProcess $agentHostScript $arguments $scriptDir $assistantState.LogFile
+        Set-AgentBusy $true
+        $agentPoll.Start()
+    } catch {
+        Remove-AgentTurnFiles
+        Set-AgentBusy $false
+        throw
+    }
+}
+
+function Complete-AgentProcess {
+    param($CompletedEvent, [bool]$Succeeded)
+    $agentPoll.Stop()
+    if ($assistantState.Process) {
+        try { $null = $assistantState.Process.Complete() } catch {}
+        $assistantState.Process = $null
+    }
+    Complete-AssistantDelta
+    if (-not $Succeeded -or $null -eq $CompletedEvent) {
+        $detail = '云端请求失败，已保留现有界面状态。'
+        if ($CompletedEvent -and $CompletedEvent.data.message) { $detail += ' ' + [string]$CompletedEvent.data.message }
+        Add-AssistantMessage '助手' $detail
+        Remove-AgentTurnFiles
+        Set-AgentBusy $false
+        return
+    }
+
+    $text = [string]$CompletedEvent.data.text
+    $calls = @($CompletedEvent.data.toolCalls | Where-Object { $null -ne $_ })
+    $assistantMessage = [PSCustomObject]@{ role = 'assistant'; content = $text; toolCalls = @($calls) }
+    $assistantState.Messages.Add($assistantMessage)
+    if ($calls.Count -eq 0) {
+        Remove-AgentTurnFiles
+        Set-AgentBusy $false
+        return
+    }
+    foreach ($call in $calls) {
+        if ($assistantState.ToolCalls -ge 8) {
+            Add-AssistantMessage '助手' '本轮已达到工具调用上限，后续操作已停止。'
+            Remove-AgentTurnFiles
+            Set-AgentBusy $false
+            return
+        }
+        $assistantState.ToolCalls++
+        try {
+            $result = Invoke-AgentUiTool $call
+            $toolText = Convert-AgentToolResultText $result
+        } catch {
+            $errorCode = if ($_.Exception.Message -match '\[([A-Z0-9_]+)\]') { [string]$Matches[1] } else { 'AGENT_TOOL_FAILED' }
+            $toolText = ([PSCustomObject]@{ ok = $false; errorCode = $errorCode } | ConvertTo-Json -Compress)
+        }
+        $assistantState.Messages.Add([PSCustomObject]@{ role = 'tool'; callId = [string]$call.callId; content = $toolText })
+    }
+    Remove-AgentTurnFiles
+    Start-AgentModelCall
+}
+
+$agentPoll = New-Object System.Windows.Forms.Timer
+$agentPoll.Interval = 100
+$agentPoll.Add_Tick({
+    $eventFile = [string]$assistantState.EventFile
+    if ($eventFile -and (Test-Path -LiteralPath $eventFile -PathType Leaf)) {
+        try {
+            $lines = @(Get-Content -LiteralPath $eventFile -Encoding UTF8)
+            if ($lines.Count -gt $assistantState.EventLines) {
+                for ($index = $assistantState.EventLines; $index -lt $lines.Count; $index++) {
+                    if ([string]::IsNullOrWhiteSpace($lines[$index])) { continue }
+                    $event = $lines[$index] | ConvertFrom-Json
+                    if ([string]$event.turnId -ne [string]$assistantState.TurnId) { continue }
+                    if ([string]$event.type -eq 'agent.text.delta') { Add-AssistantDelta ([string]$event.data.text) }
+                }
+                $assistantState.EventLines = $lines.Count
+            }
+        } catch {
+            Append-Log $log ('读取 Agent 事件失败：' + $_.Exception.Message)
+        }
+    }
+    if ($assistantState.Process -and $assistantState.Process.HasExited) {
+        $terminalEvent = $null
+        try {
+            $events = @(Get-Content -LiteralPath $assistantState.EventFile -Encoding UTF8 | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object { $_ | ConvertFrom-Json })
+            $terminalEvent = @($events | Where-Object { $_.type -in @('agent.turn.completed', 'agent.turn.failed') }) | Select-Object -Last 1
+        } catch {}
+        Complete-AgentProcess $terminalEvent ([string]$terminalEvent.type -eq 'agent.turn.completed')
+    }
+})
+
+function Invoke-CloudAssistantQuery {
+    param([string]$Question)
+    if (-not (Test-CDriveAgentTextSafe $Question)) {
+        Add-AssistantMessage '助手' '这个请求包含路径、命令、凭据或绕过确认的内容，已在联网前拒绝。'
+        return
+    }
+    $assistantState.Messages.Clear()
+    $assistantState.ReplayCache = @{}
+    $assistantState.ModelCalls = 0
+    $assistantState.ToolCalls = 0
+    $assistantState.AssistantBubbleOpen = $false
+    $assistantState.Messages.Add([PSCustomObject]@{ role = 'system'; content = Get-AgentSystemPrompt })
+    if ([string]$assistantState.Config.protocol -eq 'text-only' -and @($dashboardState.SelectionItems).Count -gt 0) {
+        $safeSummary = ConvertTo-CDriveCopilotSummary (Get-AssistantScanPayload)
+        $summaryText = '当前扫描的字段白名单摘要：' + ($safeSummary | ConvertTo-Json -Depth 8 -Compress)
+        $assistantState.Messages.Add([PSCustomObject]@{ role = 'system'; content = $summaryText })
+    }
+    $assistantState.Messages.Add([PSCustomObject]@{ role = 'user'; content = $Question })
+    Start-AgentModelCall
+}
+
+function Invoke-AssistantQuery {
+    $question = [string]$assistantInput.Text
+    if ([string]::IsNullOrWhiteSpace($question) -or $assistantState.Process) { return }
+    Add-AssistantMessage '你' $question
+    $assistantInput.Clear()
+    if ($null -eq $assistantState.Config) {
+        Invoke-OfflineAssistantQuery -Question $question -ShowUser $false
+        return
+    }
+    try { Invoke-CloudAssistantQuery $question }
+    catch {
+        Add-AssistantMessage '助手' ('云端 Agent 未启动：' + $_.Exception.Message + ' 已切换本地安全助手。')
+        Invoke-OfflineAssistantQuery -Question $question -ShowUser $false
+    }
+}
+
 $btnScan.Add_Click({
     $selectionOutput = Join-Path $env:TEMP ('cdc-scan-selection-{0}.json' -f [guid]::NewGuid().ToString('N'))
     $arguments = @('-Report', '-SkipProfile', '-SelectionOutput', $selectionOutput)
@@ -1675,6 +2219,8 @@ $navLogs.Add_Click({ Set-DashboardView 'logs' })
 $navAssistant.Add_Click({ Set-DashboardView 'assistant' })
 
 $btnAssistantSend.Add_Click({ Invoke-AssistantQuery })
+$btnAssistantSettings.Add_Click({ Show-AgentSettingsDialog })
+$btnAssistantStop.Add_Click({ Stop-AgentTurn $true })
 $assistantInput.Add_KeyDown({
     param($sender, $eventArgs)
     if ($eventArgs.KeyCode -eq [System.Windows.Forms.Keys]::Enter) {
@@ -1718,7 +2264,7 @@ $btnReport.Add_Click({
     }
 })
 
-$btnClean.Add_Click({
+function Invoke-SelectedCleanupConfirmation {
     $selected = @(Get-SelectedCleanupItems)
     if ($selected.Count -eq 0) {
         [System.Windows.Forms.MessageBox]::Show('请先完成扫描，并在「清理清单」中勾选需要执行的项目。', '尚未选择清理项', 'OK', 'Information') | Out-Null
@@ -1747,7 +2293,9 @@ $btnClean.Add_Click({
     Start-CleanAnimation
     $arguments = @('-Clean', '-Force', '-Report', '-SelectionFile', $selectionFile)
     Invoke-Main -Arguments $arguments -StatusText '正在清理已选项目…' -IsCleaning $true -SelectionFile $selectionFile
-})
+}
+
+$btnClean.Add_Click({ Invoke-SelectedCleanupConfirmation })
 
 $btnExit.Add_Click({
     if ($jobState.Process) {
@@ -1776,7 +2324,9 @@ $btnExit.Add_Click({
 })
 $form.Add_FormClosing({
     $poll.Stop()
+    $agentPoll.Stop()
     $livePulseTimer.Stop()
+    Stop-AgentTurn
     Stop-LogoAnimation
     Stop-CleanAnimation
     Stop-UiJob $true | Out-Null
@@ -1796,6 +2346,7 @@ Append-Log $log '就绪。点「开始扫描」只诊断，不会删文件。'
 Append-Log $log ('主程序：' + $mainScript)
 if ($spriteLoadError) { Append-Log $log ('动画资源加载失败：' + $spriteLoadError) }
 if ($logoLoadError) { Append-Log $log ('Logo 动画资源加载失败：' + $logoLoadError) }
+Update-AgentMode
 Update-Dashboard
 $topBar.Add_Resize({ Update-TopBarLayout })
 $form.Add_Shown({ Update-TopBarLayout; Update-TrackLayout; Update-Dashboard })
