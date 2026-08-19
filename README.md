@@ -32,6 +32,7 @@ HTML 报告保存在 `%LOCALAPPDATA%\CDriveCleaner\reports`，不会写入程序
 C盘清理.bat              双击启动入口
 C-Drive-Cleaner-UI.ps1   WinForms 图形界面
 C-Drive-Cleaner.ps1      扫描、清理、安全闸和报告引擎
+version.json             当前安装版本与更新通道
 assets/                  Logo 与动效资源
 OTA-在线升级方案.md      GitHub Releases 在线升级架构
 ```

@@ -36,6 +36,7 @@ $packageFiles = @(
     'C-Drive-Cleaner.ps1',
     'C-Drive-Cleaner-UI.ps1',
     'C盘清理.bat',
+    'version.json',
     'README.md',
     'README-使用说明.txt',
     'UI-DESIGN-RULES.md',

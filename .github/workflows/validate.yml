@@ -44,3 +44,12 @@ jobs:
           if (-not (Test-Path -LiteralPath $result.PackagePath)) { throw "Package was not created." }
           if (-not (Test-Path -LiteralPath $result.ChecksumPath)) { throw "Checksum was not created." }
           if (-not (Test-Path -LiteralPath $result.ManifestPath)) { throw "Release manifest was not created." }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($result.PackagePath)
+          try {
+            if (-not @($archive.Entries | Where-Object { $_.FullName -match '(^|[\\/])version\.json$' }).Count) {
+              throw "Package does not contain version.json."
+            }
+          } finally {
+            $archive.Dispose()
+          }
