@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "requiredFiles": [
+    ".gitattributes",
     ".gitignore",
     ".ui-smoke-test.ps1",
     "AI自动化GitHub发布工作流.md",

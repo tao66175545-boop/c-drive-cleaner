@@ -1,0 +1,3 @@
+# Preserve repository bytes exactly so source-manifest hashes are reproducible
+# across local Windows workspaces and GitHub Actions checkouts.
+* -text

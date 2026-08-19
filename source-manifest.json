@@ -2,9 +2,15 @@
     "schemaVersion":  1,
     "version":  "1.1.2",
     "baseCommit":  "1927efbfb1f4c6bf457331f99c441d1f3d1df773",
-    "sourceFingerprint":  "b4c32a7b8147b74ffd924d8706565ecdaeb0f0d207b7a427289c4a47ed7427ff",
-    "generatedAt":  "2026-08-19T01:44:36.3896819Z",
+    "sourceFingerprint":  "567bed74fb9f2d5feeaca00d9789e0b80a90fb6c52ee402fb68c5e72f454eb78",
+    "generatedAt":  "2026-08-19T01:53:51.0351500Z",
     "files":  [
+                  {
+                      "path":  ".gitattributes",
+                      "sha256":  "908e7736cb5efdaeb5ad6d78b118fcba2d1717a671063f2138f0ee1b30a4cebc",
+                      "gitBlobSha1":  "8605483ca4d6434b4d96c54fc3ceea242d5b76a3",
+                      "size":  151
+                  },
                   {
                       "path":  ".github/workflows/consistency.yml",
                       "sha256":  "a86847a03811dce94cc02507d0aa4b18e4c41d46f2a60da45c6a1e143c7b0201",
@@ -127,9 +133,9 @@
                   },
                   {
                       "path":  "source-policy.json",
-                      "sha256":  "73d3dddd395d0c739c4d6fa363f67f94ff35037e834138ce3dd55cef548f005b",
-                      "gitBlobSha1":  "8f2a24433b59708db92377268d8810325f506491",
-                      "size":  634
+                      "sha256":  "f330f772bfb611a78185403906d82276b5f510e03a6c6165f3b8eca414403143",
+                      "gitBlobSha1":  "dd279f7e4225e503ed7492c3ec89b0b7b35eebf7",
+                      "size":  656
                   },
                   {
                       "path":  "tests/PlanContractTests.ps1",
