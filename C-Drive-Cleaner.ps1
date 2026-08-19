@@ -38,6 +38,7 @@ param(
     [switch]$Report,                # 扫描结束后导出 HTML 诊断报告（写到用户本地数据目录）
     [string]$SelectionFile = "",    # UI 已勾选的项目 ID 清单；仅清理这些固定目标
     [string]$SelectionOutput = "",  # 扫描结果导出为 JSON，供 UI 展示与用户选择
+    [string]$EventOutput = "",      # 版本化 NDJSON 事件流，供 UI/自动化读取结构化进度
     [switch]$SelfTest               # 仅运行安全闸自检后退出（不扫描、不删除）
 )
 
@@ -47,6 +48,25 @@ $ErrorActionPreference = 'SilentlyContinue'
 $localDataRoot = if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'CDriveCleaner' } else { Join-Path $env:TEMP 'CDriveCleaner' }
 $reportDirectory = Join-Path $localDataRoot 'reports'
 $reportPath = Join-Path $reportDirectory 'C盘清理诊断报告.html'
+$operationId = [guid]::NewGuid().ToString('N')
+$ruleCatalogModule = Join-Path $PSScriptRoot 'core\RuleCatalog.ps1'
+$eventProtocolModule = Join-Path $PSScriptRoot 'core\EventProtocol.ps1'
+$scanProviderModule = Join-Path $PSScriptRoot 'core\ScanProvider.ps1'
+$operationJournalModule = Join-Path $PSScriptRoot 'core\OperationJournal.ps1'
+$executionBrokerModule = Join-Path $PSScriptRoot 'core\ExecutionBroker.ps1'
+if (-not (Test-Path -LiteralPath $ruleCatalogModule) -or -not (Test-Path -LiteralPath $eventProtocolModule) -or
+    -not (Test-Path -LiteralPath $scanProviderModule) -or -not (Test-Path -LiteralPath $operationJournalModule) -or
+    -not (Test-Path -LiteralPath $executionBrokerModule)) {
+    Write-Host '错误：缺少核心契约模块，程序无法安全启动。' -ForegroundColor Red
+    exit 1
+}
+. $ruleCatalogModule
+. $eventProtocolModule
+. $scanProviderModule
+. $operationJournalModule
+. $executionBrokerModule
+Initialize-CDriveEventStream $EventOutput $operationId
+Write-CDriveEvent 'operation.started' @{ mode = $(if ($SelfTest) { 'self-test' } elseif ($Clean) { 'clean' } else { 'scan' }) }
 
 # ---------- 工具函数 ----------
 function Format-Bytes {
@@ -66,11 +86,7 @@ function Encode-Html {
 # 计算目录大小：递归统计文件长度，过滤 reparse point（junction/symlink）避免重复
 function Get-DirSize {
     param([string]$Path)
-    $sum = (Get-ChildItem -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue |
-            Where-Object { ([int]$_.Attributes -band 0x400) -eq 0 } |
-            Measure-Object -Property Length -Sum).Sum
-    if ($null -eq $sum) { return 0.0 }
-    return [double]$sum
+    return [double](Measure-CDrivePathSize $Path).Size
 }
 
 # 统一计算路径大小（兼容单个文件与目录）
@@ -290,57 +306,7 @@ function Find-DuplicateDirGroups {
 #   Detect         : 仅检测大小并提示手动处理方式（不自动删除）
 #   SpaceHog       : 空间大户诊断——识别大占用项并给出分类/风险/处方（绝不自动删除）
 # RequiresAdmin   : 是否必须管理员权限
-$CleanupTargets = @(
-    # ---- 用户级（无需管理员）----
-    @{ Id = "user-temp"; Name = "用户临时文件";       Type = "FolderContents"; Path = $env:TEMP; RequiresAdmin = $false }
-    @{ Id = "local-temp"; Name = "本地临时文件";       Type = "FolderContents"; Path = "$env:LOCALAPPDATA\Temp"; RequiresAdmin = $false }
-    @{ Id = "user-crash-dumps"; Name = "用户崩溃转储";       Type = "FolderContents"; Path = "$env:LOCALAPPDATA\CrashDumps"; RequiresAdmin = $false }
-    @{ Id = "thumbnail-cache"; Name = "缩略图缓存";         Type = "FolderContents"; Path = "$env:LOCALAPPDATA\Microsoft\Windows\Explorer"; RequiresAdmin = $false }
-    @{ Id = "chrome-cache"; Name = "Chrome 缓存";        Type = "PatternCache";   Path = "$env:LOCALAPPDATA\Google\Chrome\User Data"; SubDirs = "Cache,Code Cache,GPUCache"; RequiresAdmin = $false }
-    @{ Id = "edge-cache"; Name = "Edge 缓存";          Type = "PatternCache";   Path = "$env:LOCALAPPDATA\Microsoft\Edge\User Data"; SubDirs = "Cache,Code Cache,GPUCache"; RequiresAdmin = $false }
-    @{ Id = "firefox-cache"; Name = "Firefox 缓存";       Type = "PatternCache";   Path = "$env:LOCALAPPDATA\Mozilla\Firefox\Profiles"; SubDirs = "cache2"; RequiresAdmin = $false }
-    @{ Id = "npm-cache"; Name = "npm 缓存";           Type = "FolderContents"; Path = "$env:LOCALAPPDATA\npm-cache"; RequiresAdmin = $false }
-    @{ Id = "pip-cache"; Name = "pip 缓存";           Type = "FolderContents"; Path = "$env:LOCALAPPDATA\pip\Cache"; RequiresAdmin = $false }
-    @{ Id = "nuget-packages"; Name = "NuGet 包仓库";          Type = "Detect";         Path = "$env:USERPROFILE\.nuget\packages"; RequiresAdmin = $false; Hint = "这是 NuGet 包仓库而非临时缓存。清空后需重新 restore；请自行确认后再手动删除。" }
-    @{ Id = "yarn-cache"; Name = "Yarn 缓存";          Type = "FolderContents"; Path = "$env:LOCALAPPDATA\Yarn\Cache"; RequiresAdmin = $false }
-    @{ Id = "directx-shader-cache"; Name = "DirectX 着色器缓存"; Type = "FolderContents"; Path = "$env:LOCALAPPDATA\D3DSCache"; RequiresAdmin = $false }
-    @{ Id = "nvidia-dx-cache"; Name = "NVIDIA DXCache";     Type = "FolderContents"; Path = "$env:LOCALAPPDATA\NVIDIA\DXCache"; RequiresAdmin = $false }
-    @{ Id = "nvidia-gl-cache"; Name = "NVIDIA GLCache";     Type = "FolderContents"; Path = "$env:LOCALAPPDATA\NVIDIA\GLCache"; RequiresAdmin = $false }
-    @{ Id = "nvidia-nv-cache"; Name = "NVIDIA NV_Cache";    Type = "FolderContents"; Path = "$env:LOCALAPPDATA\NVIDIA Corporation\NV_Cache"; RequiresAdmin = $false }
-    @{ Id = "windows-error-reports"; Name = "Windows 错误报告";   Type = "FolderContents"; Path = "$env:LOCALAPPDATA\Microsoft\Windows\WER"; RequiresAdmin = $false }
-    @{ Id = "clipboard-history"; Name = "剪贴板历史";         Type = "FolderContents"; Path = "$env:LOCALAPPDATA\Microsoft\Windows\Clipboard"; RequiresAdmin = $false }
-    @{ Id = "wechat-files-diagnostic"; Name = "微信文件";           Type = "Detect";         Path = "$env:USERPROFILE\Documents\WeChat Files"; RequiresAdmin = $false; Hint = "建议用微信内置：设置->文件管理->清理，避免误删聊天记录" }
-    @{ Id = "qq-files-diagnostic"; Name = "QQ 文件";            Type = "Detect";         Path = "$env:USERPROFILE\Documents\Tencent Files"; RequiresAdmin = $false; Hint = "建议用 QQ 内置清理，或手动删除不再需要的已接收文件" }
-    # 用户内容：只覆盖应用已分离的图片/视频附件目录；默认不勾选，绝不触及聊天数据库、FileRecv 或整个账号目录。
-    @{ Id = "user-wechat-media"; Name = "微信图片与视频附件"; Type = "PatternCache"; Path = "$env:USERPROFILE\Documents\WeChat Files"; SubDirs = "FileStorage\Image,FileStorage\Video"; UserContent = $true; RequiresAdmin = $false; Advice = "包含微信聊天中的图片和视频附件。删除后不可恢复；请先在微信内确认不再需要。不会处理聊天记录、数据库或 FileRecv 文件。" }
-    @{ Id = "user-qq-media"; Name = "QQ 图片与视频附件"; Type = "PatternCache"; Path = "$env:USERPROFILE\Documents\Tencent Files"; SubDirs = "Image,Video"; UserContent = $true; RequiresAdmin = $false; Advice = "包含 QQ 聊天中的图片和视频附件。删除后不可恢复；请先在 QQ 内确认不再需要。不会处理聊天记录或 FileRecv 文件。" }
-    @{ Id = "recycle-bin"; Name = "回收站";             Type = "RecycleBin";     Path = ""; RequiresAdmin = $false }
-    @{ Id = "dns-cache"; Name = "DNS 缓存";           Type = "DNSCache";       Path = ""; RequiresAdmin = $false }
-
-    # ---- 系统级（需管理员）----
-    @{ Id = "windows-temp"; Name = "Windows 临时文件";   Type = "FolderContents"; Path = "C:\Windows\Temp"; RequiresAdmin = $true }
-    @{ Id = "windows-update-cache"; Name = "Windows 更新缓存";   Type = "FolderContents"; Path = "C:\Windows\SoftwareDistribution\Download"; RequiresAdmin = $true }
-    @{ Id = "prefetch"; Name = "预读取文件 Prefetch"; Type = "FolderContents"; Path = "C:\Windows\Prefetch"; RequiresAdmin = $true }
-    @{ Id = "delivery-optimization-cache"; Name = "交付优化缓存";       Type = "FolderContents"; Path = "C:\Windows\SoftwareDistribution\DeliveryOptimization"; RequiresAdmin = $true }
-    @{ Id = "system-minidump"; Name = "系统崩溃转储";       Type = "FolderContents"; Path = "C:\Windows\Minidump"; RequiresAdmin = $true }
-    @{ Id = "memory-dump"; Name = "内存转储 MEMORY.DMP"; Type = "Remove";        Path = "C:\Windows\MEMORY.DMP"; RequiresAdmin = $true }
-    @{ Id = "windows-old"; Name = "Windows.old 旧系统"; Type = "Detect";         Path = "C:\Windows.old"; RequiresAdmin = $true; Hint = "磁盘清理(cleanmgr)->清理系统文件->勾选'以前的 Windows 安装'" }
-    @{ Id = "hibernation-file"; Name = "休眠文件 hiberfil.sys"; Type = "Detect";      Path = "C:\hiberfil.sys"; RequiresAdmin = $true; Hint = "管理员运行 powercfg /h off 可关闭休眠并释放约等于内存大小的空间" }
-    @{ Id = "page-file"; Name = "页面文件 pagefile.sys"; Type = "Detect";       Path = "C:\pagefile.sys"; RequiresAdmin = $true; Hint = "系统虚拟内存文件，不建议删除，可缩小或移至其他盘" }
-
-    # ---- 空间大户诊断（仅诊断+处方，绝不自动删除）----
-    # Pattern 支持通配符；Category=分类；Risk=风险分级（需人工决策 / 可重建）；Advice=处方
-    @{ Id = "claude-vm-disk"; Name = "Claude Desktop 虚拟机磁盘"; Type = "SpaceHog"; Pattern = "$env:LOCALAPPDATA\Packages\Claude_*\LocalCache\Roaming\Claude\vm_bundles"; Category = "应用资源"; Risk = "需人工决策"; Advice = "Claude Desktop 的 Linux 虚拟机磁盘（rootfs.vhdx 等）。若不再使用，请通过'设置→应用'卸载 Claude Desktop 回收；仍在使用请勿删除。"; RequiresAdmin = $false }
-    @{ Id = "windows-font-cache"; Name = "Windows 字体缓存";          Type = "SpaceHog"; Pattern = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"; Category = "系统资源"; Risk = "需人工决策"; Advice = "Windows 字体缓存（约 2.7GB，含字体副本）。系统字体请勿直接删除；管理字体请用'设置→个性化→字体'。"; RequiresAdmin = $false }
-    @{ Id = "jianying-data"; Name = "剪映 JianyingPro";          Type = "SpaceHog"; Pattern = "$env:LOCALAPPDATA\JianyingPro"; Category = "应用资源"; Risk = "需人工决策"; Advice = "剪映客户端（含 CUDA 依赖约 2.4GB）。若不再使用建议卸载；或用剪映内置的缓存清理。"; RequiresAdmin = $false }
-    @{ Id = "miniconda-environment"; Name = "MiniConda3 环境";           Type = "SpaceHog"; Pattern = "$env:USERPROFILE\MiniConda3"; Category = "开发环境"; Risk = "需人工决策"; Advice = "MiniConda Python 环境。清理请用 conda clean，卸载请用官方卸载器；请勿直接删除目录。"; RequiresAdmin = $false }
-    @{ Id = "downloads"; Name = "下载目录";                  Type = "SpaceHog"; Pattern = "$env:USERPROFILE\Downloads"; Category = "用户数据"; Risk = "需人工决策"; Advice = "下载目录（含安装包等）。请手动确认后删除不再需要的文件。"; RequiresAdmin = $false }
-    @{ Id = "codex-runtime"; Name = "Codex 运行时";              Type = "SpaceHog"; Pattern = "$env:USERPROFILE\.codex"; Category = "应用资源"; Risk = "需人工决策"; Advice = "OpenAI Codex CLI 及插件运行时（约 2.3GB）。若不再使用 Codex 建议卸载。"; RequiresAdmin = $false }
-    @{ Id = "developer-cache"; Name = "开发工具缓存 .cache";       Type = "SpaceHog"; Pattern = "$env:USERPROFILE\.cache"; Category = "可重建缓存"; Risk = "可重建"; Advice = "开发工具缓存（codex-runtimes 等）。可安全删除，工具下次使用时重建；删除后首次运行会重新下载。"; RequiresAdmin = $false }
-    @{ Id = "cursor-data"; Name = "Cursor 编辑器缓存";         Type = "SpaceHog"; Pattern = "$env:USERPROFILE\.cursor"; Category = "可重建缓存"; Risk = "可重建"; Advice = "Cursor 编辑器缓存/扩展。缓存可删除，扩展会随使用重建。"; RequiresAdmin = $false }
-    @{ Id = "gemini-recordings"; Name = "Gemini 浏览器录制数据";     Type = "SpaceHog"; Pattern = "$env:USERPROFILE\.gemini\*\browser_recordings"; Category = "录制数据"; Risk = "需人工决策"; Advice = "Gemini 的浏览器录制数据（antigravity 等多份副本）。可手动删除不再需要的录制；删除后历史录制不可恢复。"; RequiresAdmin = $false }
-    @{ Id = "lmstudio-models"; Name = "LM Studio 本地模型";        Type = "SpaceHog"; Pattern = "$env:USERPROFILE\.lmstudio"; Category = "应用资源"; Risk = "需人工决策"; Advice = "LM Studio 本地大模型运行环境（模型文件较大）。若不再使用建议卸载并删除模型。"; RequiresAdmin = $false }
-)
+$CleanupTargets = @(Get-CDriveCleanupTargets)
 
 # ---------- 清单校验与去重（fail fast，避免拼写错误静默误删 / 重复统计）----------
 $validTypes = @('FolderContents', 'Remove', 'PatternCache', 'RecycleBin', 'DNSCache', 'Detect', 'SpaceHog')
@@ -391,6 +357,7 @@ $targetManifest = @($CleanupTargets | ForEach-Object {
         Pattern = [string]$_['Pattern']
         SubDirs = [string]$_['SubDirs']
         RequiresAdmin = [bool]$_['RequiresAdmin']
+        RecoveryMode = [string]$_['RecoveryMode']
     }
 } | ConvertTo-Json -Depth 5 -Compress)
 $sha256 = [System.Security.Cryptography.SHA256]::Create()
@@ -404,19 +371,11 @@ $scanId = [guid]::NewGuid().ToString('N')
 
 function Get-CleanupRecommendation {
     param($Target)
-    if ($Target.UserContent) {
-        return [PSCustomObject]@{ Label = '谨慎选择'; Level = 'Review'; Advice = $Target.Advice }
+    return [PSCustomObject]@{
+        Label = [string]$Target.RecommendationLabel
+        Level = [string]$Target.RecommendationLevel
+        Advice = [string]$Target.Advice
     }
-    if ($Target.Name -eq '预读取文件 Prefetch') {
-        return [PSCustomObject]@{ Label = '不建议清理'; Level = 'NotRecommended'; Advice = '对可用空间帮助很小，删除后会暂时影响应用启动优化。' }
-    }
-    if ($Target.Type -eq 'DNSCache') {
-        return [PSCustomObject]@{ Label = '无需清理'; Level = 'NotRecommended'; Advice = '这是内存缓存，不释放磁盘空间。' }
-    }
-    if ($Target.Type -eq 'RecycleBin' -or $Target.Type -eq 'Remove' -or $Target.RequiresAdmin) {
-        return [PSCustomObject]@{ Label = '建议检查'; Level = 'Review'; Advice = '请确认内容不再需要后再选择。' }
-    }
-    return [PSCustomObject]@{ Label = '建议清理'; Level = 'Recommended'; Advice = '属于可重建缓存或临时文件，相关应用下次使用时可能重新生成。' }
 }
 
 $selectedTargetIds = $null
@@ -475,6 +434,11 @@ if ($SelectionFile) {
         Write-Host '未选择任何清理项，已取消，不会删除文件。' -ForegroundColor Yellow
         exit 0
     }
+}
+if ($Clean -and [string]::IsNullOrWhiteSpace($SelectionFile)) {
+    Write-CDriveEvent 'operation.failed' @{ code = 'PLAN_REQUIRED' }
+    Write-Host '错误：[PLAN_REQUIRED] 清理必须使用本次扫描生成的选择清单；未执行任何删除。' -ForegroundColor Red
+    exit 1
 }
 
 # ---------- Handler 分发表 ----------
@@ -627,12 +591,31 @@ if ($SelfTest) {
     if (-not $dataPathOk) { $fail++ }
     $dataPathMark = if ($dataPathOk) { 'OK' } else { 'FAIL' }
     Write-Host ("[{0}] 报告目录与程序目录分离  path={1}" -f $dataPathMark, $reportPath)
-    if ($fail -gt 0) { Write-Host ("SelfTest 失败 {0} 项" -f $fail) -ForegroundColor Red; exit 1 }
+    if ($fail -gt 0) {
+        Write-CDriveEvent 'operation.failed' @{ code = 'SELF_TEST_FAILED'; failures = $fail }
+        Write-Host ("SelfTest 失败 {0} 项" -f $fail) -ForegroundColor Red
+        exit 1
+    }
+    Write-CDriveEvent 'operation.completed' @{ status = 'passed'; mode = 'self-test'; ruleCount = $CleanupTargets.Count; manifestHash = $targetManifestHash }
     Write-Host "SelfTest 通过" -ForegroundColor Green
     exit 0
 }
 
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+$operationJournal = $null
+$executionContext = $null
+if ($Clean) {
+    try {
+        $executionContext = New-CDriveExecutionContext $CleanupTargets @($selectedTargetIds.Keys) $isAdmin
+        $operationJournal = New-CDriveOperationJournal (Join-Path $localDataRoot 'journals') $operationId $targetManifestHash @($selectedTargetIds.Keys) $isAdmin
+        $executionContext.Journal = $operationJournal
+        Write-Host ('  操作日志：' + $operationJournal.Path) -ForegroundColor DarkGray
+    } catch {
+        Write-CDriveEvent 'operation.failed' @{ code = 'BROKER_PLAN_REJECTED'; message = $_.Exception.Message }
+        Write-Host ('错误：执行代理拒绝清理计划：' + $_.Exception.Message) -ForegroundColor Red
+        exit 1
+    }
+}
 
 # 记录清理前磁盘可用空间（用于清理后对比）
 # 注：受限环境下 Get-PSDrive 的 Free 属性不可用，改用 System.IO.DriveInfo
@@ -650,6 +633,7 @@ Write-Host ""
 $totalCleanable = 0.0
 $totalDetected  = 0.0
 $totalFreed     = 0.0
+$totalStagedForRecovery = 0.0
 $totalFailed    = 0
 $skippedCount   = 0
 $totalDupWaste  = 0.0
@@ -658,19 +642,27 @@ $profileData    = [PSCustomObject]@{ Root = ''; FileCount = 0; TopDirs = @(); To
 
 $scanResults = @()
 $planMismatches = @()
+$scanPosition = 0
+$scanTotal = @($CleanupTargets | Where-Object {
+    (-not $Category -or $_.Name -like "*$Category*") -and
+    (-not $Clean -or $null -eq $selectedTargetIds -or $selectedTargetIds.ContainsKey($_.Id))
+}).Count
 
 # ---------- 阶段 1：扫描 ----------
 foreach ($t in $CleanupTargets) {
     if ($Category -and $t.Name -notlike "*$Category*") { continue }
     if ($Clean -and $null -ne $selectedTargetIds -and -not $selectedTargetIds.ContainsKey($t.Id)) { continue }
 
+    $scanPosition++
     $displayPath = if ($t.Path) { $t.Path } elseif ($t.Pattern) { $t.Pattern } else { "(系统内置)" }
     Write-Host ("[{0}] {1}" -f $t.Name, $displayPath) -ForegroundColor White
+    Write-CDriveEvent 'scan.item.started' @{ itemId = [string]$t.Id; name = [string]$t.Name; index = $scanPosition; total = $scanTotal }
 
     if ($t.RequiresAdmin -and -not $isAdmin) {
         Write-Host "    ⚠ 需要管理员权限，当前跳过（请以管理员身份运行以处理此项）" -ForegroundColor DarkYellow
         $skippedCount++
         $scanResults += [PSCustomObject]@{ Id = $t.Id; Name = $t.Name; Type = $t.Type; Path = $displayPath; Size = 0.0; Status = '需管理员'; Category = ''; Risk = ''; Advice = ''; Recommendation = (Get-CleanupRecommendation $t).Label; RecommendationLevel = (Get-CleanupRecommendation $t).Level; Note = '' }
+        Write-CDriveEvent 'scan.item.completed' @{ itemId = [string]$t.Id; size = 0.0; status = 'requires-admin' }
         continue
     }
 
@@ -725,6 +717,7 @@ foreach ($t in $CleanupTargets) {
         } else {
             Write-Host "    未检测到" -ForegroundColor Gray
         }
+        Write-CDriveEvent 'scan.item.completed' @{ itemId = [string]$t.Id; size = [double]$r.Size; status = 'diagnostic' }
         continue
     }
 
@@ -742,8 +735,9 @@ foreach ($t in $CleanupTargets) {
         Write-Host ("    当前占用：{0}{1}" -f (Format-Bytes $r.Size), $note) -ForegroundColor Gray
         $totalCleanable += $r.Size
         $recommendation = Get-CleanupRecommendation $t
-        $scanResults += [PSCustomObject]@{ Id = $t.Id; Name = $t.Name; Type = $t.Type; Path = $displayPath; Size = $r.Size; Status = '可清理'; Category = ''; Risk = ''; Advice = $recommendation.Advice; Recommendation = $recommendation.Label; RecommendationLevel = $recommendation.Level; Note = $r.Note }
+        $scanResults += [PSCustomObject]@{ Id = $t.Id; Name = $t.Name; Type = $t.Type; Path = $displayPath; Size = $r.Size; Status = '可清理'; Category = ''; Risk = ''; Advice = $recommendation.Advice; Recommendation = $recommendation.Label; RecommendationLevel = $recommendation.Level; Note = $r.Note; UserContent = [bool]$t.UserContent; RecoveryMode = [string]$t.RecoveryMode }
     }
+    Write-CDriveEvent 'scan.item.completed' @{ itemId = [string]$t.Id; size = [double]$r.Size; status = $(if ($r.Detected) { 'diagnostic' } else { 'cleanable' }) }
 }
 
 # 仅导出已扫描到的固定安全目标，供图形界面展示、勾选和回传 ID。
@@ -763,6 +757,7 @@ if ($SelectionOutput) {
                     Advice              = $_.Advice
                     Note                = $_.Note
                     SafetyLevel         = if ($cleanupTargetById[[string]$_.Id].UserContent) { 'UserContent' } else { 'Standard' }
+                    RecoveryMode        = [string]$cleanupTargetById[[string]$_.Id].RecoveryMode
                 }
             })
         $selectionExport = [PSCustomObject]@{
@@ -781,6 +776,7 @@ if ($SelectionOutput) {
 }
 
 if ($Clean -and $planMismatches.Count -gt 0) {
+    Write-CDriveJournalOperationCompleted $operationJournal 'rejected' 0 0 0 'PLAN_CHANGED'
     Write-Host ''
     Write-Host '清理计划已变化，出于安全考虑本次未执行删除。请重新扫描后再选择。' -ForegroundColor Yellow
     foreach ($mismatch in $planMismatches) {
@@ -857,6 +853,7 @@ if ($Clean) {
     if (-not $Force) {
         $resp = Read-Host "  即将执行清理，删除上述可清理项。是否继续？(y/N)"
         if ($resp -notmatch '^[yY]') {
+            Write-CDriveJournalOperationCompleted $operationJournal 'cancelled' 0 0 0 'USER_CANCELLED'
             Write-Host "  已取消清理，未删除任何文件。" -ForegroundColor Yellow
             Write-Host "=====================================================" -ForegroundColor Cyan
             exit 0
@@ -868,23 +865,23 @@ if ($Clean) {
     foreach ($t in $CleanupTargets) {
         if ($Category -and $t.Name -notlike "*$Category*") { continue }
         if ($null -ne $selectedTargetIds -and -not $selectedTargetIds.ContainsKey($t.Id)) { continue }
-        if ($t.RequiresAdmin -and -not $isAdmin) { continue }
         if ($t.Type -in @('Detect', 'SpaceHog')) { continue }
 
-        $handler = $Handlers[$t.Type]
-        if ($null -eq $handler) { continue }
-
-        $r = & $handler $t 'clean'
+        $r = Invoke-CDriveBrokeredCleanup $executionContext ([string]$t.Id) $Handlers
         $totalFreed += $r.Freed
+        $totalStagedForRecovery += [double]$r.StagedForRecovery
         $totalFailed += $r.Failed
 
         Write-Host ("  [{0}]" -f $t.Name) -ForegroundColor White
-        if ($r.Note) {
+        if ($r.Status -eq 'skipped') {
+            Write-Host ("    - {0}" -f $r.Note) -ForegroundColor DarkYellow
+        } elseif ($r.Note) {
             Write-Host ("    ✓ {0}" -f $r.Note) -ForegroundColor Green
         } else {
             Write-Host ("    ✓ 已清理，释放 {0}" -f (Format-Bytes $r.Freed)) -ForegroundColor Green
         }
         if ($r.Failed -gt 0) { Write-Host ("    ⚠ 有 {0} 项未能删除（可能被占用）" -f $r.Failed) -ForegroundColor Yellow }
+        Write-CDriveEvent 'cleanup.item.completed' @{ itemId = [string]$t.Id; freed = [double]$r.Freed; stagedForRecovery = [double]$r.StagedForRecovery; failed = [int]$r.Failed; status = [string]$r.Status }
     }
 }
 
@@ -894,6 +891,7 @@ Write-Host ""
 Write-Host "=====================================================" -ForegroundColor Cyan
 if ($Clean) {
     Write-Host ("  清理完成，合计释放约 {0} 空间" -f (Format-Bytes $totalFreed)) -ForegroundColor Green
+    if ($totalStagedForRecovery -gt 0) { Write-Host ("  已移入回收站约 {0}，清空回收站前可恢复" -f (Format-Bytes $totalStagedForRecovery)) -ForegroundColor Yellow }
     Write-Host ("  磁盘可用空间：清理前 {0} → 清理后 {1}" -f (Format-Bytes $driveFreeBefore), (Format-Bytes $driveFreeAfter)) -ForegroundColor Green
     if ($totalFailed -gt 0) { Write-Host ("  ⚠ 有 {0} 项因被占用等原因未能删除" -f $totalFailed) -ForegroundColor Yellow }
     if ($skippedCount -gt 0) { Write-Host ("  ⚠ 有 {0} 项因需要管理员权限被跳过" -f $skippedCount) -ForegroundColor DarkYellow }
@@ -1042,4 +1040,19 @@ if ($Report) {
     } catch {
         Write-Host ("  ⚠ 报告导出失败：{0}" -f $_.Exception.Message) -ForegroundColor Red
     }
+}
+
+Write-CDriveEvent 'operation.completed' @{
+    status = 'passed'
+    mode = $(if ($Clean) { 'clean' } else { 'scan' })
+    cleanable = [double]$totalCleanable
+    detected = [double]$totalDetected
+    freed = [double]$totalFreed
+    stagedForRecovery = [double]$totalStagedForRecovery
+    failed = [int]$totalFailed
+    freeBefore = [double]$driveFreeBefore
+    freeAfter = [double]$driveFreeAfter
+}
+if ($Clean) {
+    Write-CDriveJournalOperationCompleted $operationJournal 'completed' $totalFreed $totalStagedForRecovery $totalFailed ''
 }

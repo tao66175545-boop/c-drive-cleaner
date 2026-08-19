@@ -24,6 +24,10 @@ if ($uiSource -notmatch 'SelectionOutput|SelectionFile|Show-CleanupSelection|New
 if ($uiSource -notmatch '\$userContentWarning' -or $uiSource -notmatch 'FileRecv') {
     throw 'User-media confirmation regression: the explicit warning is missing.'
 }
+if ($uiSource -notmatch 'Invoke-CDriveAssistantTool' -or $uiSource -notmatch '\$navAssistant' -or
+    $uiSource -notmatch 'LastProposedIds' -or $uiSource -notmatch '\$btnAssistantApply\.Add_Click') {
+    throw 'Assistant UI regression: constrained tool routing or confirmation boundary is missing.'
+}
 if ($uiSource -notmatch '\$exitCode' -or $uiSource -notmatch '\$succeeded') {
     throw 'Job status regression: engine exit codes are not handled.'
 }
@@ -52,7 +56,7 @@ function Invoke-ButtonLifecycle($Button, [string]$Method, [object[]]$Arguments) 
     [void]$callback.Invoke($Button, $Arguments)
 }
 
-$allButtons = @($navOverview, $navLogs, $btnScan, $btnReport, $btnClean, $btnExit)
+$allButtons = @($navOverview, $navLogs, $navSelection, $navAssistant, $btnScan, $btnReport, $btnClean, $btnExit, $btnAssistantApply, $btnAssistantSend)
 foreach ($button in $allButtons) {
     if ($button.GetType().BaseType -ne [System.Windows.Forms.Control]) {
         throw ('Incorrect button base class: ' + $button.Text)
@@ -109,6 +113,17 @@ $onClick = [CDriveRoundedButton].GetMethod('OnClick', [System.Reflection.Binding
 [void]$onClick.Invoke($btnSelectSuggested, [object[]]@([EventArgs]::Empty))
 if ($dashboardState.SelectedIds.Count -ne 1 -or -not $btnClean.Enabled) { throw 'Suggested selection did not enable the scoped clean action.' }
 if ($dashboardState.SelectedIds.ContainsKey('user-wechat-media')) { throw 'Suggested selection must not include user media.' }
+Set-DashboardView 'assistant'
+$assistantInput.Text = 'recommend safe cleanup'
+Invoke-AssistantQuery
+if ($navigationState.View -ne 'assistant' -or @($assistantState.LastProposedIds).Count -ne 1) { throw 'Assistant did not produce a constrained proposal.' }
+if ($assistantState.LastProposedIds[0] -ne 'user-temp' -or -not $btnAssistantApply.Enabled) { throw 'Assistant proposal crossed the stable-ID or risk boundary.' }
+$assistantPreview = [System.Drawing.Bitmap]::new($form.ClientSize.Width, $form.ClientSize.Height)
+$form.DrawToBitmap($assistantPreview, [System.Drawing.Rectangle]::new(0, 0, $assistantPreview.Width, $assistantPreview.Height))
+$assistantPreview.Save((Join-Path (Get-Location) 'ui-assistant-preview.png'), [System.Drawing.Imaging.ImageFormat]::Png)
+$assistantPreview.Dispose()
+[void]$onClick.Invoke($btnAssistantApply, [object[]]@([EventArgs]::Empty))
+if ($navigationState.View -ne 'selection' -or $dashboardState.SelectedIds.Count -ne 1 -or -not $dashboardState.SelectedIds.ContainsKey('user-temp')) { throw 'Assistant did not apply reversible UI selection state.' }
 $selectionPreview = [System.Drawing.Bitmap]::new($form.ClientSize.Width, $form.ClientSize.Height)
 $form.DrawToBitmap($selectionPreview, [System.Drawing.Rectangle]::new(0, 0, $selectionPreview.Width, $selectionPreview.Height))
 $selectionPreview.Save((Join-Path (Get-Location) 'ui-selection-preview.png'), [System.Drawing.Imaging.ImageFormat]::Png)

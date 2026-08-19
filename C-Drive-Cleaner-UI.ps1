@@ -194,6 +194,11 @@ public class CDriveRoundedButton : Control {
 $scriptDir = $PSScriptRoot
 if (-not $scriptDir) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path }
 $mainScript = Join-Path $scriptDir 'C-Drive-Cleaner.ps1'
+$processOrchestrator = Join-Path $scriptDir 'core\ProcessOrchestrator.ps1'
+$ruleCatalogModule = Join-Path $scriptDir 'core\RuleCatalog.ps1'
+$copilotModule = Join-Path $scriptDir 'core\Copilot.ps1'
+$assistantRouterModule = Join-Path $scriptDir 'core\AssistantToolRouter.ps1'
+$assistantContractPath = Join-Path $scriptDir 'contracts\assistant-tools.json'
 $localDataRoot = if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'CDriveCleaner' } else { Join-Path $env:TEMP 'CDriveCleaner' }
 $reportPath = Join-Path (Join-Path $localDataRoot 'reports') 'C盘清理诊断报告.html'
 $spriteSheetPath = Join-Path $scriptDir 'assets\cleaning-sprite-source.png'
@@ -205,6 +210,17 @@ if (-not (Test-Path -LiteralPath $mainScript)) {
     [System.Windows.Forms.MessageBox]::Show("找不到主程序：`n$mainScript", 'C盘清理', 'OK', 'Error') | Out-Null
     exit 1
 }
+if (-not (Test-Path -LiteralPath $processOrchestrator) -or -not (Test-Path -LiteralPath $ruleCatalogModule) -or
+    -not (Test-Path -LiteralPath $copilotModule) -or -not (Test-Path -LiteralPath $assistantRouterModule) -or
+    -not (Test-Path -LiteralPath $assistantContractPath)) {
+    [System.Windows.Forms.MessageBox]::Show('缺少核心模块或助手契约，程序无法安全启动。', 'C盘清理', 'OK', 'Error') | Out-Null
+    exit 1
+}
+. $processOrchestrator
+. $ruleCatalogModule
+. $copilotModule
+. $assistantRouterModule
+$copilotTargets = @(Get-CDriveCleanupTargets)
 
 function Get-CFreeText {
     try {
@@ -311,6 +327,23 @@ $navSelection.SelectedPressedBackColor = [System.Drawing.Color]::FromArgb(247, 2
 $navSelection.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 9, [System.Drawing.FontStyle]::Bold)
 $navSelection.Cursor = [System.Windows.Forms.Cursors]::Hand
 
+$navAssistant = New-Object CDriveRoundedButton
+$navAssistant.Text = '智能助手'
+$navAssistant.Location = New-Object System.Drawing.Point(12, 222)
+$navAssistant.Size = New-Object System.Drawing.Size(88, 38)
+$navAssistant.BackColor = [System.Drawing.Color]::FromArgb(247, 249, 250)
+$navAssistant.ForeColor = [System.Drawing.Color]::FromArgb(119, 127, 133)
+$navAssistant.BorderColor = [System.Drawing.Color]::FromArgb(238, 238, 238)
+$navAssistant.HoverBackColor = [System.Drawing.Color]::FromArgb(244, 247, 249)
+$navAssistant.PressedBackColor = [System.Drawing.Color]::FromArgb(238, 242, 245)
+$navAssistant.SelectedBackColor = [System.Drawing.Color]::FromArgb(251, 229, 231)
+$navAssistant.SelectedForeColor = [System.Drawing.Color]::FromArgb(181, 30, 40)
+$navAssistant.SelectedBorderColor = [System.Drawing.Color]::FromArgb(247, 210, 214)
+$navAssistant.SelectedHoverBackColor = [System.Drawing.Color]::FromArgb(252, 236, 237)
+$navAssistant.SelectedPressedBackColor = [System.Drawing.Color]::FromArgb(247, 220, 223)
+$navAssistant.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 9, [System.Drawing.FontStyle]::Bold)
+$navAssistant.Cursor = [System.Windows.Forms.Cursors]::Hand
+
 $sideFooter = New-Object System.Windows.Forms.Label
 $sideFooter.Text = '本地工具'
 $sideFooter.Font = New-Object System.Drawing.Font('Segoe UI', 7)
@@ -319,7 +352,7 @@ $sideFooter.AutoSize = $true
 $sideFooter.Location = New-Object System.Drawing.Point(20, 0)
 $sideFooter.Anchor = 'Bottom,Left'
 $sideFooter.Add_Layout({ $sideFooter.Top = $sideBar.ClientSize.Height - 28 })
-$sideBar.Controls.AddRange(@($sideDivider, $navOverview, $navLogs, $navSelection, $sideFooter))
+$sideBar.Controls.AddRange(@($sideDivider, $navOverview, $navLogs, $navSelection, $navAssistant, $sideFooter))
 
 $workspace = New-Object System.Windows.Forms.Panel
 $workspace.Dock = 'Fill'
@@ -909,6 +942,92 @@ $selectionLayout.Controls.Add($selectionActionBar, 0, 1)
 $selectionLayout.Controls.Add($selectionItemsPanel, 0, 2)
 $selectionView.Controls.Add($selectionLayout)
 
+$assistantView = New-Object System.Windows.Forms.Panel
+$assistantView.Dock = 'Fill'
+$assistantView.BackColor = [System.Drawing.Color]::FromArgb(239, 242, 245)
+$assistantView.Padding = New-Object System.Windows.Forms.Padding(18)
+$assistantView.Visible = $false
+
+$assistantLayout = New-Object System.Windows.Forms.TableLayoutPanel
+$assistantLayout.Dock = 'Fill'
+$assistantLayout.ColumnCount = 1
+$assistantLayout.RowCount = 3
+$assistantLayout.BackColor = [System.Drawing.Color]::Transparent
+[void]$assistantLayout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute, 58))
+[void]$assistantLayout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Percent, 100))
+[void]$assistantLayout.RowStyles.Add([System.Windows.Forms.RowStyle]::new([System.Windows.Forms.SizeType]::Absolute, 54))
+
+$assistantHeader = New-Object System.Windows.Forms.Panel
+$assistantHeader.Dock = 'Fill'
+$assistantHeader.BackColor = [System.Drawing.Color]::Transparent
+$assistantTitle = New-Object System.Windows.Forms.Label
+$assistantTitle.Text = '智能助手'
+$assistantTitle.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 13, [System.Drawing.FontStyle]::Bold)
+$assistantTitle.ForeColor = [System.Drawing.Color]::FromArgb(35, 46, 55)
+$assistantTitle.Location = New-Object System.Drawing.Point(0, 2)
+$assistantTitle.AutoSize = $true
+$assistantStatus = New-Object System.Windows.Forms.Label
+$assistantStatus.Text = 'LOCAL  ·  READ ONLY'
+$assistantStatus.Font = New-Object System.Drawing.Font('Segoe UI', 8, [System.Drawing.FontStyle]::Bold)
+$assistantStatus.ForeColor = [System.Drawing.Color]::FromArgb(181, 30, 40)
+$assistantStatus.Location = New-Object System.Drawing.Point(92, 7)
+$assistantStatus.AutoSize = $true
+$assistantDescription = New-Object System.Windows.Forms.Label
+$assistantDescription.Text = '可解释扫描结果并调整勾选；最终清理由你确认。'
+$assistantDescription.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 8)
+$assistantDescription.ForeColor = [System.Drawing.Color]::FromArgb(122, 137, 149)
+$assistantDescription.Location = New-Object System.Drawing.Point(1, 31)
+$assistantDescription.AutoSize = $true
+$assistantHeader.Controls.AddRange(@($assistantTitle, $assistantStatus, $assistantDescription))
+
+$assistantShell = New-Object CDriveRoundedPanel
+$assistantShell.Dock = 'Fill'
+$assistantShell.Margin = New-Object System.Windows.Forms.Padding(0, 0, 0, 10)
+$assistantShell.Padding = New-Object System.Windows.Forms.Padding(14)
+$assistantShell.BackColor = [System.Drawing.Color]::White
+$assistantShell.BorderColor = [System.Drawing.Color]::FromArgb(220, 226, 231)
+$assistantShell.CornerRadius = 8
+$assistantTranscript = New-Object System.Windows.Forms.RichTextBox
+$assistantTranscript.Dock = 'Fill'
+$assistantTranscript.ReadOnly = $true
+$assistantTranscript.BorderStyle = 'None'
+$assistantTranscript.BackColor = [System.Drawing.Color]::White
+$assistantTranscript.ForeColor = [System.Drawing.Color]::FromArgb(56, 70, 80)
+$assistantTranscript.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 9)
+$assistantTranscript.Text = "助手  请先开始扫描。扫描完成后可以问：哪些项目建议清理、某个项目是什么，或开发缓存有哪些。`r`n"
+$assistantShell.Controls.Add($assistantTranscript)
+
+$assistantComposer = New-Object CDriveRoundedPanel
+$assistantComposer.Dock = 'Fill'
+$assistantComposer.BackColor = [System.Drawing.Color]::White
+$assistantComposer.BorderColor = [System.Drawing.Color]::FromArgb(220, 226, 231)
+$assistantComposer.CornerRadius = 8
+$assistantInput = New-Object System.Windows.Forms.TextBox
+$assistantInput.BorderStyle = 'None'
+$assistantInput.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 9)
+$assistantInput.ForeColor = [System.Drawing.Color]::FromArgb(48, 62, 72)
+$assistantInput.Location = New-Object System.Drawing.Point(14, 17)
+$assistantInput.Anchor = 'Top,Left,Right'
+$assistantInput.Width = 1
+$assistantInput.Text = '哪些项目建议清理？'
+
+$btnAssistantApply = New-Object CDriveRoundedButton
+$btnAssistantApply.Text = '应用建议'
+$btnAssistantApply.Size = New-Object System.Drawing.Size(92, 32)
+Set-ActionButtonStyle $btnAssistantApply ([System.Drawing.Color]::White) ([System.Drawing.Color]::FromArgb(181, 30, 40)) ([System.Drawing.Color]::FromArgb(214, 222, 228)) ([System.Drawing.Color]::FromArgb(252, 236, 237)) ([System.Drawing.Color]::FromArgb(247, 220, 223))
+$btnAssistantApply.Enabled = $false
+
+$btnAssistantSend = New-Object CDriveRoundedButton
+$btnAssistantSend.Text = '发送'
+$btnAssistantSend.Size = New-Object System.Drawing.Size(72, 32)
+Set-ActionButtonStyle $btnAssistantSend ([System.Drawing.Color]::FromArgb(181, 30, 40)) ([System.Drawing.Color]::White) ([System.Drawing.Color]::FromArgb(181, 30, 40)) ([System.Drawing.Color]::FromArgb(160, 26, 35)) ([System.Drawing.Color]::FromArgb(140, 21, 30))
+$assistantComposer.Controls.AddRange(@($assistantInput, $btnAssistantApply, $btnAssistantSend))
+
+$assistantLayout.Controls.Add($assistantHeader, 0, 0)
+$assistantLayout.Controls.Add($assistantShell, 0, 1)
+$assistantLayout.Controls.Add($assistantComposer, 0, 2)
+$assistantView.Controls.Add($assistantLayout)
+
 $dashboardGrid.Controls.Add($diskCard, 0, 1)
 $dashboardGrid.SetColumnSpan($diskCard, 2)
 $dashboardGrid.Controls.Add($compareCard, 2, 1)
@@ -919,14 +1038,15 @@ $dashboardGrid.Controls.Add($logShell, 0, 3)
 $dashboardGrid.SetColumnSpan($logShell, 4)
 
 $topBar.Controls.AddRange(@($title, $hint, $statusCluster, $toolbar, $animationImage, $topRule, $topDivider))
-$contentHost.Controls.AddRange(@($dashboardGrid, $selectionView))
+$contentHost.Controls.AddRange(@($dashboardGrid, $selectionView, $assistantView))
 $workspace.Controls.AddRange(@($contentHost, $topBar))
 $form.Controls.AddRange(@($workspace, $sideBar))
 
 $buttons = @($btnScan, $btnReport, $btnClean, $btnExit)
-$jobState = @{ Job = $null; LastLen = 0; LogFile = ''; SelectionOutput = ''; SelectionFile = '' }
+$jobState = @{ Process = $null; LastLen = 0; EventLines = 0; LogFile = ''; EventFile = ''; SelectionOutput = ''; SelectionFile = '' }
 $dashboardState = @{ CleanBeforeFree = $null; CleanAfterFree = $null; IsCleaning = $false; LastAction = '尚未执行操作'; LastFinished = $null; SelectionItems = @(); SelectedIds = @{}; SelectionCheckboxes = @(); ScanId = ''; ManifestHash = ''; ScannedAt = '' }
 $navigationState = @{ View = 'overview' }
+$assistantState = @{ LastProposedIds = @() }
 
 $toolTips = New-Object System.Windows.Forms.ToolTip
 $toolTips.InitialDelay = 350
@@ -934,6 +1054,7 @@ $toolTips.ReshowDelay = 120
 $toolTips.SetToolTip($navOverview, '概览：统计、磁盘状态和清理对比')
 $toolTips.SetToolTip($navSelection, '清理清单：查看扫描到的候选项并自行选择')
 $toolTips.SetToolTip($navLogs, '日志：专注查看实时输出')
+$toolTips.SetToolTip($navAssistant, '智能助手：解释扫描结果并提供可撤销的勾选建议')
 $toolTips.SetToolTip($btnScan, '扫描可安全清理项，不会删除文件')
 $toolTips.SetToolTip($btnReport, '打开最新的 HTML 诊断报告')
 $toolTips.SetToolTip($btnClean, '清理缓存和临时文件，执行前会再次确认')
@@ -961,6 +1082,18 @@ function Update-SelectionActionLayout {
     $btnSelectSuggested.Top = [Math]::Max(0, [int][Math]::Floor(($selectionActionBar.ClientSize.Height - $btnSelectSuggested.Height) / 2))
 }
 
+function Update-AssistantComposerLayout {
+    $right = $assistantComposer.ClientSize.Width - 12
+    $btnAssistantSend.Left = [Math]::Max(12, $right - $btnAssistantSend.Width)
+    $btnAssistantSend.Top = [Math]::Max(0, [int][Math]::Floor(($assistantComposer.ClientSize.Height - $btnAssistantSend.Height) / 2))
+    $btnAssistantApply.Left = [Math]::Max(12, $btnAssistantSend.Left - 8 - $btnAssistantApply.Width)
+    $btnAssistantApply.Top = $btnAssistantSend.Top
+    $assistantInput.Width = [Math]::Max(80, $btnAssistantApply.Left - 26)
+}
+
+$assistantComposer.Add_Resize({ Update-AssistantComposerLayout })
+$assistantComposer.Add_Layout({ Update-AssistantComposerLayout })
+
 function Update-CleanupSelectionRows {
     $rowWidth = [Math]::Max(1, $selectionItemsPanel.ClientSize.Width - 8)
     foreach ($row in @($selectionItemsPanel.Controls)) {
@@ -986,20 +1119,28 @@ function Get-SelectedCleanupItems {
 function Update-CleanupSelectionSummary {
     $selected = @(Get-SelectedCleanupItems)
     $selectedSize = 0.0
-    foreach ($item in $selected) { $selectedSize += [double]$item.Size }
+    $recoverableSize = 0.0
+    foreach ($item in $selected) {
+        if ([string]$item.RecoveryMode -eq 'RecycleBin') { $recoverableSize += [double]$item.Size }
+        else { $selectedSize += [double]$item.Size }
+    }
     $available = @($dashboardState.SelectionItems).Count
     $selectionSummary.Text = if ($available -eq 0) {
         '本次扫描没有发现可释放的缓存或临时文件'
     } elseif ($selected.Count -eq 0) {
         ('已发现 {0} 项；尚未选择' -f $available)
+    } elseif ($recoverableSize -gt 0 -and $selectedSize -gt 0) {
+        ('已选择 {0} / {1} 项，预计立即释放 {2}；另有 {3} 移入回收站' -f $selected.Count, $available, (Format-UiBytes $selectedSize), (Format-UiBytes $recoverableSize))
+    } elseif ($recoverableSize -gt 0) {
+        ('已选择 {0} / {1} 项，约 {2} 将移入回收站（暂不释放空间）' -f $selected.Count, $available, (Format-UiBytes $recoverableSize))
     } else {
         ('已选择 {0} / {1} 项，预计释放 {2}' -f $selected.Count, $available, (Format-UiBytes $selectedSize))
     }
-    $canClean = (-not $jobState.Job) -and $selected.Count -gt 0
+    $canClean = (-not $jobState.Process) -and $selected.Count -gt 0
     $btnClean.Text = if ($selected.Count -gt 0) { '执行所选项' } else { '清理安全项' }
     $btnClean.Enabled = $canClean
-    $btnSelectSuggested.Enabled = (-not $jobState.Job) -and $available -gt 0
-    $btnClearSelection.Enabled = (-not $jobState.Job) -and $selected.Count -gt 0
+    $btnSelectSuggested.Enabled = (-not $jobState.Process) -and $available -gt 0
+    $btnClearSelection.Enabled = (-not $jobState.Process) -and $selected.Count -gt 0
 }
 
 function New-CleanupSelectionRow {
@@ -1095,6 +1236,8 @@ function Show-CleanupSelection {
         $dashboardState.ScannedAt = [string]$payload.ScannedAt
         $dashboardState.SelectedIds = @{}
         $dashboardState.SelectionCheckboxes = @()
+        $assistantState.LastProposedIds = @()
+        $btnAssistantApply.Enabled = $false
         foreach ($control in @($selectionItemsPanel.Controls)) { $control.Dispose() }
         $selectionItemsPanel.Controls.Clear()
         if ($dashboardState.SelectionItems.Count -eq 0) {
@@ -1143,15 +1286,17 @@ $selectionActionBar.Add_Layout({ Update-SelectionActionLayout })
 $selectionItemsPanel.Add_Resize({ Update-CleanupSelectionRows })
 
 function Set-DashboardView {
-    param([ValidateSet('overview', 'selection', 'logs')][string]$View)
+    param([ValidateSet('overview', 'selection', 'logs', 'assistant')][string]$View)
     $navigationState.View = $View
     $isOverview = $View -eq 'overview'
     $isSelection = $View -eq 'selection'
+    $isAssistant = $View -eq 'assistant'
     foreach ($card in $statCards) { $card.Panel.Visible = $isOverview }
     $diskCard.Visible = $isOverview
     $compareCard.Visible = $isOverview
-    $dashboardGrid.Visible = -not $isSelection
+    $dashboardGrid.Visible = (-not $isSelection) -and (-not $isAssistant)
     $selectionView.Visible = $isSelection
+    $assistantView.Visible = $isAssistant
     if ($isSelection) {
         Update-SelectionViewLayout
         $selectionView.PerformLayout()
@@ -1159,6 +1304,9 @@ function Set-DashboardView {
         Update-SelectionActionLayout
         Update-CleanupSelectionRows
         $selectionView.BringToFront()
+    } elseif ($isAssistant) {
+        Update-AssistantComposerLayout
+        $assistantView.BringToFront()
     } else {
         $dashboardGrid.BringToFront()
     }
@@ -1169,6 +1317,7 @@ function Set-DashboardView {
     $navOverview.Selected = $isOverview
     $navSelection.Selected = $isSelection
     $navLogs.Selected = $View -eq 'logs'
+    $navAssistant.Selected = $isAssistant
     $dashboardGrid.PerformLayout()
 }
 
@@ -1268,24 +1417,61 @@ function Update-Dashboard {
 }
 
 function Set-UiBusy([bool]$Busy) {
-    foreach ($b in @($btnScan, $btnReport, $btnExit)) { $b.Enabled = (-not $Busy) }
+    foreach ($b in @($btnScan, $btnReport)) { $b.Enabled = (-not $Busy) }
     $btnClean.Enabled = $false
     $btnSelectSuggested.Enabled = -not $Busy
     $btnClearSelection.Enabled = $false
+    $btnExit.Enabled = $true
+    $btnExit.Text = if ($Busy) { '取消任务' } else { '退出' }
+    $toolTips.SetToolTip($btnExit, $(if ($Busy) { '停止当前扫描或清理任务' } else { '关闭清理工具' }))
     if (-not $Busy) { Update-CleanupSelectionSummary }
 }
 
-function Stop-UiJob {
-    if ($jobState.Job) {
-        try { Stop-Job $jobState.Job -ErrorAction SilentlyContinue } catch {}
-        try { Remove-Job $jobState.Job -Force -ErrorAction SilentlyContinue } catch {}
-        $jobState.Job = $null
+function Stop-UiJob([bool]$Cancel = $false) {
+    $elapsed = 0
+    if ($jobState.Process) {
+        try {
+            if ($Cancel -and -not $jobState.Process.HasExited) { $elapsed = $jobState.Process.Cancel(2000) }
+            else { $jobState.Process.Dispose() }
+        } catch {
+            Append-Log $log ('停止任务失败：' + $_.Exception.Message)
+        }
+        $jobState.Process = $null
+    }
+    return $elapsed
+}
+
+function Read-OperationEvents {
+    $eventFile = $jobState.EventFile
+    if (-not $eventFile -or -not (Test-Path -LiteralPath $eventFile)) { return }
+    try {
+        $lines = @(Get-Content -LiteralPath $eventFile -Encoding UTF8)
+        if ($lines.Count -le $jobState.EventLines) { return }
+        for ($index = $jobState.EventLines; $index -lt $lines.Count; $index++) {
+            if ([string]::IsNullOrWhiteSpace($lines[$index])) { continue }
+            $event = $lines[$index] | ConvertFrom-Json
+            switch ([string]$event.type) {
+                'scan.item.started' {
+                    $status.Text = ('正在扫描 {0}/{1}：{2}' -f $event.data.index, $event.data.total, $event.data.name)
+                }
+                'cleanup.item.completed' {
+                    $status.Text = ('正在清理：已完成 {0}' -f $event.data.itemId)
+                }
+                'operation.failed' {
+                    Append-Log $log ('结构化错误：' + [string]$event.data.code)
+                }
+            }
+        }
+        $jobState.EventLines = $lines.Count
+    } catch {
+        Append-Log $log ('读取结构化进度失败：' + $_.Exception.Message)
     }
 }
 
 $poll = New-Object System.Windows.Forms.Timer
 $poll.Interval = 400
 $poll.Add_Tick({
+    Read-OperationEvents
     $file = $jobState.LogFile
     if ($file -and (Test-Path -LiteralPath $file)) {
         try {
@@ -1302,16 +1488,16 @@ $poll.Add_Tick({
             }
         } catch {}
     }
-    $j = $jobState.Job
-    if ($j -and $j.State -in @('Completed', 'Failed', 'Stopped')) {
+    $process = $jobState.Process
+    if ($process -and $process.HasExited) {
         $poll.Stop()
-        $jobOutput = @()
-        try { $jobOutput = @(Receive-Job $j -ErrorAction SilentlyContinue) } catch {}
-        $exitCode = if ($jobOutput.Count -gt 0 -and $jobOutput[-1] -is [int]) { [int]$jobOutput[-1] } else { 1 }
-        $succeeded = ($j.State -eq 'Completed') -and ($exitCode -eq 0)
+        $exitCode = 1
+        try { $exitCode = [int]$process.Complete() } catch { Append-Log $log ('读取任务结果失败：' + $_.Exception.Message) }
+        $jobState.Process = $null
+        Read-OperationEvents
+        $succeeded = ($exitCode -eq 0)
         $selectionOutput = $jobState.SelectionOutput
         $selectionFile = $jobState.SelectionFile
-        Stop-UiJob
         Set-UiBusy $false
         if ($animationState.Active) { Stop-CleanAnimation }
         $status.Text = Get-CFreeText
@@ -1333,23 +1519,26 @@ $poll.Add_Tick({
         if ($succeeded -and (Test-Path -LiteralPath $reportPath)) {
             Append-Log $log ('报告：' + $reportPath)
         }
-        foreach ($temporaryPath in @($selectionOutput, $selectionFile, $jobState.LogFile)) {
+        foreach ($temporaryPath in @($selectionOutput, $selectionFile, $jobState.LogFile, $jobState.EventFile)) {
             if ($temporaryPath -and (Test-Path -LiteralPath $temporaryPath)) {
                 try { Remove-Item -LiteralPath $temporaryPath -Force -ErrorAction SilentlyContinue } catch {}
             }
         }
         $jobState.LogFile = ''
+        $jobState.EventFile = ''
+        $jobState.EventLines = 0
     }
 })
 
 function Invoke-Main {
-    param([string]$ExtraArgs, [string]$StatusText, [bool]$IsCleaning = $false, [string]$SelectionOutput = '', [string]$SelectionFile = '')
-    if ($jobState.Job) { return }
+    param([string[]]$Arguments, [string]$StatusText, [bool]$IsCleaning = $false, [string]$SelectionOutput = '', [string]$SelectionFile = '')
+    if ($jobState.Process) { return }
     $jobState.LogFile = Join-Path $env:TEMP ('cdc-ui-{0}.log' -f [guid]::NewGuid().ToString('N'))
+    $jobState.EventFile = Join-Path $env:TEMP ('cdc-ui-{0}.ndjson' -f [guid]::NewGuid().ToString('N'))
     $jobState.LastLen = 0
+    $jobState.EventLines = 0
     $jobState.SelectionOutput = $SelectionOutput
     $jobState.SelectionFile = $SelectionFile
-    Set-Content -LiteralPath $jobState.LogFile -Value '' -Encoding Default
     Set-UiBusy $true
     $status.Text = $StatusText
     if ($IsCleaning) {
@@ -1363,28 +1552,139 @@ function Invoke-Main {
     $dashboardState.LastFinished = $null
     Update-Dashboard
     Append-Log $log ''
-    Append-Log $log ('启动主程序  ' + $ExtraArgs)
-
-    $jobState.Job = Start-Job -ScriptBlock {
-        param($script, $extra, $logPath, $workDir)
-        Set-Location -LiteralPath $workDir
-        $line = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "{0}" {1} > "{2}" 2>&1' -f $script, $extra, $logPath
-        cmd.exe /c $line
-        return $LASTEXITCODE
-    } -ArgumentList $mainScript, $ExtraArgs, $jobState.LogFile, $scriptDir
+    $engineArguments = @($Arguments) + @('-EventOutput', $jobState.EventFile)
+    Append-Log $log ('启动主程序  ' + ($engineArguments -join ' '))
+    try {
+        $jobState.Process = Start-CDriveEngineProcess $mainScript $engineArguments $scriptDir $jobState.LogFile
+    } catch {
+        Set-UiBusy $false
+        Append-Log $log ('启动主程序失败：' + $_.Exception.Message)
+        [System.Windows.Forms.MessageBox]::Show('无法启动扫描或清理进程，请查看运行日志。', 'C盘清理', 'OK', 'Error') | Out-Null
+        return
+    }
 
     $poll.Start()
 }
 
+function Add-AssistantMessage {
+    param([string]$Role, [string]$Text)
+    if ([string]::IsNullOrWhiteSpace($Text)) { return }
+    $assistantTranscript.SelectionStart = $assistantTranscript.TextLength
+    $assistantTranscript.SelectionColor = if ($Role -eq '你') { [System.Drawing.Color]::FromArgb(181, 30, 40) } else { [System.Drawing.Color]::FromArgb(56, 70, 80) }
+    $assistantTranscript.SelectionFont = New-Object System.Drawing.Font('Microsoft YaHei UI', 9, [System.Drawing.FontStyle]::Bold)
+    $assistantTranscript.AppendText($Role + '  ')
+    $assistantTranscript.SelectionColor = [System.Drawing.Color]::FromArgb(56, 70, 80)
+    $assistantTranscript.SelectionFont = New-Object System.Drawing.Font('Microsoft YaHei UI', 9)
+    $assistantTranscript.AppendText($Text + "`r`n`r`n")
+    $assistantTranscript.SelectionStart = $assistantTranscript.TextLength
+    $assistantTranscript.ScrollToCaret()
+}
+
+function Get-AssistantScanPayload {
+    return [PSCustomObject]@{
+        SchemaVersion = 2
+        ScanId = $dashboardState.ScanId
+        ManifestHash = $dashboardState.ManifestHash
+        ScannedAt = $dashboardState.ScannedAt
+        Items = @($dashboardState.SelectionItems | ForEach-Object {
+            [PSCustomObject]@{
+                Id = [string]$_.Id
+                Size = [double]$_.Size
+                RecommendationLevel = [string]$_.RecommendationLevel
+                SafetyLevel = [string]$_.SafetyLevel
+                RecoveryMode = [string]$_.RecoveryMode
+            }
+        })
+    }
+}
+
+function Get-AssistantToolContext {
+    return [PSCustomObject]@{
+        ScanPayload = Get-AssistantScanPayload
+        Targets = $copilotTargets
+        BeforeFreeBytes = if ($null -ne $dashboardState.CleanBeforeFree) { [double]$dashboardState.CleanBeforeFree } else { 0.0 }
+        AfterFreeBytes = if ($null -ne $dashboardState.CleanAfterFree) { [double]$dashboardState.CleanAfterFree } else { 0.0 }
+    }
+}
+
+function Invoke-AssistantQuery {
+    $question = [string]$assistantInput.Text
+    if ([string]::IsNullOrWhiteSpace($question)) { return }
+    Add-AssistantMessage '你' $question
+    $assistantInput.Clear()
+    if (@($dashboardState.SelectionItems).Count -eq 0) {
+        Add-AssistantMessage '助手' '还没有可分析的扫描结果。请先点击“开始扫描”。扫描过程不会删除文件。'
+        return
+    }
+    try {
+        $intent = Resolve-CDriveAssistantIntent $question $copilotTargets
+        if ($intent.Intent -eq 'denied') {
+            Add-AssistantMessage '助手' '这个请求涉及路径、命令、绕过规则或替代最终确认，已被安全边界拒绝。你可以询问清理项含义，或让我提供低风险勾选建议。'
+            return
+        }
+        $context = Get-AssistantToolContext
+        $result = Invoke-CDriveAssistantTool ([string]$intent.Intent) $intent.Arguments $context $assistantContractPath
+        switch ([string]$intent.Intent) {
+            'explain_item' {
+                $level = switch ([string]$result.recommendationLevel) { 'Recommended' { '建议清理' } 'Review' { '谨慎选择' } default { '不建议自动处理' } }
+                $recovery = if ([string]$result.recovery -match 'Recycle Bin') { '执行后进入系统回收站，清空前可恢复。' } elseif ([string]$result.recovery -match 'diagnostic') { '仅诊断，助手和清理程序都不会删除。' } else { '属于永久缓存清理，应用可能在之后重新生成。' }
+                Add-AssistantMessage '助手' ("$($result.displayName)`r`n建议：$level`r`n说明：$($result.whyConsiderIt)`r`n恢复：$recovery`r`n最终是否执行仍由你在清理清单中确认。")
+            }
+            'propose_selection' {
+                $assistantState.LastProposedIds = @($result.proposedItemIds)
+                $btnAssistantApply.Enabled = $assistantState.LastProposedIds.Count -gt 0
+                if ($assistantState.LastProposedIds.Count -eq 0) {
+                    Add-AssistantMessage '助手' '本次扫描没有符合“建议清理且低风险”条件的项目，我没有改变任何勾选。'
+                } else {
+                    $names = @($dashboardState.SelectionItems | Where-Object { $assistantState.LastProposedIds -contains [string]$_.Id } | ForEach-Object Name)
+                    $proposalText = ('建议勾选 {0} 项，预计 {1}：{2}。' -f $names.Count, (Format-UiBytes ([double]$result.estimatedBytes)), ($names -join '、'))
+                    $proposalText += "`r`n点击应用建议只会改变勾选，不会开始清理。"
+                    Add-AssistantMessage '助手' $proposalText
+                }
+            }
+            default {
+                Add-AssistantMessage '助手' ("本次有 $($result.itemCount) 个可选项目，候选大小合计 $(Format-UiBytes ([double]$result.totalCandidateBytes))。可以继续询问某个项目名称，或让我给出低风险建议。")
+            }
+        }
+    } catch {
+        Add-AssistantMessage '助手' ('请求未执行：' + $_.Exception.Message)
+    }
+}
+
 $btnScan.Add_Click({
     $selectionOutput = Join-Path $env:TEMP ('cdc-scan-selection-{0}.json' -f [guid]::NewGuid().ToString('N'))
-    $args = '-Report -SelectionOutput "{0}"' -f $selectionOutput
-    Invoke-Main -ExtraArgs $args -StatusText '正在扫描（不删除任何文件）…' -IsCleaning $false -SelectionOutput $selectionOutput
+    $arguments = @('-Report', '-SelectionOutput', $selectionOutput)
+    Invoke-Main -Arguments $arguments -StatusText '正在扫描（不删除任何文件）…' -IsCleaning $false -SelectionOutput $selectionOutput
 })
 
 $navOverview.Add_Click({ Set-DashboardView 'overview' })
 $navSelection.Add_Click({ Set-DashboardView 'selection' })
 $navLogs.Add_Click({ Set-DashboardView 'logs' })
+$navAssistant.Add_Click({ Set-DashboardView 'assistant' })
+
+$btnAssistantSend.Add_Click({ Invoke-AssistantQuery })
+$assistantInput.Add_KeyDown({
+    param($sender, $eventArgs)
+    if ($eventArgs.KeyCode -eq [System.Windows.Forms.Keys]::Enter) {
+        $eventArgs.SuppressKeyPress = $true
+        Invoke-AssistantQuery
+    }
+})
+$btnAssistantApply.Add_Click({
+    if (@($assistantState.LastProposedIds).Count -eq 0) { return }
+    try {
+        $context = Get-AssistantToolContext
+        $selection = Invoke-CDriveAssistantTool 'set_selection' @{ itemIds = @($assistantState.LastProposedIds) } $context $assistantContractPath
+        foreach ($choice in @($dashboardState.SelectionCheckboxes)) {
+            $choice.Checked = @($selection.selectedItemIds) -contains [string]$choice.Tag.Id
+        }
+        Update-CleanupSelectionSummary
+        Add-AssistantMessage '助手' '建议已应用到清理清单。你仍可逐项修改；只有点击“执行所选项”并在确认框同意后才会清理。'
+        Set-DashboardView 'selection'
+    } catch {
+        Add-AssistantMessage '助手' ('无法应用建议：' + $_.Exception.Message)
+    }
+})
 
 $btnSelectSuggested.Add_Click({
     foreach ($choice in @($dashboardState.SelectionCheckboxes)) {
@@ -1414,29 +1714,61 @@ $btnClean.Add_Click({
         return
     }
     $selectedSize = 0.0
-    foreach ($item in $selected) { $selectedSize += [double]$item.Size }
+    $recoverableSize = 0.0
+    foreach ($item in $selected) {
+        if ([string]$item.RecoveryMode -eq 'RecycleBin') { $recoverableSize += [double]$item.Size }
+        else { $selectedSize += [double]$item.Size }
+    }
     $userContent = @($selected | Where-Object { $_.SafetyLevel -eq 'UserContent' })
+    if ($userContent.Count -gt 0 -and @($selected | Where-Object { $_.Id -eq 'recycle-bin' }).Count -gt 0) {
+        [System.Windows.Forms.MessageBox]::Show('为保留微信/QQ 图片与视频的恢复机会，用户内容不能和“清空回收站”在同一批执行。请取消其中一类后重试。', '恢复策略冲突', 'OK', 'Warning') | Out-Null
+        return
+    }
     $userContentWarning = if ($userContent.Count -gt 0) {
-        "`r`n`r`n注意：已选择用户内容项目：$($userContent.Name -join '、')。其中的图片/视频附件删除后不可恢复，聊天记录、数据库与 FileRecv 文件不会被处理。"
+        "`r`n`r`n注意：已选择用户内容项目：$($userContent.Name -join '、')。约 $(Format-UiBytes $recoverableSize) 会移入系统回收站，清空回收站前可恢复；聊天记录、数据库与 FileRecv 文件不会被处理。"
     } else { '' }
-    $msg = "即将清理您勾选的 $($selected.Count) 项，预计释放 $(Format-UiBytes $selectedSize)。$userContentWarning`r`n`r`n只会执行清理清单中已勾选的固定目标；不会删除空间大户、重复目录、聊天数据库、FileRecv、休眠/页面文件。`r`n`r`n是否继续？"
+    $msg = "即将执行您勾选的 $($selected.Count) 项，预计立即释放 $(Format-UiBytes $selectedSize)。$userContentWarning`r`n`r`n只会执行清理清单中已勾选的固定目标；不会删除空间大户、重复目录、聊天数据库、FileRecv、休眠/页面文件。`r`n`r`n是否继续？"
     $r = [System.Windows.Forms.MessageBox]::Show($msg, '确认清理', 'YesNo', 'Warning', 'Button2')
     if ($r -ne [System.Windows.Forms.DialogResult]::Yes) { return }
     $selectionFile = New-SelectedCleanupFile
     if (-not $selectionFile) { return }
     Start-CleanAnimation
-    $args = '-Clean -Force -Report -SelectionFile "{0}"' -f $selectionFile
-    Invoke-Main -ExtraArgs $args -StatusText '正在清理已选项目…' -IsCleaning $true -SelectionFile $selectionFile
+    $arguments = @('-Clean', '-Force', '-Report', '-SelectionFile', $selectionFile)
+    Invoke-Main -Arguments $arguments -StatusText '正在清理已选项目…' -IsCleaning $true -SelectionFile $selectionFile
 })
 
-$btnExit.Add_Click({ $form.Close() })
+$btnExit.Add_Click({
+    if ($jobState.Process) {
+        $poll.Stop()
+        $elapsed = Stop-UiJob $true
+        $dashboardState.IsCleaning = $false
+        $dashboardState.LastAction = '任务已取消'
+        $dashboardState.LastFinished = Get-Date
+        Set-UiBusy $false
+        $status.Text = Get-CFreeText
+        Append-Log $log ("--- 任务已取消，确认耗时 $elapsed ms ---")
+        foreach ($temporaryPath in @($jobState.SelectionOutput, $jobState.SelectionFile, $jobState.LogFile, $jobState.EventFile)) {
+            if ($temporaryPath -and (Test-Path -LiteralPath $temporaryPath)) {
+                try { Remove-Item -LiteralPath $temporaryPath -Force -ErrorAction SilentlyContinue } catch {}
+            }
+        }
+        $jobState.SelectionOutput = ''
+        $jobState.SelectionFile = ''
+        $jobState.LogFile = ''
+        $jobState.EventFile = ''
+        $jobState.EventLines = 0
+        Update-Dashboard
+        return
+    }
+    $form.Close()
+})
 $form.Add_FormClosing({
     $poll.Stop()
     $livePulseTimer.Stop()
     Stop-LogoAnimation
     Stop-CleanAnimation
-    Stop-UiJob
-    foreach ($temporaryPath in @($jobState.SelectionOutput, $jobState.SelectionFile, $jobState.LogFile)) {
+    Stop-UiJob $true | Out-Null
+    foreach ($temporaryPath in @($jobState.SelectionOutput, $jobState.SelectionFile, $jobState.LogFile, $jobState.EventFile)) {
         if ($temporaryPath -and (Test-Path -LiteralPath $temporaryPath)) {
             try { Remove-Item -LiteralPath $temporaryPath -Force -ErrorAction SilentlyContinue } catch {}
         }

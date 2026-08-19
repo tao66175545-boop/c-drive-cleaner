@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "objective": "A safe, modular, responsive C-drive cleaner with an optional constrained AI copilot.",
+  "objectiveStatus": "completed",
+  "completedAt": "2026-08-19",
+  "currentPhase": "P6-shell-migration",
+  "iteration": 7,
+  "phases": [
+    {
+      "id": "P0-contracts",
+      "status": "completed",
+      "exitCriteria": [
+        "rule_catalog_contract",
+        "structured_event_contract",
+        "ai_tool_boundary_contract",
+        "legacy_validation_suite"
+      ]
+    },
+    {
+      "id": "P1-process",
+      "status": "completed",
+      "exitCriteria": ["typed_ipc", "progress_latency", "cancellation_ack", "typed_errors"]
+    },
+    {
+      "id": "P2-scan-providers",
+      "status": "completed",
+      "exitCriteria": ["baseline_benchmark", "provider_fallback", "fast_provider_speedup", "incremental_capability_probe"]
+    },
+    {
+      "id": "P3-execution-broker",
+      "status": "completed",
+      "exitCriteria": ["least_privilege", "operation_journal", "recovery_decision"]
+    },
+    {
+      "id": "P4-readonly-copilot",
+      "status": "completed",
+      "exitCriteria": ["offline_core", "privacy_redaction", "explanation_quality"]
+    },
+    {
+      "id": "P5-constrained-agent",
+      "status": "completed",
+      "exitCriteria": ["allowlisted_tools", "confirmation_boundary", "prompt_injection_tests"]
+    },
+    {
+      "id": "P6-shell-migration",
+      "status": "completed",
+      "exitCriteria": ["migration_metrics", "contract_parity", "rollback_path"]
+    }
+  ]
+}

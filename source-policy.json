@@ -2,6 +2,9 @@
   "schemaVersion": 1,
   "requiredFiles": [
     "AGENTS.md",
+    "ARCHITECTURE.md",
+    "architecture-loop.json",
+    "migration-decision.json",
     ".gitattributes",
     ".gitignore",
     ".ui-smoke-test.ps1",
@@ -19,6 +22,9 @@
   "requiredDirectories": [
     ".github/workflows",
     "assets",
+    "contracts",
+    "core",
+    "rules",
     "tests",
     "tools"
   ],
@@ -29,6 +35,9 @@
     "C-Drive-Cleaner.ps1",
     "C-Drive-Cleaner-UI.ps1",
     "C盘清理.bat",
-    "assets/"
+    "assets/",
+    "contracts/",
+    "core/",
+    "rules/"
   ]
 }

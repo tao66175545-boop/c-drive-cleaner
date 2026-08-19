@@ -31,3 +31,7 @@ jobs:
       - name: Run project validation suite
         shell: powershell
         run: .\tools\Invoke-ProjectValidation.ps1
+
+      - name: Evaluate architecture loop gate
+        shell: powershell
+        run: .\tools\Invoke-ArchitectureLoop.ps1

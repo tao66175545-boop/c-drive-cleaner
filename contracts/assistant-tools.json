@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "policy": {
+    "aiOptional": true,
+    "finalCleanupApproval": "user-interface-only",
+    "rawPathsAllowed": false,
+    "shellCommandsAllowed": false
+  },
+  "tools": [
+    {
+      "name": "start_scan",
+      "risk": "read-only",
+      "parameters": {
+        "scope": ["recommended", "user-profile", "full-diagnostic"]
+      }
+    },
+    {
+      "name": "get_scan_summary",
+      "risk": "read-only",
+      "parameters": {}
+    },
+    {
+      "name": "explain_item",
+      "risk": "read-only",
+      "parameters": {
+        "itemId": "stable-rule-id"
+      }
+    },
+    {
+      "name": "propose_selection",
+      "risk": "advisory",
+      "parameters": {
+        "goal": ["free-space", "low-risk", "developer-cache"],
+        "riskLevel": ["recommended-only", "include-review"]
+      }
+    },
+    {
+      "name": "set_selection",
+      "risk": "reversible-ui-state",
+      "parameters": {
+        "itemIds": "stable-rule-id-array"
+      }
+    },
+    {
+      "name": "show_cleanup_confirmation",
+      "risk": "user-confirmation-required",
+      "parameters": {
+        "planId": "validated-plan-id"
+      }
+    },
+    {
+      "name": "open_system_settings",
+      "risk": "navigation",
+      "parameters": {
+        "settingId": "allowlisted-setting-id"
+      }
+    },
+    {
+      "name": "compare_cleanup_results",
+      "risk": "read-only",
+      "parameters": {}
+    }
+  ],
+  "forbiddenCapabilities": [
+    "delete_path",
+    "execute_shell",
+    "execute_powershell",
+    "approve_cleanup",
+    "download_and_execute",
+    "write_rule_pack"
+  ]
+}
