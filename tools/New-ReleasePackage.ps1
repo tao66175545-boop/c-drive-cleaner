@@ -64,7 +64,11 @@ foreach ($relativePath in $packageFiles) {
 }
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'assets') -Destination $stagePath -Recurse -Force
 
-$packageName = "C盘智能清理工具包-v$Version.zip"
+# GitHub 会清洗非 ASCII Release 资产名，导致清单 URL 与实际文件名不一致。
+$packageName = "C-Drive-Cleaner-v$Version.zip"
+if ($packageName -notmatch '^[A-Za-z0-9._-]+$') {
+    throw "Release asset name is not GitHub-safe: $packageName"
+}
 $packagePath = Join-Path $resolvedOutput $packageName
 if (Test-Path -LiteralPath $packagePath) {
     Remove-Item -LiteralPath $packagePath -Force

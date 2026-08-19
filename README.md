@@ -4,7 +4,7 @@ Windows C 盘扫描与清理工具。它先分析，再由用户逐项选择是�
 
 ## 下载与运行
 
-从 [Releases](https://github.com/tao66175545-boop/c-drive-cleaner/releases) 下载最新版本的工具包 ZIP，解压后双击 `C盘清理.bat`。
+从 [Releases](https://github.com/tao66175545-boop/c-drive-cleaner/releases) 下载最新版本的 `C-Drive-Cleaner-vX.Y.Z.zip`，解压后双击 `C盘清理.bat`。
 
 运行环境：Windows 10/11、Windows PowerShell 5.1、Windows Forms。
 

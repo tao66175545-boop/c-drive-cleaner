@@ -10,7 +10,7 @@
 
 ```text
 GitHub Release
-  ├─ C盘智能清理工具包-1.2.0.zip
+  ├─ C-Drive-Cleaner-v1.2.0.zip
   ├─ release.json
   ├─ release.json.sig
   └─ 更新说明
