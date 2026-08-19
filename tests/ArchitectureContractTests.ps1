@@ -30,11 +30,14 @@ try {
 }
 
 $assistantContract = Get-Content -LiteralPath (Join-Path $projectRoot 'contracts\assistant-tools.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-if ($assistantContract.schemaVersion -ne 1 -or -not $assistantContract.policy.aiOptional) { throw 'AI tool policy must remain optional.' }
+if ($assistantContract.schemaVersion -ne 2 -or -not $assistantContract.policy.aiOptional -or -not $assistantContract.policy.strictToolSchemas) { throw 'AI tool policy must remain optional and strict.' }
 $toolNames = @($assistantContract.tools | ForEach-Object name)
 $forbidden = @($assistantContract.forbiddenCapabilities)
 if (@($toolNames | Where-Object { $forbidden -contains $_ }).Count -gt 0) { throw 'AI exposes a forbidden capability.' }
 $contractText = $assistantContract.tools | ConvertTo-Json -Depth 10 -Compress
 if ($contractText -match '(?i)path|command|shell|powershell') { throw 'AI tool parameters expose paths or commands.' }
 if ([string]$assistantContract.policy.finalCleanupApproval -ne 'user-interface-only') { throw 'AI must not own final cleanup approval.' }
+foreach ($tool in @($assistantContract.tools)) {
+    if ($tool.parameters.type -ne 'object' -or $tool.parameters.additionalProperties -ne $false) { throw "AI tool schema is not strict: $($tool.name)" }
+}
 Write-Output "[OK] AI tool boundary -> $($toolNames.Count) allowlisted tools"

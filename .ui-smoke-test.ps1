@@ -59,7 +59,7 @@ function Invoke-ButtonLifecycle($Button, [string]$Method, [object[]]$Arguments) 
     [void]$callback.Invoke($Button, $Arguments)
 }
 
-$allButtons = @($navOverview, $navLogs, $navSelection, $navAssistant, $btnScan, $btnReport, $btnClean, $btnExit, $btnAssistantApply, $btnAssistantSend)
+$allButtons = @($navOverview, $navLogs, $navSelection, $navAssistant, $btnScan, $btnReport, $btnClean, $btnExit, $btnAssistantSettings, $btnAssistantStop, $btnAssistantApply, $btnAssistantSend)
 foreach ($button in $allButtons) {
     if ($button.GetType().BaseType -ne [System.Windows.Forms.Control]) {
         throw ('Incorrect button base class: ' + $button.Text)
@@ -117,10 +117,42 @@ $onClick = [CDriveRoundedButton].GetMethod('OnClick', [System.Reflection.Binding
 if ($dashboardState.SelectedIds.Count -ne 1 -or -not $btnClean.Enabled) { throw 'Suggested selection did not enable the scoped clean action.' }
 if ($dashboardState.SelectedIds.ContainsKey('user-wechat-media')) { throw 'Suggested selection must not include user media.' }
 Set-DashboardView 'assistant'
+$assistantState.Config = $null
 $assistantInput.Text = 'recommend safe cleanup'
 Invoke-AssistantQuery
 if ($navigationState.View -ne 'assistant' -or @($assistantState.LastProposedIds).Count -ne 1) { throw 'Assistant did not produce a constrained proposal.' }
 if ($assistantState.LastProposedIds[0] -ne 'user-temp' -or -not $btnAssistantApply.Enabled) { throw 'Assistant proposal crossed the stable-ID or risk boundary.' }
+$agentFixtureRoot = Join-Path $env:TEMP ('cdc-ui-agent-fixture-' + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $agentFixtureRoot -Force | Out-Null
+$agentDataRoot = $agentFixtureRoot
+$agentConfigPath = Join-Path $agentFixtureRoot 'provider.json'
+$agentConfig = [PSCustomObject]@{ schemaVersion = 1; providerId = 'fixture-provider'; protocol = 'chat-completions'; baseUrl = 'https://api.example.com/v1'; model = 'fixture-model'; stream = $true; timeoutSeconds = 30; maxOutputTokens = 512; credentialId = 'fixture'; cloudConsent = $null }
+$agentConfig = Grant-CDriveAgentCloudConsent $agentConfig
+$null = Save-CDriveAgentConfig $agentConfig $agentConfigPath
+$assistantState.Config = $agentConfig
+$agentSsePath = Join-Path $agentFixtureRoot 'response.sse'
+[System.IO.File]::WriteAllLines($agentSsePath, @(
+    'data: {"choices":[{"delta":{"content":"Fixture "}}]}',
+    'data: {"choices":[{"delta":{"content":"stream complete."}}]}',
+    'data: [DONE]'
+), [System.Text.UTF8Encoding]::new($false))
+$assistantState.FixtureSsePath = $agentSsePath
+$assistantInput.Text = 'summarize current scan'
+Invoke-AssistantQuery
+$agentDeadline = [DateTime]::UtcNow.AddSeconds(8)
+while ($assistantState.Process -and [DateTime]::UtcNow -lt $agentDeadline) {
+    [System.Windows.Forms.Application]::DoEvents()
+    Start-Sleep -Milliseconds 20
+}
+if ($assistantState.Process) { throw 'Fixture Agent did not complete without blocking the UI.' }
+if ($assistantTranscript.Text -notmatch 'Fixture stream complete\.') { throw ('Fixture Agent stream was not rendered in the assistant transcript. Transcript: ' + $assistantTranscript.Text) }
+$assistantState.FixtureSsePath = ''
+$navCall = [PSCustomObject]@{ callId = 'ui_fixture_nav'; name = 'navigate_view'; argumentsJson = '{"view":"overview"}' }
+$navResult = Invoke-AgentUiTool $navCall
+if ($navResult.view -ne 'overview' -or $navigationState.View -ne 'overview') { throw 'Agent UI tool did not navigate through the broker.' }
+try { $null = Invoke-AgentUiTool $navCall; throw 'Agent UI replay was accepted.' }
+catch { if ($_.Exception.Message -notmatch 'AGENT_TOOL_REPLAY') { throw } }
+Set-DashboardView 'assistant'
 $assistantPreview = [System.Drawing.Bitmap]::new($form.ClientSize.Width, $form.ClientSize.Height)
 $form.DrawToBitmap($assistantPreview, [System.Drawing.Rectangle]::new(0, 0, $assistantPreview.Width, $assistantPreview.Height))
 $assistantPreview.Save((Join-Path (Get-Location) 'ui-assistant-preview.png'), [System.Drawing.Imaging.ImageFormat]::Png)
@@ -155,6 +187,7 @@ $compactPreview.Dispose()
 $form.Close()
 $form.Dispose()
 if (Test-Path -LiteralPath $selectionFixturePath) { [System.IO.File]::Delete($selectionFixturePath) }
+if (Test-Path -LiteralPath $agentFixtureRoot) { Remove-Item -LiteralPath $agentFixtureRoot -Recurse -Force }
 '@
 $uiSource = $uiSource.Replace('[void]$form.ShowDialog()', $replacement)
 Invoke-Expression $uiSource

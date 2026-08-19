@@ -25,3 +25,9 @@ artifacts/
 
 # Local-only state used while preparing GitHub candidate updates
 .github-sync-state.json
+
+# Local AI Agent credentials, provider settings, and transient turn files
+.agent-local/
+*.credential
+agent-turn-*.json
+agent-events-*.ndjson

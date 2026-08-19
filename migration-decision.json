@@ -21,6 +21,7 @@
       "ExecutionBrokerTests.ps1",
       "CopilotTests.ps1",
       "AssistantToolTests.ps1",
+      "AgentRuntimeTests.ps1",
       ".ui-smoke-test.ps1"
     ]
   },

@@ -69,6 +69,12 @@ change reversible UI state; they cannot start the cleanup process.
 6. P5 Constrained agent: scan and selection tools; UI confirmation remains final.
 7. P6 Shell migration: move proven core boundaries to .NET only where metrics justify it.
 8. P7 Incremental scan: consume NTFS USN deltas through a bounded, path-free stable-ID index and preserve full-scan and deletion-time verification fallbacks.
+9. P8 Provider foundation: isolate model calls in Agent Host and protect BYOK credentials with Windows DPAPI CurrentUser.
+10. P9 Streaming chat: render NDJSON/SSE responses without blocking WinForms and preserve deterministic offline fallback.
+11. P10 Strict tools: support Responses and Chat Completions tool calls through schema v2; text-only providers remain read-only.
+12. P11 Reversible UI: broker navigation, scan control, and stable-ID selection with replay rejection and hard loop limits.
+13. P12 Confirmation bridge: route Agent cleanup intent through the same native selection checks and user confirmation as the toolbar.
+14. P13 Hardening: verify privacy request snapshots, credential removal, injection rejection, UI cancellation, packaging, and full release gates.
 
 P6 currently defers a full rewrite. Directory sizing and child-process control
 already use focused C# implementations, while the PowerShell contracts retain

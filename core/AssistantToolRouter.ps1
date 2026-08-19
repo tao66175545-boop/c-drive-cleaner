@@ -2,7 +2,7 @@ function Get-CDriveAssistantToolContract {
     param([string]$ContractPath)
     if (-not (Test-Path -LiteralPath $ContractPath -PathType Leaf)) { throw 'Assistant tool contract is missing.' }
     $contract = Get-Content -LiteralPath $ContractPath -Raw -Encoding UTF8 | ConvertFrom-Json
-    if ([int]$contract.schemaVersion -ne 1) { throw 'Unsupported assistant tool contract.' }
+    if ([int]$contract.schemaVersion -notin @(1, 2)) { throw 'Unsupported assistant tool contract.' }
     return $contract
 }
 
