@@ -127,6 +127,18 @@ try {
     if ($eventText.Contains($secret) -or $eventText -match '(?i)authorization|bearer') { throw 'Agent events leaked a credential.' }
     Write-Output '[OK] agent host -> one model call, NDJSON events, no credential leakage'
 
+    $agentHostSource = Get-Content -LiteralPath (Join-Path $projectRoot 'AgentHost.ps1') -Raw -Encoding UTF8
+    if ($agentHostSource -notmatch "Arguments\s*=\s*'--config -'" -or $agentHostSource -notmatch 'RedirectStandardInput\s*=\s*\$true') {
+        throw 'Secure curl transport does not inject configuration through standard input.'
+    }
+    if ($agentHostSource -match '(?i)--insecure|\s-k(?:\s|''|")' -or $agentHostSource -match 'ServerCertificateCustomValidationCallback') {
+        throw 'Agent transport disables certificate verification.'
+    }
+    if ($agentHostSource -match 'Arguments\s*=.*(?:Bearer|ApiKey|apiKey)') {
+        throw 'Agent transport exposes a credential in process arguments.'
+    }
+    Write-Output '[OK] Windows transport -> TLS-compatible curl, certificate verification, no key in arguments'
+
     $sse = @(
         'data: {"choices":[{"delta":{"content":"Safe "}}]}',
         'data: {"choices":[{"delta":{"content":"answer","tool_calls":[{"index":0,"id":"call_2","function":{"name":"navigate_view","arguments":"{\"view\":\"selection\"}"}}]}}]}',

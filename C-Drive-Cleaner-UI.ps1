@@ -1952,6 +1952,21 @@ function Convert-AgentToolResultText {
     return ($Result | ConvertTo-Json -Depth 12 -Compress)
 }
 
+function Get-AgentFailureDisplayText {
+    param([string]$Message)
+    if ($Message -match 'AGENT_HTTP_(401|403)') { return '云端鉴权失败，请在“配置”中检查 API Key、模型权限和账户状态。' }
+    if ($Message -match 'AGENT_HTTP_404') { return '云端接口路径不存在，请检查 API 基础地址是否包含供应商要求的 /v1。' }
+    if ($Message -match 'AGENT_HTTP_429') { return '云端请求达到速率或额度限制，请稍后重试并检查账户额度。' }
+    if ($Message -match 'AGENT_HTTP_5\d\d') { return '云端供应商或其上游模型暂时异常，请稍后重试；当前界面状态未改变。' }
+    if ($Message -match 'AGENT_DNS_FAILED') { return '无法解析云端域名，请检查网络或 API 基础地址。' }
+    if ($Message -match 'AGENT_CONNECT_FAILED') { return '无法连接云端服务，请检查端口、防火墙或服务状态。' }
+    if ($Message -match 'AGENT_TLS_FAILED') { return '云端 TLS 握手失败，请检查服务端 TLS 配置。' }
+    if ($Message -match 'AGENT_CERTIFICATE_FAILED') { return '云端证书验证失败；程序不会绕过证书校验。' }
+    if ($Message -match 'AGENT_TIMEOUT') { return '云端响应超时，请稍后重试，或在配置中关闭流式响应。' }
+    if ($Message -match 'AGENT_RESPONSE_JSON|AGENT_SSE_JSON') { return '云端返回格式与所选协议不匹配，请检查 Responses / Chat Completions 设置。' }
+    return '云端请求失败，已保留现有界面状态。请检查 API 地址、协议、模型和网络后重试。'
+}
+
 function Invoke-AgentUiTool {
     param($Call)
     $arguments = [PSCustomObject]@{}
@@ -2102,8 +2117,8 @@ function Complete-AgentProcess {
     }
     Complete-AssistantDelta
     if (-not $Succeeded -or $null -eq $CompletedEvent) {
-        $detail = '云端请求失败，已保留现有界面状态。'
-        if ($CompletedEvent -and $CompletedEvent.data.message) { $detail += ' ' + [string]$CompletedEvent.data.message }
+        $failureMessage = if ($CompletedEvent -and $CompletedEvent.data.message) { [string]$CompletedEvent.data.message } else { '' }
+        $detail = Get-AgentFailureDisplayText $failureMessage
         Add-AssistantMessage '助手' $detail
         Remove-AgentTurnFiles
         Set-AgentBusy $false

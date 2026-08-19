@@ -77,7 +77,7 @@ function Set-CDriveAgentCredential {
         [string]$Root = ''
     )
 
-    if ([string]::IsNullOrWhiteSpace($ApiKey) -or $ApiKey.Length -gt 8192) { throw '[AGENT_CREDENTIAL_VALUE] API key is empty or too long.' }
+    if ([string]::IsNullOrWhiteSpace($ApiKey) -or $ApiKey.Length -gt 8192 -or $ApiKey -match '[\r\n]') { throw '[AGENT_CREDENTIAL_VALUE] API key is empty, too long, or contains line breaks.' }
     if ($CredentialId -notmatch '^[a-zA-Z0-9._-]{1,100}$') { throw '[AGENT_CREDENTIAL_ID] Credential ID is invalid.' }
     Add-Type -AssemblyName System.Security
     $dataRoot = Get-CDriveAgentDataRoot $Root
