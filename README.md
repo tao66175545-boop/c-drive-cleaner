@@ -43,6 +43,16 @@ OTA-在线升级方案.md      GitHub Releases 在线升级架构
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\C-Drive-Cleaner.ps1 -SelfTest
 ```
 
+## 提交更新
+
+功能或版本修改完成后运行：
+
+```powershell
+.\tools\Submit-UpdateCandidate.ps1
+```
+
+脚本会执行完整验证、检查本地/远端漂移、生成源码指纹并创建候选 PR。维护者只需在 PR 中确认一次 Merge；合并后的验证、Release 构建、校验和生成与发布后一致性验收均由 GitHub Actions 自动完成。详细规则见 [AI自动化GitHub发布工作流.md](AI自动化GitHub发布工作流.md)。
+
 ## 版本与更新
 
 当前稳定版本由 [Releases](https://github.com/tao66175545-boop/c-drive-cleaner/releases/latest) 提供。发布包与 `release.json` 由 GitHub Actions 同一次构建生成；客户端自动更新将在代码签名、独立更新器和回滚机制完成后启用。

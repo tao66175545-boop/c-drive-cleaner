@@ -22,3 +22,6 @@ artifacts/
 .playwright-cli/
 *.tmp
 *.log
+
+# Local-only state used while preparing GitHub candidate updates
+.github-sync-state.json

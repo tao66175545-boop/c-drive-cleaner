@@ -1,0 +1,189 @@
+{
+    "schemaVersion":  1,
+    "version":  "1.1.2",
+    "baseCommit":  "1927efbfb1f4c6bf457331f99c441d1f3d1df773",
+    "sourceFingerprint":  "b4c32a7b8147b74ffd924d8706565ecdaeb0f0d207b7a427289c4a47ed7427ff",
+    "generatedAt":  "2026-08-19T01:44:36.3896819Z",
+    "files":  [
+                  {
+                      "path":  ".github/workflows/consistency.yml",
+                      "sha256":  "a86847a03811dce94cc02507d0aa4b18e4c41d46f2a60da45c6a1e143c7b0201",
+                      "gitBlobSha1":  "30fa0f9ea17f5806c764b4ae2519226c159d8201",
+                      "size":  3381
+                  },
+                  {
+                      "path":  ".github/workflows/release.yml",
+                      "sha256":  "9e61e671423ef835c111ea52e690dea4d6ecb77b6c05da42ae2767f1ac0ea92d",
+                      "gitBlobSha1":  "30f4d8c193623306b7c4d6f87638f300e6a4e1fe",
+                      "size":  3873
+                  },
+                  {
+                      "path":  ".github/workflows/validate.yml",
+                      "sha256":  "2cbee7cbf14c2024285f782244a27e052d9344992c998f7e756c204256ae9f6b",
+                      "gitBlobSha1":  "18cb1a1ba68afb832774f6bf0ddd2752e5315407",
+                      "size":  872
+                  },
+                  {
+                      "path":  ".gitignore",
+                      "sha256":  "5d2e759e3232476e3ddef17e9a1f49d066cad9502ac24c9270b636febca588f6",
+                      "gitBlobSha1":  "ca652e530f48fcc19f9b4d3bbf3514910210d2b0",
+                      "size":  531
+                  },
+                  {
+                      "path":  ".ui-smoke-test.ps1",
+                      "sha256":  "6c74129ac6080d4575db6280eb44b8f97ce1f1eec5163a14d0206903b032c5b3",
+                      "gitBlobSha1":  "ce3eaa570f6f21ced07cf6069e85f0e28440668b",
+                      "size":  9625
+                  },
+                  {
+                      "path":  "AI自动化GitHub发布工作流.md",
+                      "sha256":  "4e8a056794c7860d2f9cc9ab9deaf8034f402918551b397df5902f655d770896",
+                      "gitBlobSha1":  "fb318da13d4643bcfdf361874091f0698ae1bd6b",
+                      "size":  6501
+                  },
+                  {
+                      "path":  "assets/cleaning-sprite-source.png",
+                      "sha256":  "fcbf44f7dbcdeff3973aceb58cd3d18268bf5ac38e4024dfc5299383ae15a9ad",
+                      "gitBlobSha1":  "4fb79de41f21f4f1c6fa3626f4d93bf45b983a93",
+                      "size":  984741
+                  },
+                  {
+                      "path":  "assets/logo-animated.svg",
+                      "sha256":  "bc30fe9c4f610dea9d3eef5d252bdae19c10811e47a4d65c191ebc7bce76556f",
+                      "gitBlobSha1":  "6a522c708b71ece92b781ff027bab4aa259e7bf1",
+                      "size":  64339
+                  },
+                  {
+                      "path":  "assets/logo-animated-sprite.png",
+                      "sha256":  "b7e6cfcdb4889e8f60609c4b2539fb828716be0d6c49c6dd826ea0b388b3e3c4",
+                      "gitBlobSha1":  "23a196dcc0321c55112c61c8cfeb49171564d36f",
+                      "size":  173175
+                  },
+                  {
+                      "path":  "assets/sugon-cloud-logo-red.png",
+                      "sha256":  "4f62330214f946a1ae1f6ab655e222f28268389d6d0ad835d58fa07c7faefc68",
+                      "gitBlobSha1":  "825213fe0288e75e54cc362d757f1f093ad3afef",
+                      "size":  13260
+                  },
+                  {
+                      "path":  "C-Drive-Cleaner.ps1",
+                      "sha256":  "591b5f9bc70fd5d2e6b083f5478e550fe0b60c014476e49a4879e3d49505dbe4",
+                      "gitBlobSha1":  "035bd50080ee05f84f5f1930b519cb3a4a51e7cf",
+                      "size":  58814
+                  },
+                  {
+                      "path":  "C-Drive-Cleaner-UI.ps1",
+                      "sha256":  "09fc4b49a0d34d66b4245c91b144cc90830d27d6f36b867d9e06f42db6f84e7d",
+                      "gitBlobSha1":  "98693f01073bd82c31eb23a86cb04db4d1faed9a",
+                      "size":  72583
+                  },
+                  {
+                      "path":  "C盘清理.bat",
+                      "sha256":  "917864c4542bacb45d704b633f3b42ab1c003860cabe53cba0f4c925853cb97d",
+                      "gitBlobSha1":  "fd3149844ac7bf882e61e3d131a8b5d585f1b170",
+                      "size":  354
+                  },
+                  {
+                      "path":  "OTA-在线升级方案.md",
+                      "sha256":  "5a46e6229f80dce32327b291bd40c85263beeca28db0f02327339529c7f40ff2",
+                      "gitBlobSha1":  "634e55a3002825da5d070722cb09ace1f25dbd22",
+                      "size":  4001
+                  },
+                  {
+                      "path":  "README.md",
+                      "sha256":  "ca996686324a833e7c39406da2684b22ddc96c33f5cb1ca765bd776e207be9e3",
+                      "gitBlobSha1":  "c959542890e224a3377981c9abea3f84f254fd48",
+                      "size":  2892
+                  },
+                  {
+                      "path":  "README-使用说明.txt",
+                      "sha256":  "c4479392434853bcadf714893cc1220963400373af486a75720d25a146130282",
+                      "gitBlobSha1":  "41e8b5db04e7aba3e6e0fe1dcd723063fc79d247",
+                      "size":  2488
+                  },
+                  {
+                      "path":  "RELEASE_NOTES_v1.0.0.md",
+                      "sha256":  "5e4b153ccc4dd9ffcedcadbd8aa6b82f7faf5925f2b5315c4828d895c19c50a2",
+                      "gitBlobSha1":  "4132574b2263793e40be3ee0c85a0c7deb47b833",
+                      "size":  830
+                  },
+                  {
+                      "path":  "RELEASE_NOTES_v1.1.0.md",
+                      "sha256":  "276cd27f7a0f97670da6fa3b8fcae665c95898b929deee3ae5918b49d592d0fc",
+                      "gitBlobSha1":  "c406a1b82e2cffaa37692a7cc1b8d3174cbd46fb",
+                      "size":  1234
+                  },
+                  {
+                      "path":  "RELEASE_NOTES_v1.1.1.md",
+                      "sha256":  "d7e147e0e8758bb83ea1fb3d133a4f2f3907597998d56833141e37b7535856ec",
+                      "gitBlobSha1":  "a36d082718999a603cbf06a73de17d60166c5448",
+                      "size":  713
+                  },
+                  {
+                      "path":  "RELEASE_NOTES_v1.1.2.md",
+                      "sha256":  "8ed1d5c1e388aae733e22823ba1f074746bdcc9574099c357ceb46fb939f866f",
+                      "gitBlobSha1":  "6ffe982cb4eace3498b0f247363ae29bf6297440",
+                      "size":  598
+                  },
+                  {
+                      "path":  "source-policy.json",
+                      "sha256":  "73d3dddd395d0c739c4d6fa363f67f94ff35037e834138ce3dd55cef548f005b",
+                      "gitBlobSha1":  "8f2a24433b59708db92377268d8810325f506491",
+                      "size":  634
+                  },
+                  {
+                      "path":  "tests/PlanContractTests.ps1",
+                      "sha256":  "54b4492b9003e9cbe13657d1da8e8537226d80422366de64004172d96197c7bb",
+                      "gitBlobSha1":  "096fa900ab27790ce5416db3528777ecf8bf6bad",
+                      "size":  2734
+                  },
+                  {
+                      "path":  "tools/Enable-GitHubWorkflowGuard.ps1",
+                      "sha256":  "05cdf2efd39cfd6ec1e62f1ce8da46d3af0fae737334a2e32ef3feb26d4d524e",
+                      "gitBlobSha1":  "a1187ab0367a4d26db3239855bb4592c0db1b11d",
+                      "size":  2224
+                  },
+                  {
+                      "path":  "tools/Get-SourceManifest.ps1",
+                      "sha256":  "8c4b0b91d74d8c6abd50d6129a2cf1f7a7a340b8e7308bfb6fc8e58b2ac6a9d0",
+                      "gitBlobSha1":  "d3189ed1f238218ec2c3593e4a7f19ea7c6134c3",
+                      "size":  6882
+                  },
+                  {
+                      "path":  "tools/Invoke-ProjectValidation.ps1",
+                      "sha256":  "17a4b9de3370984f91c9c6885eeb1222ce1c0474dbc580281f37697c4606604d",
+                      "gitBlobSha1":  "7afdcc80d3f3719183b2f553a258f84a9c227097",
+                      "size":  2994
+                  },
+                  {
+                      "path":  "tools/New-ReleasePackage.ps1",
+                      "sha256":  "a4c55d3853d1fcc48b5ef2c6263994d24e51c169d120b9efb6432d25aa9d61fd",
+                      "gitBlobSha1":  "c954b3f97c2cc8e6dc459607cf71c0125ac6df1b",
+                      "size":  3915
+                  },
+                  {
+                      "path":  "tools/Submit-UpdateCandidate.ps1",
+                      "sha256":  "3478326248784098b7abcd56f7d91e81b6acc551106a64ca11e628ec848c33b6",
+                      "gitBlobSha1":  "6e66a353ae89d7e4b699224fcf7ca1d0dd6a1eaa",
+                      "size":  13179
+                  },
+                  {
+                      "path":  "tools/Test-VersionPolicy.ps1",
+                      "sha256":  "00da5c5e5b0e118edb557556d46cb8c9e203c8d2dfa695c72f6412e655e2e3ee",
+                      "gitBlobSha1":  "534f9b14d95dfa66a85e26ad5031cce96798a2b5",
+                      "size":  3833
+                  },
+                  {
+                      "path":  "UI-DESIGN-RULES.md",
+                      "sha256":  "890248be63f9c8c2aa51c12b4d86e262fde06b2b43218a24023c5258311893e5",
+                      "gitBlobSha1":  "9e8131f896af50ca3483049b9622463a4895db80",
+                      "size":  5554
+                  },
+                  {
+                      "path":  "version.json",
+                      "sha256":  "f00c2e76d4c6b0d5eaefaf63732a7d58f95ecaac61607569ca2f31fbd5665fc0",
+                      "gitBlobSha1":  "7c4bebeeb65d1e780c447401946d5431087da4c5",
+                      "size":  196
+                  }
+              ]
+}

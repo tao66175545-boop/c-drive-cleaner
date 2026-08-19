@@ -1,0 +1,72 @@
+name: Verify Published Release
+
+on:
+  workflow_run:
+    workflows: ["Publish Release"]
+    branches: [main]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  release-consistency:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: windows-latest
+    steps:
+      - name: Check out published revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Verify source fingerprint
+        shell: powershell
+        run: .\tools\Get-SourceManifest.ps1 -Verify
+
+      - name: Download and verify GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = [string](Get-Content .\version.json -Raw -Encoding UTF8 | ConvertFrom-Json).version
+          $tag = "v$version"
+          $releaseDirectory = Join-Path $env:RUNNER_TEMP 'published-release'
+          New-Item -ItemType Directory -Path $releaseDirectory -Force | Out-Null
+
+          gh release download $tag `
+            --repo "${{ github.repository }}" `
+            --dir $releaseDirectory `
+            --pattern 'C-Drive-Cleaner-*.zip' `
+            --pattern 'SHA256SUMS.txt' `
+            --pattern 'release.json'
+          if ($LASTEXITCODE -ne 0) { throw "Unable to download Release $tag." }
+
+          $releaseManifest = Get-Content (Join-Path $releaseDirectory 'release.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+          $expectedPackageName = "C-Drive-Cleaner-v$version.zip"
+          if ([string]$releaseManifest.version -ne $version) { throw 'release.json version mismatch.' }
+          if ([string]$releaseManifest.package.name -ne $expectedPackageName) { throw 'release.json package name mismatch.' }
+
+          $packagePath = Join-Path $releaseDirectory $expectedPackageName
+          if (-not (Test-Path -LiteralPath $packagePath)) { throw "Missing package: $expectedPackageName" }
+          $actualHash = (Get-FileHash -LiteralPath $packagePath -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualHash -ne ([string]$releaseManifest.package.sha256).ToLowerInvariant()) {
+            throw 'Release ZIP SHA-256 does not match release.json.'
+          }
+          $checksumLine = Get-Content (Join-Path $releaseDirectory 'SHA256SUMS.txt') -Raw
+          if ($checksumLine -notmatch "(?i)^$actualHash\s+$([regex]::Escape($expectedPackageName))\s*$") {
+            throw 'SHA256SUMS.txt does not match the Release ZIP.'
+          }
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [System.IO.Compression.ZipFile]::OpenRead($packagePath)
+          try {
+            $entry = $archive.Entries | Where-Object { $_.FullName -match '(^|[\\/])version\.json$' } | Select-Object -First 1
+            if (-not $entry) { throw 'Release ZIP does not contain version.json.' }
+            $reader = New-Object System.IO.StreamReader($entry.Open(), [System.Text.Encoding]::UTF8)
+            try { $packagedVersion = [string](($reader.ReadToEnd() | ConvertFrom-Json).version) } finally { $reader.Dispose() }
+            if ($packagedVersion -ne $version) { throw 'Packaged version.json does not match the published version.' }
+          } finally {
+            $archive.Dispose()
+          }
+
+          Write-Host "Verified $tag, $expectedPackageName, SHA-256 $actualHash"

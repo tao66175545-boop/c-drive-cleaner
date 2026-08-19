@@ -9,47 +9,25 @@ on:
 jobs:
   powershell-validation:
     runs-on: windows-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
 
-      - name: Parse PowerShell scripts
+      - name: Verify source fingerprint
         shell: powershell
-        run: |
-          $files = @('C-Drive-Cleaner.ps1', 'C-Drive-Cleaner-UI.ps1', 'tools\New-ReleasePackage.ps1', 'tests\PlanContractTests.ps1', '.ui-smoke-test.ps1')
-          foreach ($file in $files) {
-            $tokens = $null
-            $errors = $null
-            [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file), [ref]$tokens, [ref]$errors) | Out-Null
-            if ($errors.Count -gt 0) { throw "Parse failed: $file" }
-          }
+        run: .\tools\Get-SourceManifest.ps1 -Verify
 
-      - name: Run safety self-test
+      - name: Enforce version policy
         shell: powershell
-        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\C-Drive-Cleaner.ps1 -SelfTest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: .\tools\Test-VersionPolicy.ps1 -BaseCommit $env:BASE_SHA -Repository "${{ github.repository }}"
 
-      - name: Validate cleanup plan contract
+      - name: Run project validation suite
         shell: powershell
-        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\PlanContractTests.ps1
-
-      - name: Run UI smoke test
-        shell: powershell
-        run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\.ui-smoke-test.ps1
-
-      - name: Dry-run release package
-        shell: powershell
-        run: |
-          $version = (Get-Content .\version.json -Raw -Encoding UTF8 | ConvertFrom-Json).version
-          $result = .\tools\New-ReleasePackage.ps1 -Version $version -OutputDirectory "$env:TEMP\c-drive-cleaner-release-test" -Repository "tao66175545-boop/c-drive-cleaner"
-          if (-not (Test-Path -LiteralPath $result.PackagePath)) { throw "Package was not created." }
-          if (-not (Test-Path -LiteralPath $result.ChecksumPath)) { throw "Checksum was not created." }
-          if (-not (Test-Path -LiteralPath $result.ManifestPath)) { throw "Release manifest was not created." }
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          $archive = [System.IO.Compression.ZipFile]::OpenRead($result.PackagePath)
-          try {
-            if (-not @($archive.Entries | Where-Object { $_.FullName -match '(^|[\\/])version\.json$' }).Count) {
-              throw "Package does not contain version.json."
-            }
-          } finally {
-            $archive.Dispose()
-          }
+        run: .\tools\Invoke-ProjectValidation.ps1
