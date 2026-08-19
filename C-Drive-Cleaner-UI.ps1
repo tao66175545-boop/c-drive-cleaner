@@ -1144,12 +1144,19 @@ function Update-CleanupSelectionRows {
     }
 }
 
+$selectionRowTopInset = 10
+$selectionRowRightInset = 14
+$selectionRowSizeWidth = 94
+$selectionRowSizeHeight = 22
+
 function Update-CleanupSelectionRowLayout {
     param($Row)
     $refs = $Row.Tag
     if ($null -eq $refs) { return }
     $clientWidth = $Row.ClientSize.Width
-    $refs.SizeLabel.Left = [Math]::Max(128, $clientWidth - 108)
+    $refs.SizeLabel.Size = New-Object System.Drawing.Size($selectionRowSizeWidth, $selectionRowSizeHeight)
+    $refs.SizeLabel.Left = [Math]::Max(128, $clientWidth - $selectionRowRightInset - $refs.SizeLabel.Width)
+    $refs.SizeLabel.Top = $selectionRowTopInset
     $refs.NameLabel.Width = [Math]::Max(72, $refs.SizeLabel.Left - 58)
     $refs.AdviceLabel.Width = [Math]::Max(72, $clientWidth - 142)
 }
@@ -1213,7 +1220,9 @@ function New-CleanupSelectionRow {
     $size.Text = Format-UiBytes ([double]$Item.Size)
     $size.Font = New-Object System.Drawing.Font('Segoe UI', 10, [System.Drawing.FontStyle]::Bold)
     $size.ForeColor = [System.Drawing.Color]::FromArgb(181, 30, 40)
-    $size.Size = New-Object System.Drawing.Size(94, 22)
+    $size.BackColor = [System.Drawing.Color]::Transparent
+    $size.Location = New-Object System.Drawing.Point(0, $selectionRowTopInset)
+    $size.Size = New-Object System.Drawing.Size($selectionRowSizeWidth, $selectionRowSizeHeight)
     $size.TextAlign = 'MiddleRight'
     $size.Anchor = 'Top,Right'
 
