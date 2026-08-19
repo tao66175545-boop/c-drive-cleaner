@@ -89,6 +89,50 @@ try {
     $responsesConfig.protocol = 'responses'
     $responsesRequest = New-CDriveProviderRequest $responsesConfig $turn $contract
     if (@($responsesRequest.tools).Count -lt 10 -or @($responsesRequest.tools | Where-Object strict -ne $true).Count -gt 0) { throw 'Responses tool schemas are not strict.' }
+    if ((Normalize-CDriveToolArgumentsJson '{}{}') -ne '{}') { throw 'Duplicated empty provider arguments were not normalized.' }
+    $normalizedArguments = Normalize-CDriveToolArgumentsJson '{}{"scope":"recommended"}'
+    if ([string](($normalizedArguments | ConvertFrom-Json).scope) -ne 'recommended') { throw 'Empty-prefix provider arguments were not normalized.' }
+    if ((Normalize-CDriveToolArgumentsJson '{"view":"selection"}{"view":"selection"}') -ne '{"view":"selection"}') { throw 'Identical provider arguments were not deduplicated.' }
+    try {
+        $null = Normalize-CDriveToolArgumentsJson '{"view":"selection"}{"view":"logs"}'
+        throw 'Conflicting concatenated provider arguments were accepted.'
+    } catch { if ($_.Exception.Message -notmatch 'AGENT_TOOL_ARGUMENTS_AMBIGUOUS') { throw } }
+    $providerCompatibilityFixture = [PSCustomObject]@{
+        id = 'responses-compatibility-fixture'
+        output = @([PSCustomObject]@{ type = 'function_call'; call_id = 'call_scan_1'; name = 'start_scan'; arguments = '{}{"scope":"recommended"}' })
+    }
+    $normalizedResponse = ConvertFrom-CDriveProviderResponse $providerCompatibilityFixture 'responses'
+    if (@($normalizedResponse.toolCalls).Count -ne 1 -or [string]$normalizedResponse.toolCalls[0].argumentsJson -ne '{"scope":"recommended"}') {
+        throw 'Responses parser did not normalize duplicated provider tool arguments.'
+    }
+    $chatCompatibilityFixture = [PSCustomObject]@{ choices = @([PSCustomObject]@{ message = [PSCustomObject]@{
+        content = ''
+        tool_calls = @([PSCustomObject]@{ id = 'call_nav_compat'; function = [PSCustomObject]@{ name = 'navigate_view'; arguments = '{}{"view":"selection"}' } })
+    } }) }
+    $normalizedChatResponse = ConvertFrom-CDriveProviderResponse $chatCompatibilityFixture 'chat-completions'
+    if (@($normalizedChatResponse.toolCalls).Count -ne 1 -or [string]$normalizedChatResponse.toolCalls[0].argumentsJson -ne '{"view":"selection"}') {
+        throw 'Chat Completions parser did not normalize duplicated provider tool arguments.'
+    }
+    $responsesCompatibilitySse = @(
+        'data: {"type":"response.output_item.done","item":{"type":"function_call","id":"item_compat_1","call_id":"call_scan_sse","name":"start_scan","arguments":"{}{\"scope\":\"recommended\"}"}}'
+        'data: [DONE]'
+    )
+    $normalizedSseResponse = ConvertFrom-CDriveProviderSse $responsesCompatibilitySse 'responses'
+    if (@($normalizedSseResponse.toolCalls).Count -ne 1 -or [string]$normalizedSseResponse.toolCalls[0].argumentsJson -ne '{"scope":"recommended"}') {
+        throw 'Responses SSE parser did not normalize duplicated provider tool arguments.'
+    }
+    $compatibilityTurn = [PSCustomObject]@{
+        schemaVersion = 1
+        turnId = [guid]::NewGuid().ToString('N')
+        messages = @(
+            [PSCustomObject]@{ role = 'assistant'; content = ''; toolCalls = @([PSCustomObject]@{ callId = 'call_scan_1'; name = 'start_scan'; argumentsJson = '{}{"scope":"recommended"}' }) },
+            [PSCustomObject]@{ role = 'tool'; callId = 'call_scan_1'; content = '{"ok":true}' }
+        )
+    }
+    $compatibilityRequest = New-CDriveProviderRequest $responsesConfig $compatibilityTurn $contract
+    $replayedCall = @($compatibilityRequest.input | Where-Object type -eq 'function_call') | Select-Object -First 1
+    if ([string]$replayedCall.arguments -ne '{"scope":"recommended"}') { throw 'Provider request replayed malformed tool arguments.' }
+    Write-Output '[OK] provider tool arguments -> duplicated gateway JSON normalized without accepting conflicts'
     $textConfig = $config.PSObject.Copy()
     $textConfig.protocol = 'text-only'
     $textRequest = New-CDriveProviderRequest $textConfig $turn $contract
