@@ -23,7 +23,10 @@
 AI/开发者产生变更
         |
         v
-release-candidate 分支 / Pull Request
+Submit-UpdateCandidate.ps1 本地全量验证 + 源码指纹
+        |
+        v
+candidate/vX.Y.Z-基线提交 分支 / Pull Request
         |
         v
 Validate 工作流：脚本解析 + 安全自检
@@ -31,7 +34,16 @@ Validate 工作流：脚本解析 + 安全自检
         +-- 失败：自动阻断，AI 根据日志修复 PR
         |
         v
-受保护 main（自动合并仅限低风险规则通过的 PR）
+Codex 对话展示版本、PR、提交 SHA、源码指纹和验证结果
+        |
+        v
+用户在 Codex 对话回复“同意”（唯一批准点）
+        |
+        v
+Complete-ApprovedCandidate.ps1 校验批准未过期并自动合并
+        |
+        v
+受保护 main（禁止绕过 PR 直接推送）
         |
         v
 Publish Release 工作流
@@ -52,7 +64,14 @@ GitHub Releases / 客户端检查更新
 | --- | --- |
 | `.github/workflows/validate.yml` | 对 `main` 和 PR 做 PowerShell 解析、安全自检、计划契约测试、UI 烟测和发布包试构建。 |
 | `.github/workflows/release.yml` | 当 `main` 验证成功时，由只读任务构建；写权限任务不执行仓库代码，只发布已验证产物。 |
+| `.github/workflows/consistency.yml` | Release 完成后重新下载 ZIP，核验版本、SHA-256、发布清单和包内 `version.json`。 |
 | `tools/New-ReleasePackage.ps1` | 仅从发布白名单构建 ZIP，并生成 SHA-256、发布清单。 |
+| `tools/Submit-UpdateCandidate.ps1` | 检查远端漂移、执行本地验证、计算指纹并创建或更新候选 PR。 |
+| `tools/Complete-ApprovedCandidate.ps1` | 在 Codex 获得明确同意后，绑定候选 SHA/指纹完成合并、监控和最终验收。 |
+| `tools/Enable-GitHubWorkflowGuard.ps1` | 一次性保护 `main`，禁止直接推送并要求 PR 验证通过。 |
+| `AGENTS.md` | 让后续 Codex 任务自动遵守“对话批准、批准后全自动”的发布协议。 |
+| `source-policy.json` | 定义允许公开同步的文件与产品版本敏感路径。 |
+| `source-manifest.json` | 记录版本、基线提交、文件 SHA-256/Git Blob 哈希和整体源码指纹。 |
 | `version.json` | 唯一版本来源，格式为 SemVer，例如 `1.1.0`。 |
 | `RELEASE_NOTES_v1.1.0.md` | 必需的本次发布说明。 |
 
@@ -60,28 +79,72 @@ GitHub Releases / 客户端检查更新
 
 ## AI 自动工作方式
 
-AI 每次完成一个可发布的变更时，应执行以下确定性动作：
+AI 每次完成变更时执行以下确定性动作：
 
 1. 在分支中修改源代码和相应文档。
 2. 将 `version.json` 提升到新的版本号，并新增同版本的 `RELEASE_NOTES_vX.Y.Z.md`。
 3. 运行 `C-Drive-Cleaner.ps1 -SelfTest`、PowerShell 解析检查和 UI 冒烟测试。
-4. 创建 Pull Request；验证失败时只修复当前 PR，不创建 Release。
-5. PR 合入 `main` 后不再打包或手动上传。Actions 自动完成发布。
+4. 运行下面一条命令。脚本会拒绝远端漂移、漏升版本、缺发布说明或测试失败，并自动创建/更新同一候选 PR。
+
+```powershell
+.\tools\Submit-UpdateCandidate.ps1
+```
+
+5. Codex 等待 PR 验证通过，并在对话中展示 PR 号、版本、完整提交 SHA、源码指纹和变更摘要。
+6. 用户在 Codex 对话回复“同意”；这是唯一人工批准动作，不需要打开 GitHub。
+7. Codex 将批准绑定到刚才展示的 SHA 和指纹，运行以下收尾命令。若候选已发生变化，命令拒绝合并并要求重新批准。
+
+```powershell
+.\tools\Complete-ApprovedCandidate.ps1 `
+  -PullRequest <PR号> `
+  -ExpectedHeadSha <40位提交SHA> `
+  -ExpectedFingerprint <64位源码指纹> `
+  -UserApproved
+```
+
+8. 收尾脚本自动 squash 合并、删除候选分支，等待 Validate、Publish Release、Verify Published Release，并最终核对远端 `main` 指纹与 Release。Codex 将结果直接回复到当前对话。
+
+首次部署本机制时使用 `-Bootstrap`；之后禁止再使用该参数：
+
+```powershell
+.\tools\Submit-UpdateCandidate.ps1 -Bootstrap
+```
 
 对于只改文档、截图或发布说明的提交，不应提高 `version.json`，因此工作流会发现同名 tag 已存在并安全跳过发布。
 
-## 权限与完全自动化的配置
+## 一次性仓库保护配置
 
-GitHub Actions 的默认工作流权限保持 **Read repository contents**。只有 `release.yml` 的最终发布任务显式申请 `contents: write`；它不会检出或执行仓库代码。工作流使用临时 `GITHUB_TOKEN`，不需要将个人 Token 写入代码或脚本。若启用 PR 自动合并，再单独允许 GitHub Actions 创建和批准 pull request。
+首次基础设施 PR 合并后，在本地运行一次：
 
-在 `Settings -> Branches` 为 `main` 创建规则：
+```powershell
+.\tools\Enable-GitHubWorkflowGuard.ps1 -Apply
+```
 
-1. 要求 `Validate C Drive Cleaner` 通过。
-2. 要求线性历史，禁止强制推送。
-3. 只允许 GitHub App 或指定发布机器人自动合并。
-4. 对涉及下列文件的 PR 强制人工审批：`C-Drive-Cleaner.ps1`、`C-Drive-Cleaner-UI.ps1`、`C盘清理.bat`、`.github/workflows/**`、`tools/**`。
+它要求所有变更通过 PR，`powershell-validation` 成功后才允许合并，同时禁止管理员绕过、强推和删除 `main`。AI 不能自行批准：只有用户在 Codex 对话明确回复“同意”后，Codex 才能调用批准收尾器完成 GitHub 操作。
 
-这意味着低风险的文档、资源和已验证 UI 文案可自动合并并自动发布；涉及删除逻辑、启动入口、CI 权限或打包逻辑的变化必须保留一次人工确认。对于面向用户删除文件的工具，这是必要的发布闸门，不能由 AI 完全取消。
+## 对话批准的有效性
+
+批准不是对未来任意版本的长期授权，只对对话中刚刚展示的一组候选标识有效：
+
+1. PR 编号。
+2. 版本号。
+3. PR 完整 head commit SHA。
+4. `source-manifest.json` 源码指纹。
+
+`继续`、询问状态、同意其他方案都不算发布批准。用户回复“同意”后，Codex 会立即重新读取 GitHub；只要提交 SHA、指纹或验证状态变化，旧批准自动失效。批准后若只是网络或 Actions 瞬时失败，可自动重试；若必须修改任何候选内容，则重新生成摘要并再次等待“同意”。
+
+GitHub Actions 默认只读。只有 `release.yml` 的最终发布任务显式申请 `contents: write`；该任务不检出或执行仓库代码。所有 Actions 使用临时 `GITHUB_TOKEN`，个人 Token 不写入项目。
+
+## 一致性判定
+
+本地与 GitHub 一致不是只比较版本号，而是同时满足：
+
+1. `version.json` 版本相同。
+2. `source-manifest.json` 的整体指纹相同。
+3. 远端 Git Blob 与清单逐文件一致，远端被旁路修改会在下次提交前阻断。
+4. 新版本的 Release tag、ZIP 名称、`release.json`、SHA-256 和 ZIP 内版本全部一致。
+
+候选 PR 创建后，本地已经保留与候选分支完全相同的源码清单。PR 合并后，远端 `main` 的内容指纹与本地自动一致；若 PR 未合并，可继续修改并再次执行同一命令更新原 PR。
 
 ## 版本发布规则
 

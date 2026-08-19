@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "requiredFiles": [
+    "AGENTS.md",
+    ".gitattributes",
+    ".gitignore",
+    ".ui-smoke-test.ps1",
+    "AI自动化GitHub发布工作流.md",
+    "C-Drive-Cleaner.ps1",
+    "C-Drive-Cleaner-UI.ps1",
+    "C盘清理.bat",
+    "OTA-在线升级方案.md",
+    "README-使用说明.txt",
+    "README.md",
+    "UI-DESIGN-RULES.md",
+    "version.json",
+    "source-policy.json"
+  ],
+  "requiredDirectories": [
+    ".github/workflows",
+    "assets",
+    "tests",
+    "tools"
+  ],
+  "rootPatterns": [
+    "RELEASE_NOTES_v*.md"
+  ],
+  "productPaths": [
+    "C-Drive-Cleaner.ps1",
+    "C-Drive-Cleaner-UI.ps1",
+    "C盘清理.bat",
+    "assets/"
+  ]
+}
