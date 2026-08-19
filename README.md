@@ -66,6 +66,7 @@ agent-roadmap.json        AI Agent P8-P13 验收状态
 默认状态是 `LOCAL · SAFE MODE`，不会发起模型网络请求。需要云端对话时，在“智能助手”页点击“配置”，填写 HTTPS API 基础地址、精确模型名、接口协议和自己的 API Key，并确认数据范围。
 
 - 支持 OpenAI Responses、Chat Completions 兼容接口；纯文本接口只提供问答，不操作页面。
+- 对部分兼容网关重复拼接的工具参数进行结构化归一化；仅接受重复空对象或相同对象，冲突参数会安全拒绝。
 - API Key 使用 Windows DPAPI CurrentUser 加密保存在 `%LOCALAPPDATA%\CDriveCleaner\agent`，不会回显，也不会进入项目、日志、命令行或发布包。
 - 云端会收到用户输入的问题和字段白名单扫描摘要；不会收到原始路径、用户名、机器名、文件内容或运行日志。
 - Agent 可切换页面、启动/取消扫描和调整勾选，但单轮最多 6 次模型请求、8 次工具调用。
