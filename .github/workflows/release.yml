@@ -45,8 +45,9 @@ jobs:
           }
 
           $tag = "v$($manifest.version)"
-          gh release view $tag --repo "${{ github.repository }}" 2>$null
-          $alreadyPublished = $LASTEXITCODE -eq 0
+          $releaseTags = @(gh release list --repo "${{ github.repository }}" --limit 100 --json tagName |
+            ConvertFrom-Json | ForEach-Object tagName)
+          $alreadyPublished = $releaseTags -contains $tag
 
           "tag=$tag" >> $env:GITHUB_OUTPUT
           "version=$($manifest.version)" >> $env:GITHUB_OUTPUT
