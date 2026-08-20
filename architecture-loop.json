@@ -3,8 +3,8 @@
   "objective": "A safe, modular, responsive C-drive cleaner with an optional constrained AI copilot.",
   "objectiveStatus": "completed",
   "completedAt": "2026-08-19",
-  "currentPhase": "P15-conversational-ui-control",
-  "iteration": 16,
+  "currentPhase": "P16-structured-travel-results",
+  "iteration": 17,
   "phases": [
     {
       "id": "P0-contracts",
@@ -90,6 +90,11 @@
       "id": "P15-conversational-ui-control",
       "status": "completed",
       "exitCriteria": ["deterministic_local_command_mapping", "negation_and_unsafe_request_rejection", "shared_ui_action_broker", "stable_id_selection_only", "native_confirmation_boundary", "full_project_validation"]
+    },
+    {
+      "id": "P16-structured-travel-results",
+      "status": "completed",
+      "exitCriteria": ["typed_markdown_display_model", "readable_section_hierarchy", "selectable_copyable_text", "explicit_https_detail_links", "bounded_trusted_image_cache", "compact_layout_no_overflow", "full_project_validation"]
     }
   ]
 }

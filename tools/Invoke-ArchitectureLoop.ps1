@@ -85,7 +85,7 @@ if ([string]$phase.id -eq 'P7-incremental-scan') {
     }
 }
 
-if ([string]$phase.id -match '^P(?:8|9|10|11|12|13|14|15)-') {
+if ([string]$phase.id -match '^P(?:8|9|10|11|12|13|14|15|16)-') {
     try {
         & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\AgentRuntimeTests.ps1') | Out-Host
         Add-LoopCheck 'agent_runtime_contracts' ($LASTEXITCODE -eq 0) 'tests/AgentRuntimeTests.ps1'
@@ -106,6 +106,15 @@ if ([string]$phase.id -eq 'P15-conversational-ui-control') {
         Add-LoopCheck 'conversational_control_contracts' ($LASTEXITCODE -eq 0) 'tests/ConversationalControlTests.ps1'
     } catch {
         Add-LoopCheck 'conversational_control_contracts' $false $_.Exception.Message
+    }
+}
+
+if ([string]$phase.id -eq 'P16-structured-travel-results') {
+    try {
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\FlyAiTravelProviderTests.ps1') | Out-Host
+        Add-LoopCheck 'structured_travel_results' ($LASTEXITCODE -eq 0) 'tests/FlyAiTravelProviderTests.ps1'
+    } catch {
+        Add-LoopCheck 'structured_travel_results' $false $_.Exception.Message
     }
 }
 
