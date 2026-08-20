@@ -43,12 +43,84 @@ function ConvertTo-CDriveProcessArgument {
     return $builder.ToString()
 }
 
+function ConvertTo-CDriveFlyAiProxyUri {
+    param([AllowEmptyString()][string]$Value)
+    if ([string]::IsNullOrWhiteSpace($Value)) { return '' }
+    $candidate = $Value.Trim()
+    if ($candidate -notmatch '^[a-z][a-z0-9+.-]*://') { $candidate = 'http://' + $candidate }
+    $uri = $null
+    if (-not [uri]::TryCreate($candidate, [System.UriKind]::Absolute, [ref]$uri) -or
+        $uri.Scheme -notin @('http', 'https') -or [string]::IsNullOrWhiteSpace($uri.Host)) {
+        return ''
+    }
+    return $uri.AbsoluteUri.TrimEnd('/')
+}
+
+function ConvertFrom-CDriveWinInetProxyServer {
+    param([AllowEmptyString()][string]$ProxyServer)
+    $values = @{}
+    foreach ($part in @($ProxyServer -split ';')) {
+        $candidate = $part.Trim()
+        if (-not $candidate) { continue }
+        if ($candidate -match '^(?<scheme>https?|socks)=(?<address>.+)$') {
+            $values[$Matches.scheme.ToLowerInvariant()] = $Matches.address.Trim()
+        } elseif (-not $values.ContainsKey('default')) {
+            $values.default = $candidate
+        }
+    }
+    $httpProxy = ConvertTo-CDriveFlyAiProxyUri $(if ($values.http) { $values.http } elseif ($values.default) { $values.default } elseif ($values.https) { $values.https } else { '' })
+    $httpsProxy = ConvertTo-CDriveFlyAiProxyUri $(if ($values.https) { $values.https } elseif ($values.default) { $values.default } elseif ($values.http) { $values.http } else { '' })
+    return [PSCustomObject]@{ HttpProxy = $httpProxy; HttpsProxy = $httpsProxy; Source = $(if ($httpProxy -or $httpsProxy) { 'wininet' } else { 'direct' }) }
+}
+
+function Get-CDriveFlyAiProxySettings {
+    $environmentHttp = [Environment]::GetEnvironmentVariable('HTTP_PROXY')
+    $environmentHttps = [Environment]::GetEnvironmentVariable('HTTPS_PROXY')
+    if ($environmentHttp -or $environmentHttps) {
+        return [PSCustomObject]@{
+            HttpProxy = ConvertTo-CDriveFlyAiProxyUri $(if ($environmentHttp) { $environmentHttp } else { $environmentHttps })
+            HttpsProxy = ConvertTo-CDriveFlyAiProxyUri $(if ($environmentHttps) { $environmentHttps } else { $environmentHttp })
+            Source = 'environment'
+        }
+    }
+
+    try {
+        $internetSettings = Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings' -ErrorAction Stop
+        if ([int]$internetSettings.ProxyEnable -eq 1 -and -not [string]::IsNullOrWhiteSpace([string]$internetSettings.ProxyServer)) {
+            return ConvertFrom-CDriveWinInetProxyServer ([string]$internetSettings.ProxyServer)
+        }
+    } catch {}
+    return [PSCustomObject]@{ HttpProxy = ''; HttpsProxy = ''; Source = 'direct' }
+}
+
+function Set-CDriveFlyAiProcessProxy {
+    param(
+        [Parameter(Mandatory = $true)][System.Diagnostics.ProcessStartInfo]$StartInfo,
+        [Parameter(Mandatory = $true)]$ProxySettings
+    )
+    if ($ProxySettings.HttpProxy) { $StartInfo.EnvironmentVariables['HTTP_PROXY'] = [string]$ProxySettings.HttpProxy }
+    if ($ProxySettings.HttpsProxy) { $StartInfo.EnvironmentVariables['HTTPS_PROXY'] = [string]$ProxySettings.HttpsProxy }
+    if ($ProxySettings.HttpProxy -or $ProxySettings.HttpsProxy) {
+        # Node 24+ uses this switch for fetch/undici; older supported runtimes safely ignore it.
+        $StartInfo.EnvironmentVariables['NODE_USE_ENV_PROXY'] = '1'
+    }
+}
+
+function Get-CDriveFlyAiFailureCode {
+    param([AllowEmptyString()][string]$ErrorText)
+    if ($ErrorText -match '(?i)certificate|ERR_TLS|ERR_SSL|secure TLS|TLS connection|unable to verify|SELF_SIGNED|ECONNRESET') { return 'FLYAI_TLS' }
+    if ($ErrorText -match '(?i)ENETUNREACH|EHOSTUNREACH|ECONNREFUSED|EAI_AGAIN|ENOTFOUND|ETIMEDOUT|UND_ERR_CONNECT') { return 'FLYAI_NETWORK' }
+    return 'FLYAI_FAILED'
+}
+
 function Invoke-CDriveFlyAiSearch {
     param(
         [Parameter(Mandatory = $true)][string]$Query,
         [ValidateSet('ai-search', 'keyword-search')][string]$Mode = 'ai-search',
-        [int]$TimeoutSeconds = 45,
-        [string]$ExecutablePath = ''
+        [int]$TimeoutSeconds = 0,
+        [string]$ExecutablePath = '',
+        [ValidateRange(1, 3)][int]$MaxAttempts = 2,
+        $ProxySettings = $null
     )
 
     if ([string]::IsNullOrWhiteSpace($Query) -or $Query.Length -gt 500) {
@@ -62,57 +134,75 @@ function Invoke-CDriveFlyAiSearch {
     $nodeCommand = Get-Command 'node.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
     if (-not $nodeCommand) { $nodeCommand = Get-Command 'node' -ErrorAction SilentlyContinue | Select-Object -First 1 }
     if (-not $nodeCommand) { throw '[FLYAI_NODE] FlyAI requires Node.js 18 or later.' }
+    if ($TimeoutSeconds -le 0) { $TimeoutSeconds = if ($Mode -eq 'ai-search') { 90 } else { 45 } }
+    if ($TimeoutSeconds -lt 5 -or $TimeoutSeconds -gt 180) { throw '[FLYAI_TIMEOUT_CONFIG] FlyAI timeout must be between 5 and 180 seconds.' }
+    if ($null -eq $ProxySettings) { $ProxySettings = Get-CDriveFlyAiProxySettings }
 
-    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
-    $startInfo.FileName = [string]$nodeCommand.Source
-    $startInfo.UseShellExecute = $false
-    $startInfo.CreateNoWindow = $true
-    $startInfo.RedirectStandardOutput = $true
-    $startInfo.RedirectStandardError = $true
-    $startInfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
-    $startInfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
-    if ($null -ne $startInfo.ArgumentList) {
-        $startInfo.ArgumentList.Add($ExecutablePath)
-        $startInfo.ArgumentList.Add($Mode)
-        $startInfo.ArgumentList.Add('--query')
-        $startInfo.ArgumentList.Add($Query)
-    } else {
-        $startInfo.Arguments = @(
-            (ConvertTo-CDriveProcessArgument $ExecutablePath)
-            $Mode
-            '--query'
-            (ConvertTo-CDriveProcessArgument $Query)
-        ) -join ' '
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+        $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+        $startInfo.FileName = [string]$nodeCommand.Source
+        $startInfo.UseShellExecute = $false
+        $startInfo.CreateNoWindow = $true
+        $startInfo.RedirectStandardOutput = $true
+        $startInfo.RedirectStandardError = $true
+        $startInfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+        $startInfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
+        Set-CDriveFlyAiProcessProxy $startInfo $ProxySettings
+        if ($null -ne $startInfo.ArgumentList) {
+            $startInfo.ArgumentList.Add($ExecutablePath)
+            $startInfo.ArgumentList.Add($Mode)
+            $startInfo.ArgumentList.Add('--query')
+            $startInfo.ArgumentList.Add($Query)
+        } else {
+            $startInfo.Arguments = @(
+                (ConvertTo-CDriveProcessArgument $ExecutablePath)
+                $Mode
+                '--query'
+                (ConvertTo-CDriveProcessArgument $Query)
+            ) -join ' '
+        }
+
+        $process = [System.Diagnostics.Process]::new()
+        $process.StartInfo = $startInfo
+        try {
+            if (-not $process.Start()) { throw '[FLYAI_START] Unable to start FlyAI.' }
+            $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+            $stderrTask = $process.StandardError.ReadToEndAsync()
+            if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+                try { $process.Kill() } catch {}
+                try { [void]$process.WaitForExit(2000) } catch {}
+                throw ('[FLYAI_TIMEOUT] FlyAI travel search exceeded {0} seconds.' -f $TimeoutSeconds)
+            }
+            $stdout = $stdoutTask.GetAwaiter().GetResult().Trim()
+            $stderr = $stderrTask.GetAwaiter().GetResult().Trim()
+            $knownNode24ExitAssertion = $stderr -match 'Assertion failed:\s*!\(handle->flags\s*&\s*UV_HANDLE_CLOSING\)'
+            if ($process.ExitCode -ne 0 -and -not $knownNode24ExitAssertion) {
+                $failureCode = Get-CDriveFlyAiFailureCode $stderr
+                if ($attempt -lt $MaxAttempts -and $failureCode -in @('FLYAI_TLS', 'FLYAI_NETWORK')) {
+                    Start-Sleep -Milliseconds (500 * $attempt)
+                    continue
+                }
+                $detail = if ($stderr.Length -gt 1200) { $stderr.Substring(0, 1200) } else { $stderr }
+                throw ('[{0}] {1}' -f $failureCode, $detail)
+            }
+            if ([string]::IsNullOrWhiteSpace($stdout)) { throw '[FLYAI_EMPTY] FlyAI returned no result.' }
+            try { $payload = $stdout | ConvertFrom-Json }
+            catch { throw '[FLYAI_JSON] FlyAI returned invalid JSON.' }
+            return [PSCustomObject]@{
+                schemaVersion = 1
+                provider = 'FlyAI'
+                mode = $Mode
+                query = $Query
+                result = $payload
+                readOnly = $true
+                bookingExecuted = $false
+                attempts = $attempt
+                networkRoute = [string]$ProxySettings.Source
+                runtimeWarning = $(if ($knownNode24ExitAssertion) { 'node24-windows-exit-assertion' } else { '' })
+            }
+        } finally { $process.Dispose() }
     }
-
-    $process = [System.Diagnostics.Process]::new()
-    $process.StartInfo = $startInfo
-    try {
-        if (-not $process.Start()) { throw '[FLYAI_START] Unable to start FlyAI.' }
-        $stdoutTask = $process.StandardOutput.ReadToEndAsync()
-        $stderrTask = $process.StandardError.ReadToEndAsync()
-        if (-not $process.WaitForExit([Math]::Max(1, $TimeoutSeconds) * 1000)) {
-            try { $process.Kill() } catch {}
-            throw '[FLYAI_TIMEOUT] FlyAI travel search timed out.'
-        }
-        $stdout = $stdoutTask.GetAwaiter().GetResult().Trim()
-        $stderr = $stderrTask.GetAwaiter().GetResult().Trim()
-        if ([string]::IsNullOrWhiteSpace($stdout)) { throw '[FLYAI_EMPTY] FlyAI returned no result.' }
-        try { $payload = $stdout | ConvertFrom-Json }
-        catch { throw '[FLYAI_JSON] FlyAI returned invalid JSON.' }
-        $knownNode24ExitAssertion = $stderr -match 'Assertion failed:\s*!\(handle->flags\s*&\s*UV_HANDLE_CLOSING\)'
-        if ($process.ExitCode -ne 0 -and -not $knownNode24ExitAssertion) { throw ('[FLYAI_FAILED] ' + $stderr) }
-        return [PSCustomObject]@{
-            schemaVersion = 1
-            provider = 'FlyAI'
-            mode = $Mode
-            query = $Query
-            result = $payload
-            readOnly = $true
-            bookingExecuted = $false
-            runtimeWarning = $(if ($knownNode24ExitAssertion) { 'node24-windows-exit-assertion' } else { '' })
-        }
-    } finally { $process.Dispose() }
+    throw '[FLYAI_FAILED] FlyAI travel search failed after retry.'
 }
 
 function Format-CDriveFlyAiResult {

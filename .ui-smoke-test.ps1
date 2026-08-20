@@ -42,7 +42,8 @@ if ($uiSource -notmatch 'Test-AssistantCleanupCommand' -or $uiSource -notmatch '
 }
 if ($uiSource -notmatch 'Test-CDriveTravelIntent' -or $uiSource -notmatch 'Invoke-AssistantTravelQuery' -or
     $uiSource -notmatch 'TravelHost\.ps1' -or $uiSource -notmatch '\$travelState\.Consent' -or
-    $uiSource -notmatch 'FLYAI.*SEARCHING') {
+    $uiSource -notmatch 'FLYAI.*SEARCHING' -or $uiSource -notmatch 'FLYAI_TLS' -or
+    $uiSource -notmatch 'FLYAI_NETWORK' -or $uiSource -notmatch '超过 90 秒') {
     throw 'FlyAI regression: travel routing, isolation host, or consent boundary is missing.'
 }
 if ($uiSource -notmatch "'-SkipProfile'" -or $uiSource -notmatch "'scan\.provider\.selected'" -or $uiSource -notmatch "'scan\.incremental\.completed'") {

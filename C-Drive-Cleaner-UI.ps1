@@ -2179,7 +2179,17 @@ $travelPoll.Add_Tick({
         if (-not $payload.ok) { throw ('[' + [string]$payload.errorCode + '] ' + [string]$payload.message) }
         Add-AssistantMessage '助手' (Format-CDriveFlyAiResult $payload.response)
     } catch {
-        $message = if ($_.Exception.Message -match 'FLYAI_NOT_INSTALLED') { '飞猪 FlyAI 尚未安装，暂时不能查询旅行建议。' } elseif ($_.Exception.Message -match 'FLYAI_TIMEOUT') { '飞猪旅行搜索超时，请稍后重试。' } else { '飞猪旅行搜索失败，未改变任何清理或界面状态。' }
+        $message = if ($_.Exception.Message -match 'FLYAI_NOT_INSTALLED') {
+            '飞猪 FlyAI 尚未安装，暂时不能查询旅行建议。'
+        } elseif ($_.Exception.Message -match 'FLYAI_TLS') {
+            '飞猪安全连接失败。已尝试继承 Windows 系统代理，请检查代理是否可用或稍后重试。'
+        } elseif ($_.Exception.Message -match 'FLYAI_NETWORK') {
+            '飞猪网络连接失败，请检查网络或代理设置后重试。'
+        } elseif ($_.Exception.Message -match 'FLYAI_TIMEOUT') {
+            '飞猪旅行搜索超过 90 秒仍未完成，已安全停止，请稍后重试。'
+        } else {
+            '飞猪旅行搜索失败，未改变任何清理或界面状态。'
+        }
         Add-AssistantMessage '助手' $message
     }
     Remove-TravelTurnFiles
