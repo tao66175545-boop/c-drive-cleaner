@@ -1156,6 +1156,9 @@ $travelState = @{
     RequestFile = ''
     OutputFile = ''
     LogFile = ''
+    ActiveQuestion = ''
+    PendingDetails = $false
+    PendingQuestion = ''
 }
 
 $toolTips = New-Object System.Windows.Forms.ToolTip
@@ -2135,6 +2138,12 @@ function Invoke-AssistantCleanupWorkflow {
 
 function Invoke-AssistantTravelQuery {
     param([string]$Question)
+    if (-not (Test-CDriveTravelQueryComplete $Question)) {
+        $travelState.PendingDetails = $true
+        $travelState.PendingQuestion = $Question
+        Add-AssistantMessage '助手' '可以。先告诉我目的地、从哪里出发、计划几天，以及预算或偏好；例如“从上海出发，去杭州两天，偏好人文和安静住宿”。'
+        return
+    }
     $flyAi = Get-CDriveFlyAiExecutable
     if ([string]::IsNullOrWhiteSpace($flyAi)) {
         Add-AssistantMessage '助手' '我可以帮你做一次“心理空间清洁”，规划旅行、查询酒店、机票、火车和景点。当前未安装飞猪官方 FlyAI CLI；管理员安装后即可启用，C 盘清理功能不受影响。'
@@ -2148,6 +2157,9 @@ function Invoke-AssistantTravelQuery {
     $travelState.OutputFile = Join-Path $env:TEMP ('cdc-flyai-output-' + [guid]::NewGuid().ToString('N') + '.json')
     $travelState.LogFile = Join-Path $env:TEMP ('cdc-flyai-log-' + [guid]::NewGuid().ToString('N') + '.txt')
     [System.IO.File]::WriteAllText($travelState.RequestFile, ([PSCustomObject]@{ query = $Question; mode = 'ai-search' } | ConvertTo-Json -Compress), [System.Text.UTF8Encoding]::new($false))
+    $travelState.ActiveQuestion = $Question
+    $travelState.PendingDetails = $false
+    $travelState.PendingQuestion = ''
     $travelState.Process = Start-CDriveEngineProcess $travelHostScript @('-RequestPath', $travelState.RequestFile, '-OutputPath', $travelState.OutputFile) $scriptDir $travelState.LogFile
     Set-AgentBusy $true
     $assistantStatus.Text = 'FLYAI · SEARCHING'
@@ -2171,6 +2183,9 @@ function Stop-TravelQuery {
         $travelState.Process = $null
     }
     Remove-TravelTurnFiles
+    $travelState.ActiveQuestion = ''
+    $travelState.PendingDetails = $false
+    $travelState.PendingQuestion = ''
     Set-AgentBusy $false
     Update-AgentMode
     if ($ShowMessage) { Add-AssistantMessage '助手' '已停止本次旅行搜索，扫描和清理状态未改变。' }
@@ -2187,6 +2202,8 @@ $travelPoll.Add_Tick({
         $payload = Get-Content -LiteralPath $travelState.OutputFile -Raw -Encoding UTF8 | ConvertFrom-Json
         if (-not $payload.ok) { throw ('[' + [string]$payload.errorCode + '] ' + [string]$payload.message) }
         Add-AssistantMessage '助手' (Format-CDriveFlyAiResult $payload.response)
+        $travelState.PendingDetails = $false
+        $travelState.PendingQuestion = ''
     } catch {
         $message = if ($_.Exception.Message -match 'FLYAI_NOT_INSTALLED') {
             '飞猪 FlyAI 尚未安装，暂时不能查询旅行建议。'
@@ -2196,12 +2213,17 @@ $travelPoll.Add_Tick({
             '飞猪网络连接失败，请检查网络或代理设置后重试。'
         } elseif ($_.Exception.Message -match 'FLYAI_TIMEOUT') {
             '飞猪旅行搜索超过 90 秒仍未完成，已安全停止，请稍后重试。'
+        } elseif ($_.Exception.Message -match 'FLYAI_EMPTY') {
+            $travelState.PendingDetails = $true
+            $travelState.PendingQuestion = $travelState.ActiveQuestion
+            '飞猪没有返回可展示的结果。请补充或调整目的地、出发地、天数和预算，我会继续查询。'
         } else {
             '飞猪旅行搜索失败，未改变任何清理或界面状态。'
         }
         Add-AssistantMessage '助手' $message
     }
     Remove-TravelTurnFiles
+    $travelState.ActiveQuestion = ''
     Set-AgentBusy $false
     Update-AgentMode
 })
@@ -2522,6 +2544,27 @@ function Invoke-AssistantQuery {
     if ([string]::IsNullOrWhiteSpace($question) -or $assistantState.Process -or $travelState.Process) { return }
     Add-AssistantMessage '你' $question
     $assistantInput.Clear()
+    if ($travelState.PendingDetails) {
+        if ($question -match '^(?i:取消|不用|算了|停止|不查了|cancel|never mind)[。.!！?？\s]*$') {
+            $travelState.PendingDetails = $false
+            $travelState.PendingQuestion = ''
+            Add-AssistantMessage '助手' '已取消旅行查询，没有发送新的数据。'
+            return
+        }
+        if (Test-AssistantCleanupCommand $question) {
+            $travelState.PendingDetails = $false
+            $travelState.PendingQuestion = ''
+            Invoke-AssistantCleanupWorkflow
+            return
+        }
+        if (-not (Test-CDriveTravelQueryComplete $question)) {
+            Add-AssistantMessage '助手' '还需要一个具体目的地或出发地，以及大致天数。例如：“从上海去杭州两天”。'
+            return
+        }
+        $combinedQuestion = Join-CDriveTravelQuestion $travelState.PendingQuestion $question
+        Invoke-AssistantTravelQuery $combinedQuestion
+        return
+    }
     if (Test-CDriveTravelIntent $question) {
         Invoke-AssistantTravelQuery $question
         return

@@ -4,6 +4,11 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 
 if (-not (Test-CDriveTravelIntent 'find a hotel in Shanghai')) { throw 'English travel intent was not detected.' }
 if (Test-CDriveTravelIntent 'clean recommended cache') { throw 'Cleanup intent leaked into the travel provider.' }
+if (Test-CDriveTravelQueryComplete 'plan a trip') { throw 'Underspecified travel request was sent to FlyAI instead of requesting details.' }
+$genericChineseTravel = -join ([char[]]@(0x98DE, 0x732A, 0x89C4, 0x5212, 0x4E00, 0x6B21, 0x65C5, 0x884C))
+if (Test-CDriveTravelQueryComplete $genericChineseTravel) { throw 'Underspecified Chinese travel request was sent to FlyAI instead of requesting details.' }
+if (-not (Test-CDriveTravelQueryComplete 'Hangzhou, two days, from Shanghai')) { throw 'Travel clarification details were incorrectly rejected.' }
+if ((Join-CDriveTravelQuestion 'plan a trip' 'Hangzhou, two days') -ne 'plan a trip; additional details: Hangzhou, two days') { throw 'Travel clarification context was not combined deterministically.' }
 
 $quotedArgument = ConvertTo-CDriveProcessArgument 'plan "West Lake" trip'
 if ($quotedArgument -ne '"plan \"West Lake\" trip"') { throw 'Windows process argument quoting is not strict.' }

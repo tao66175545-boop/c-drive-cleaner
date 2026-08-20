@@ -57,6 +57,10 @@ if ($uiSource -match '旅行问题将发送给飞猪 FlyAI|启用飞猪旅行建
 if ($uiSource -notmatch '输入旅行问题时，我会在后台仅将本条问题交给飞猪查询') {
     throw 'FlyAI transparency regression: non-blocking data scope disclosure is missing.'
 }
+if ($uiSource -notmatch 'Test-CDriveTravelQueryComplete' -or $uiSource -notmatch '\$travelState\.PendingDetails' -or
+    $uiSource -notmatch 'Join-CDriveTravelQuestion' -or $uiSource -notmatch 'FLYAI_EMPTY') {
+    throw 'FlyAI clarification regression: underspecified or empty-result recovery is missing.'
+}
 if ($uiSource -notmatch "'-SkipProfile'" -or $uiSource -notmatch "'scan\.provider\.selected'" -or $uiSource -notmatch "'scan\.incremental\.completed'") {
     throw 'Incremental scan UI regression: fast scan arguments or provider events are missing.'
 }
@@ -208,6 +212,14 @@ if (-not (Test-AssistantCleanupCommand '请帮我清理低风险缓存')) { thro
 if (Test-AssistantCleanupCommand '不要清理 C盘') { throw 'Negated cleanup request was incorrectly treated as execution approval.' }
 if (-not (Test-CDriveTravelIntent 'plan a weekend trip to Hangzhou')) { throw 'Travel request was not routed to the isolated provider.' }
 if (Test-CDriveTravelIntent 'clean recommended cache') { throw 'Cleanup request leaked into travel routing.' }
+$travelRowsBefore = @($assistantChatSurface.Controls).Count
+Invoke-AssistantTravelQuery '飞猪规划一次旅行'
+if ($travelState.Process -or -not $travelState.PendingDetails -or @($assistantChatSurface.Controls).Count -ne ($travelRowsBefore + 1)) {
+    throw 'Underspecified travel request did not enter non-network clarification state.'
+}
+if ($assistantTranscript.Text -notmatch '目的地.*出发.*几天') { throw 'Travel clarification prompt is not actionable.' }
+$travelState.PendingDetails = $false
+$travelState.PendingQuestion = ''
 if ($initialChatRows[0].Tag.Avatar.Left -ne 0 -or $initialChatRows[0].Tag.Bubble.Left -le $initialChatRows[0].Tag.Avatar.Right) { throw 'Assistant message is not left aligned.' }
 $assistantState.Config = $null
 $assistantInput.Text = 'recommend safe cleanup'

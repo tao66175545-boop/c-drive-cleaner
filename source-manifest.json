@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "version": "1.4.7",
   "baseCommit": "ee20e5055aab1e34ba8152e0e3aab9435137c7bc",
-  "sourceFingerprint": "be3be06081fc653f08e788b877ebf1013a9b395f52cdcf2b47a255073834e1e9",
-  "generatedAt": "2026-08-20T05:47:29.9738583Z",
+  "sourceFingerprint": "e0e2b9cd33a3844d611d9d2000b8ed9203f17ce2eba2449feb43069ccd231d41",
+  "generatedAt": "2026-08-20T06:04:27.1348839Z",
   "files": [
     {
       "path": ".gitattributes",
@@ -37,9 +37,9 @@
     },
     {
       "path": ".ui-smoke-test.ps1",
-      "sha256": "06d256fe0df8dfb2df721d363837936c37468c15f80eaa4aa189607d2abba4b8",
-      "gitBlobSha1": "6bcf2fc09b4e7119e0b8af75ad4abe5bcb7b3d31",
-      "size": 23109
+      "sha256": "5879f7b25fc77a56182feacd8b8b66abfcce050cba9ccf9c101af9fac1d10c64",
+      "gitBlobSha1": "ced4b403bac4a35dbc9518c073b431437cac0db8",
+      "size": 23959
     },
     {
       "path": "AGENTS.md",
@@ -73,9 +73,9 @@
     },
     {
       "path": "C-Drive-Cleaner-UI.ps1",
-      "sha256": "487b69c61098aa91e4dae0bba2e1a705c935bd42565351d75b377b0cd2211f2d",
-      "gitBlobSha1": "09913f487bcc3668143e29673f0e85ecb345f075",
-      "size": 137372
+      "sha256": "8ffee55574435326a8932debca542b05ae728a4fbf625e94e361fdfc94ef9acb",
+      "gitBlobSha1": "231c993fbb4bc6fe20ab11eeb0247ecbe7799de1",
+      "size": 139519
     },
     {
       "path": "C-Drive-Cleaner.ps1",
@@ -193,9 +193,9 @@
     },
     {
       "path": "RELEASE_NOTES_v1.4.7.md",
-      "sha256": "1c052abb684b9854b7b25a3e49977e0e0cb1426c17fc5fd804a2344cae5ae761",
-      "gitBlobSha1": "b17ac9e9e3c6ad3ecbfa91b9fc46d01d5f0e7630",
-      "size": 1677
+      "sha256": "90d3e63b1cc1c0247423510308644885259ce6cb2bd73595d730a52d527e54de",
+      "gitBlobSha1": "506a17035fbc4b70c23345a83d192168005ee088",
+      "size": 2052
     },
     {
       "path": "TravelHost.ps1",
@@ -349,9 +349,9 @@
     },
     {
       "path": "core/FlyAiTravelProvider.ps1",
-      "sha256": "990b558450549c94249966efff8bbecdae1b7143c11e785b61581ddb0f1a207b",
-      "gitBlobSha1": "ba4553b3128141f7445ab4de9cdb04c6e15d2297",
-      "size": 12214
+      "sha256": "179fd5269f7e15e8ddd0499e759d80f46fd046ec60b7f42bec0d01fb083ea08e",
+      "gitBlobSha1": "c7d399a979d99dc366d984e4dbc079b35956782f",
+      "size": 13622
     },
     {
       "path": "core/IncrementalScanIndex.ps1",
@@ -445,9 +445,9 @@
     },
     {
       "path": "tests/FlyAiTravelProviderTests.ps1",
-      "sha256": "e5a8e80b803dda4be5118a3f1322bd9fed30b96eb2e8b5675df72a8291730d24",
-      "gitBlobSha1": "0a94bb6d99b692e812d63585a99c04eb0930b12f",
-      "size": 4007
+      "sha256": "9ddc2321203511e89c1fc72fbfe0b61330caf170bd13c49c697469abbc96ee9d",
+      "gitBlobSha1": "09d0d3c30dd2499a4fdc971841114ba064c7887d",
+      "size": 4761
     },
     {
       "path": "tests/IncrementalScanTests.ps1",

@@ -15,6 +15,24 @@ function Test-CDriveTravelIntent {
     return $Text -match '(?i)\u65c5\u884c|\u65c5\u6e38|\u51fa\u884c|\u5ea6\u5047|\u884c\u7a0b|\u653b\u7565|\u9152\u5e97|\u4f4f\u5bbf|\u6c11\u5bbf|\u673a\u7968|\u822a\u73ed|\u706b\u8f66|\u9ad8\u94c1|\u666f\u70b9|\u95e8\u7968|\u7b7e\u8bc1|\u90ae\u8f6e|\u79df\u8f66|trip|travel|hotel|flight|train|itinerary|vacation'
 }
 
+function Test-CDriveTravelQueryComplete {
+    param([string]$Text)
+    if ([string]::IsNullOrWhiteSpace($Text)) { return $false }
+    if ($Text.Trim() -match '^(?i:\u968f\u4fbf|\u90fd\u884c|\u4f60\u770b|\u4e0d\u77e5\u9053|\u6ca1\u60f3\u597d|\u518d\u8bf4|whatever|anywhere|not sure)[\p{P}\p{S}\s]*$') { return $false }
+
+    $specific = $Text
+    $specific = $specific -replace '(?i)\b(flyai|please|help|me|plan|find|search|show|a|an|the|trip|travel|vacation|itinerary|hotel|flight|train|for|to|from|in)\b', ''
+    $specific = $specific -replace '\u98de\u732a|\u8bf7|\u5e2e\u6211|\u7ed9\u6211|\u7528|\u8ba9|\u6211\u60f3|\u60f3\u8981|\u60f3|\u53ef\u4ee5|\u80fd\u5426|\u89c4\u5212|\u5b89\u6392|\u63a8\u8350|\u67e5\u8be2|\u641c\u7d22|\u67e5\u627e|\u67e5|\u4e00\u6b21|\u4e00\u8d9f|\u4e00\u4e2a|\u65c5\u884c|\u65c5\u6e38|\u51fa\u884c|\u5ea6\u5047|\u884c\u7a0b|\u653b\u7565|\u9152\u5e97|\u4f4f\u5bbf|\u6c11\u5bbf|\u673a\u7968|\u822a\u73ed|\u706b\u8f66|\u9ad8\u94c1|\u666f\u70b9|\u95e8\u7968|\u7b7e\u8bc1|\u90ae\u8f6e|\u79df\u8f66|\u4e00\u4e0b|\u5427', ''
+    $specific = $specific -replace '[\p{P}\p{S}\s]', ''
+    return $specific.Length -ge 2
+}
+
+function Join-CDriveTravelQuestion {
+    param([string]$OriginalQuestion, [string]$Details)
+    if ([string]::IsNullOrWhiteSpace($OriginalQuestion)) { return $Details.Trim() }
+    return ('{0}; additional details: {1}' -f $OriginalQuestion.Trim(), $Details.Trim())
+}
+
 function ConvertTo-CDriveProcessArgument {
     param([AllowEmptyString()][string]$Value)
     if ($Value -notmatch '[\s"]') { return $Value }
