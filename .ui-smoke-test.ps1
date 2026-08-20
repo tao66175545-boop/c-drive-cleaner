@@ -195,13 +195,21 @@ if ($userRows.Count -lt 2 -or $assistantRows.Count -lt 3) { throw 'Two-sided ass
 foreach ($row in $chatRows) {
     if ($row.Tag.Bubble.Right -gt $row.ClientSize.Width -or $row.Tag.Avatar.Right -gt $row.ClientSize.Width) { throw 'Assistant bubble or avatar overflows its message row.' }
     if ($row.Tag.Label.Bottom -gt $row.Tag.Bubble.ClientSize.Height) { throw 'Assistant message text is clipped inside its bubble.' }
-    if ($row.Tag.Label.TextAlign -ne [System.Drawing.ContentAlignment]::MiddleLeft) { throw 'Assistant message text is not vertically centered.' }
+    if ($row.Tag.Label -isnot [System.Windows.Forms.TextBox] -or -not $row.Tag.Label.ReadOnly -or -not $row.Tag.Label.Multiline -or $row.Tag.Label.BorderStyle -ne [System.Windows.Forms.BorderStyle]::None) { throw 'Assistant message text is not a selectable read-only control.' }
+    if (-not $row.Tag.Label.ShortcutsEnabled -or $row.Tag.Label.HideSelection -or $row.Tag.Label.Cursor -ne [System.Windows.Forms.Cursors]::IBeam) { throw 'Assistant message text does not expose visible standard selection and copy interaction.' }
+    if ($null -eq $row.Tag.Label.ContextMenuStrip -or $row.Tag.Label.ContextMenuStrip.Items.Count -lt 2) { throw 'Assistant message copy context menu is missing.' }
     if ($row.Tag.Label.Left -ne 14 -or ($row.Tag.Bubble.ClientSize.Width - $row.Tag.Label.Right) -ne 14) { throw 'Assistant bubble horizontal text insets are inconsistent.' }
-    if ($row.Tag.Label.Top -ne 10 -or ($row.Tag.Bubble.ClientSize.Height - $row.Tag.Label.Bottom) -ne 10) { throw 'Assistant bubble vertical text insets are inconsistent.' }
+    $topInset = $row.Tag.Label.Top
+    $bottomInset = $row.Tag.Bubble.ClientSize.Height - $row.Tag.Label.Bottom
+    if ($topInset -lt 10 -or $bottomInset -lt 10 -or [Math]::Abs($topInset - $bottomInset) -gt 1) { throw 'Assistant message text is not vertically centered with safe insets.' }
     if ([string]$row.Tag.Role -eq 'user' -and $row.Tag.Bubble.Right -ge $row.Tag.Avatar.Left) { throw 'User message is not right aligned before its avatar.' }
 }
-$streamRows = @($assistantRows | Where-Object { $_.Tag.Label.Text -match 'Fixture stream complete\.' })
-if ($streamRows.Count -ne 1) { throw 'Streaming response did not stay in one assistant bubble.' }
+$copyFixture = $streamRows = @($assistantRows | Where-Object { $_.Tag.Label.Text -match 'Fixture stream complete\.' })
+if ($copyFixture.Count -ne 1) { throw 'Streaming response did not stay in one assistant bubble.' }
+$copyFixture[0].Tag.Label.Select(0, 7)
+if ([string]$copyFixture[0].Tag.Label.SelectedText -ne 'Fixture') { throw 'Assistant message text cannot be selected programmatically.' }
+$copyFixture[0].Tag.Label.Select(0, 0)
+$streamRows = $copyFixture
 $maximumAllowedBubbleWidth = [Math]::Floor(($streamRows[0].ClientSize.Width - 50) * 0.72) + 1
 if ($streamRows[0].Tag.Bubble.Width -gt $maximumAllowedBubbleWidth) { throw 'Assistant bubble exceeded the responsive maximum width.' }
 $assistantState.FixtureSsePath = ''

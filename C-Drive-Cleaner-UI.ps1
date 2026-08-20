@@ -1206,8 +1206,10 @@ function Update-AssistantChatRowLayout {
     $refs.Avatar.Top = 0
     $refs.Bubble.Size = [System.Drawing.Size]::new($bubbleWidth, $bubbleHeight)
     $refs.Bubble.Top = 0
-    $refs.Label.Location = [System.Drawing.Point]::new($bubblePaddingX, $bubblePaddingY)
-    $refs.Label.Size = [System.Drawing.Size]::new($labelWidth, [Math]::Max(20, $bubbleHeight - ($bubblePaddingY * 2)))
+    $textControlHeight = [Math]::Min($bubbleHeight - ($bubblePaddingY * 2), [Math]::Max($refs.Label.Font.Height + 2, $measured.Height + 2))
+    $textControlTop = [Math]::Max($bubblePaddingY, [int][Math]::Floor(($bubbleHeight - $textControlHeight) / 2))
+    $refs.Label.Location = [System.Drawing.Point]::new($bubblePaddingX, $textControlTop)
+    $refs.Label.Size = [System.Drawing.Size]::new($labelWidth, $textControlHeight)
     if ([string]$refs.Role -eq 'user') {
         $refs.Avatar.Left = [Math]::Max(0, $rowWidth - $avatarSize)
         $refs.Bubble.Left = [Math]::Max(0, $refs.Avatar.Left - $gap - $bubbleWidth)
@@ -1751,15 +1753,34 @@ function New-AssistantChatRow {
         $bubble.BorderColor = [System.Drawing.Color]::FromArgb(220, 226, 231)
     }
 
-    $label = New-Object System.Windows.Forms.Label
-    $label.AutoSize = $false
+    $label = New-Object System.Windows.Forms.TextBox
     $label.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 9)
     $label.ForeColor = if ($Role -eq 'user') { [System.Drawing.Color]::White } else { [System.Drawing.Color]::FromArgb(49, 62, 72) }
-    $label.BackColor = [System.Drawing.Color]::Transparent
+    $label.BackColor = $bubble.BackColor
     $label.Text = $Text
-    $label.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
-    $label.UseCompatibleTextRendering = $false
+    $label.ReadOnly = $true
+    $label.BorderStyle = [System.Windows.Forms.BorderStyle]::None
+    $label.Multiline = $true
+    $label.ScrollBars = [System.Windows.Forms.ScrollBars]::None
+    $label.WordWrap = $true
+    $label.ShortcutsEnabled = $true
+    $label.HideSelection = $false
+    $label.TabStop = $true
+    $label.Cursor = [System.Windows.Forms.Cursors]::IBeam
+    $label.AccessibleRole = [System.Windows.Forms.AccessibleRole]::StaticText
     $label.AccessibleName = if ($Role -eq 'user') { '你的消息' } else { '智能助手消息' }
+
+    $messageMenu = New-Object System.Windows.Forms.ContextMenuStrip
+    $copyMessage = $messageMenu.Items.Add('复制')
+    $selectAllMessage = $messageMenu.Items.Add('全选')
+    $messageMenu.Add_Opening({
+        param($sender, $eventArgs)
+        $copyMessage.Enabled = $label.SelectionLength -gt 0
+        $selectAllMessage.Enabled = $label.TextLength -gt 0
+    }.GetNewClosure())
+    $copyMessage.Add_Click({ if ($label.SelectionLength -gt 0) { $label.Copy() } }.GetNewClosure())
+    $selectAllMessage.Add_Click({ $label.SelectAll(); $label.Focus() }.GetNewClosure())
+    $label.ContextMenuStrip = $messageMenu
 
     $bubble.Controls.Add($label)
     $row.Controls.AddRange(@($avatar, $bubble))

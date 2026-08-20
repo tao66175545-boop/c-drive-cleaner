@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "version": "1.4.6",
   "baseCommit": "ee20e5055aab1e34ba8152e0e3aab9435137c7bc",
-  "sourceFingerprint": "156ab0e02f33c7313179288f698dcb062a10ad7d8d6b5b846a91e89fdb503bea",
-  "generatedAt": "2026-08-20T02:53:31.7455427Z",
+  "sourceFingerprint": "c3085d0c1c8fc5e141fc266b6303854efbb19dc81006e5e32376d0e10722f2c1",
+  "generatedAt": "2026-08-20T03:11:55.0560415Z",
   "files": [
     {
       "path": ".gitattributes",
@@ -37,9 +37,9 @@
     },
     {
       "path": ".ui-smoke-test.ps1",
-      "sha256": "fa04ed86254a07e4c312462ce42ad75a2f80953d5fa53254808a22fc7dbff6c0",
-      "gitBlobSha1": "b6f58592eca5325a6561ec24e0c2628851778d21",
-      "size": 18918
+      "sha256": "29bdd7466a78fce85c8ad2bc096ca2cf0117a1023e2454fe8f190653af3b4825",
+      "gitBlobSha1": "e38ef059834fec3906910e0b4cf46257e32abd73",
+      "size": 19837
     },
     {
       "path": "AGENTS.md",
@@ -73,9 +73,9 @@
     },
     {
       "path": "C-Drive-Cleaner-UI.ps1",
-      "sha256": "eb88e3f94a7f6accbb0e810c99fa53182aff8666712c14d6ead76cd8245166eb",
-      "gitBlobSha1": "a32b4a6a499a60c7c027cb189bd54a432845c903",
-      "size": 135304
+      "sha256": "c603dc6f713e3ab15dc5f9f0ab770b3251feecb974195fb41f5bd75922b61933",
+      "gitBlobSha1": "c2455d46550771cfb30b7acc13262558f3049a15",
+      "size": 136426
     },
     {
       "path": "C-Drive-Cleaner.ps1",
@@ -103,15 +103,15 @@
     },
     {
       "path": "README-使用说明.txt",
-      "sha256": "ec02fb07658593a518611a2f1a5c264d39f012762780e26c7800b6b98212fbc0",
-      "gitBlobSha1": "bf3b70fdcfd383e788779cd81321af3d3d16e39d",
-      "size": 4730
+      "sha256": "83bb94df76b5d2233d910cee8a15dbcee8de08f100c9055901f5199522d8537b",
+      "gitBlobSha1": "0c14e1affc8e29f8934e5a49c8e630e7aa03eb2b",
+      "size": 4874
     },
     {
       "path": "README.md",
-      "sha256": "f0fe385e654a29d1bea89240551fc0736f00d87ad3255fdc6ef1c69504fb5ad4",
-      "gitBlobSha1": "de3cfa5207bd1e8093f85bb66f3896c7fb446c5a",
-      "size": 7889
+      "sha256": "b412789bcaeb1a4da2393e240dc65bc1f7f191a505ac687d94fe71d73daf2ea8",
+      "gitBlobSha1": "35134dfee8a604a869057af71c56a529463a4757",
+      "size": 8086
     },
     {
       "path": "RELEASE_NOTES_v1.0.0.md",
@@ -187,9 +187,9 @@
     },
     {
       "path": "RELEASE_NOTES_v1.4.6.md",
-      "sha256": "8724c4d8ae1e4471dd0c1adf59bfde2c1346542de0f28a161ac591f060142178",
-      "gitBlobSha1": "88914586a772b61544d3904d2837b899311e68d6",
-      "size": 1376
+      "sha256": "922db032f1b8d07bc918e3e998efe44ba840baea08f493291564ba73fa2cbe19",
+      "gitBlobSha1": "011d3b9501af0684d31314b50f7b217633ccd2a8",
+      "size": 1534
     },
     {
       "path": "TravelHost.ps1",
@@ -199,9 +199,9 @@
     },
     {
       "path": "UI-DESIGN-RULES.md",
-      "sha256": "6e819701720b5ca70eaf7cab89b3815c7d56fa91fa638026b9cba7dca68a1ca2",
-      "gitBlobSha1": "3d291852a66a514424b67d25a5ba3f3bcd6e74ec",
-      "size": 7347
+      "sha256": "572ddaca3fd8ec3125be8576fa4bc89ca3d829a9af43ca8eb8d50388b6d534fc",
+      "gitBlobSha1": "49de1fc86362c30d7cbc220f7bc0352e3da64694",
+      "size": 7605
     },
     {
       "path": "agent-roadmap.json",
