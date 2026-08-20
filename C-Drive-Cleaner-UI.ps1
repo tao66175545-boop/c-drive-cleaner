@@ -209,6 +209,8 @@ $spriteSheetPath = Join-Path $scriptDir 'assets\cleaning-sprite-source.png'
 $logoSvgPath = Join-Path $scriptDir 'assets\logo-animated.svg'
 $logoSpritePath = Join-Path $scriptDir 'assets\logo-animated-sprite.png'
 $logoFallbackPath = Join-Path $scriptDir 'assets\sugon-cloud-logo-red.png'
+$assistantAgentAvatarPath = Join-Path $scriptDir 'assets\assistant-agent-wave.png'
+$assistantUserAvatarPaths = @(1..6 | ForEach-Object { Join-Path $scriptDir ("assets\assistant-user-{0}.png" -f $_) })
 
 if (-not (Test-Path -LiteralPath $mainScript)) {
     [System.Windows.Forms.MessageBox]::Show("找不到主程序：`n$mainScript", 'C盘清理', 'OK', 'Error') | Out-Null
@@ -992,19 +994,41 @@ $assistantHeader.Controls.AddRange(@($assistantTitle, $assistantStatus, $assista
 $assistantShell = New-Object CDriveRoundedPanel
 $assistantShell.Dock = 'Fill'
 $assistantShell.Margin = New-Object System.Windows.Forms.Padding(0, 0, 0, 10)
-$assistantShell.Padding = New-Object System.Windows.Forms.Padding(14)
-$assistantShell.BackColor = [System.Drawing.Color]::White
+$assistantShell.Padding = New-Object System.Windows.Forms.Padding(8, 12, 4, 8)
+$assistantShell.BackColor = [System.Drawing.Color]::FromArgb(247, 249, 250)
 $assistantShell.BorderColor = [System.Drawing.Color]::FromArgb(220, 226, 231)
 $assistantShell.CornerRadius = 8
+$assistantChatSurface = New-Object System.Windows.Forms.FlowLayoutPanel
+$assistantChatSurface.Dock = 'Fill'
+$assistantChatSurface.AutoScroll = $true
+$assistantChatSurface.FlowDirection = 'TopDown'
+$assistantChatSurface.WrapContents = $false
+$assistantChatSurface.Padding = New-Object System.Windows.Forms.Padding(4, 2, 8, 6)
+$assistantChatSurface.BackColor = [System.Drawing.Color]::Transparent
+$assistantChatSurface.HorizontalScroll.Enabled = $false
+$assistantChatSurface.HorizontalScroll.Visible = $false
+
+# Kept as a non-visual accessibility and test transcript. Chat bubbles are the user-facing renderer.
 $assistantTranscript = New-Object System.Windows.Forms.RichTextBox
-$assistantTranscript.Dock = 'Fill'
+$assistantTranscript.Visible = $false
 $assistantTranscript.ReadOnly = $true
-$assistantTranscript.BorderStyle = 'None'
-$assistantTranscript.BackColor = [System.Drawing.Color]::White
-$assistantTranscript.ForeColor = [System.Drawing.Color]::FromArgb(56, 70, 80)
-$assistantTranscript.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 9)
-$assistantTranscript.Text = "助手  请先开始扫描。扫描完成后可以问：哪些项目建议清理、某个项目是什么，或开发缓存有哪些。`r`n"
-$assistantShell.Controls.Add($assistantTranscript)
+$assistantTranscript.Text = ''
+$assistantShell.Controls.Add($assistantChatSurface)
+
+$assistantAgentAvatarImage = $null
+$assistantUserAvatarImage = $null
+try {
+    if (Test-Path -LiteralPath $assistantAgentAvatarPath -PathType Leaf) {
+        $assistantAgentAvatarImage = [System.Drawing.Image]::FromFile($assistantAgentAvatarPath)
+    }
+    $availableUserAvatars = @($assistantUserAvatarPaths | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf })
+    if ($availableUserAvatars.Count -gt 0) {
+        $assistantUserAvatarImage = [System.Drawing.Image]::FromFile((Get-Random -InputObject $availableUserAvatars))
+    }
+} catch {
+    $assistantAgentAvatarImage = $null
+    $assistantUserAvatarImage = $null
+}
 
 $assistantComposer = New-Object CDriveRoundedPanel
 $assistantComposer.Dock = 'Fill'
@@ -1081,6 +1105,7 @@ $assistantState = @{
     ModelCalls = 0
     ToolCalls = 0
     AssistantBubbleOpen = $false
+    ActiveBubble = $null
     Config = $null
     FixtureResponsePath = ''
     FixtureSsePath = ''
@@ -1135,6 +1160,47 @@ function Update-AssistantComposerLayout {
 
 $assistantComposer.Add_Resize({ Update-AssistantComposerLayout })
 $assistantComposer.Add_Layout({ Update-AssistantComposerLayout })
+
+function Update-AssistantChatRowLayout {
+    param($Row)
+    if ($null -eq $Row -or $null -eq $Row.Tag) { return }
+    $refs = $Row.Tag
+    $rowWidth = [Math]::Max(260, $assistantChatSurface.ClientSize.Width - 18)
+    $Row.Width = $rowWidth
+    $avatarSize = 40
+    $gap = 10
+    $maximumBubbleWidth = [Math]::Max(180, [Math]::Floor(($rowWidth - $avatarSize - $gap) * 0.72))
+    $textMaximumWidth = [Math]::Max(140, $maximumBubbleWidth - 24)
+    $flags = [System.Windows.Forms.TextFormatFlags]::WordBreak -bor [System.Windows.Forms.TextFormatFlags]::NoPrefix -bor [System.Windows.Forms.TextFormatFlags]::TextBoxControl
+    $singleLine = [System.Windows.Forms.TextRenderer]::MeasureText([string]$refs.Label.Text, $refs.Label.Font)
+    $textWidth = [Math]::Min($textMaximumWidth, [Math]::Max(72, $singleLine.Width))
+    $measured = [System.Windows.Forms.TextRenderer]::MeasureText([string]$refs.Label.Text, $refs.Label.Font, [System.Drawing.Size]::new($textWidth, 10000), $flags)
+    $bubbleWidth = [Math]::Min($maximumBubbleWidth, [Math]::Max(96, $measured.Width + 24))
+    $labelWidth = [Math]::Max(72, $bubbleWidth - 24)
+    $measured = [System.Windows.Forms.TextRenderer]::MeasureText([string]$refs.Label.Text, $refs.Label.Font, [System.Drawing.Size]::new($labelWidth, 10000), $flags)
+    $bubbleHeight = [Math]::Max(42, $measured.Height + 20)
+    $Row.Height = [Math]::Max($avatarSize, $bubbleHeight) + 10
+    $refs.Avatar.Size = [System.Drawing.Size]::new($avatarSize, $avatarSize)
+    $refs.Avatar.Top = 0
+    $refs.Bubble.Size = [System.Drawing.Size]::new($bubbleWidth, $bubbleHeight)
+    $refs.Bubble.Top = 0
+    $refs.Label.Location = [System.Drawing.Point]::new(12, 10)
+    $refs.Label.Size = [System.Drawing.Size]::new($labelWidth, [Math]::Max(20, $bubbleHeight - 20))
+    if ([string]$refs.Role -eq 'user') {
+        $refs.Avatar.Left = [Math]::Max(0, $rowWidth - $avatarSize)
+        $refs.Bubble.Left = [Math]::Max(0, $refs.Avatar.Left - $gap - $bubbleWidth)
+    } else {
+        $refs.Avatar.Left = 0
+        $refs.Bubble.Left = $avatarSize + $gap
+    }
+}
+
+function Update-AssistantChatLayout {
+    foreach ($row in @($assistantChatSurface.Controls)) { Update-AssistantChatRowLayout $row }
+}
+
+$assistantChatSurface.Add_Resize({ Update-AssistantChatLayout })
+$assistantChatSurface.Add_Layout({ Update-AssistantChatLayout })
 
 function Update-CleanupSelectionRows {
     $rowWidth = [Math]::Max(1, $selectionItemsPanel.ClientSize.Width - 8)
@@ -1629,43 +1695,82 @@ function Invoke-Main {
     $poll.Start()
 }
 
+function New-AssistantChatRow {
+    param(
+        [ValidateSet('assistant', 'user')][string]$Role,
+        [string]$Text
+    )
+    $row = New-Object System.Windows.Forms.Panel
+    $row.BackColor = [System.Drawing.Color]::Transparent
+    $row.Margin = New-Object System.Windows.Forms.Padding(0)
+    $row.TabStop = $false
+
+    $avatar = New-Object System.Windows.Forms.PictureBox
+    $avatar.SizeMode = 'Zoom'
+    $avatar.BackColor = [System.Drawing.Color]::Transparent
+    $avatar.TabStop = $false
+    $avatar.Image = if ($Role -eq 'user') { $assistantUserAvatarImage } else { $assistantAgentAvatarImage }
+    $avatar.AccessibleName = if ($Role -eq 'user') { '用户头像' } else { '智能助手挥手头像' }
+
+    $bubble = New-Object CDriveRoundedPanel
+    $bubble.CornerRadius = 8
+    if ($Role -eq 'user') {
+        $bubble.BackColor = [System.Drawing.Color]::FromArgb(181, 30, 40)
+        $bubble.BorderColor = [System.Drawing.Color]::FromArgb(181, 30, 40)
+    } else {
+        $bubble.BackColor = [System.Drawing.Color]::White
+        $bubble.BorderColor = [System.Drawing.Color]::FromArgb(220, 226, 231)
+    }
+
+    $label = New-Object System.Windows.Forms.Label
+    $label.AutoSize = $false
+    $label.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 9)
+    $label.ForeColor = if ($Role -eq 'user') { [System.Drawing.Color]::White } else { [System.Drawing.Color]::FromArgb(49, 62, 72) }
+    $label.BackColor = [System.Drawing.Color]::Transparent
+    $label.Text = $Text
+    $label.UseCompatibleTextRendering = $false
+    $label.AccessibleName = if ($Role -eq 'user') { '你的消息' } else { '智能助手消息' }
+
+    $bubble.Controls.Add($label)
+    $row.Controls.AddRange(@($avatar, $bubble))
+    $row.Tag = [PSCustomObject]@{ Role = $Role; Avatar = $avatar; Bubble = $bubble; Label = $label }
+    $assistantChatSurface.Controls.Add($row)
+    Update-AssistantChatRowLayout $row
+    $assistantChatSurface.ScrollControlIntoView($row)
+    return $row
+}
+
 function Add-AssistantMessage {
     param([string]$Role, [string]$Text)
     if ([string]::IsNullOrWhiteSpace($Text)) { return }
-    $assistantTranscript.SelectionStart = $assistantTranscript.TextLength
-    $assistantTranscript.SelectionColor = if ($Role -eq '你') { [System.Drawing.Color]::FromArgb(181, 30, 40) } else { [System.Drawing.Color]::FromArgb(56, 70, 80) }
-    $assistantTranscript.SelectionFont = New-Object System.Drawing.Font('Microsoft YaHei UI', 9, [System.Drawing.FontStyle]::Bold)
-    $assistantTranscript.AppendText($Role + '  ')
-    $assistantTranscript.SelectionColor = [System.Drawing.Color]::FromArgb(56, 70, 80)
-    $assistantTranscript.SelectionFont = New-Object System.Drawing.Font('Microsoft YaHei UI', 9)
-    $assistantTranscript.AppendText($Text + "`r`n`r`n")
-    $assistantTranscript.SelectionStart = $assistantTranscript.TextLength
-    $assistantTranscript.ScrollToCaret()
+    $assistantTranscript.AppendText($Role + '  ' + $Text + "`r`n`r`n")
+    $chatRole = if ($Role -eq '你') { 'user' } else { 'assistant' }
+    $null = New-AssistantChatRow $chatRole $Text
 }
 
 function Add-AssistantDelta {
     param([string]$Text)
     if ([string]::IsNullOrEmpty($Text)) { return }
     if (-not $assistantState.AssistantBubbleOpen) {
-        $assistantTranscript.SelectionStart = $assistantTranscript.TextLength
-        $assistantTranscript.SelectionColor = [System.Drawing.Color]::FromArgb(56, 70, 80)
-        $assistantTranscript.SelectionFont = New-Object System.Drawing.Font('Microsoft YaHei UI', 9, [System.Drawing.FontStyle]::Bold)
         $assistantTranscript.AppendText('助手  ')
-        $assistantTranscript.SelectionFont = New-Object System.Drawing.Font('Microsoft YaHei UI', 9)
+        $row = New-AssistantChatRow 'assistant' ''
+        $assistantState.ActiveBubble = $row.Tag
         $assistantState.AssistantBubbleOpen = $true
     }
     $assistantTranscript.AppendText($Text)
-    $assistantTranscript.SelectionStart = $assistantTranscript.TextLength
-    $assistantTranscript.ScrollToCaret()
+    $assistantState.ActiveBubble.Label.Text += $Text
+    Update-AssistantChatRowLayout $assistantState.ActiveBubble.Bubble.Parent
+    $assistantChatSurface.ScrollControlIntoView($assistantState.ActiveBubble.Bubble.Parent)
 }
 
 function Complete-AssistantDelta {
     if (-not $assistantState.AssistantBubbleOpen) { return }
     $assistantTranscript.AppendText([Environment]::NewLine + [Environment]::NewLine)
-    $assistantTranscript.SelectionStart = $assistantTranscript.TextLength
-    $assistantTranscript.ScrollToCaret()
     $assistantState.AssistantBubbleOpen = $false
+    $assistantState.ActiveBubble = $null
 }
+
+Add-AssistantMessage '助手' '你好，我是你的智能清理助手。请先开始扫描；扫描完成后，我可以解释项目并给出可撤销的勾选建议。'
 
 function Update-AgentMode {
     $assistantState.Config = $null
@@ -2205,6 +2310,7 @@ function Invoke-CloudAssistantQuery {
     $assistantState.ModelCalls = 0
     $assistantState.ToolCalls = 0
     $assistantState.AssistantBubbleOpen = $false
+    $assistantState.ActiveBubble = $null
     $assistantState.Messages.Add([PSCustomObject]@{ role = 'system'; content = Get-AgentSystemPrompt })
     if ([string]$assistantState.Config.protocol -eq 'text-only' -and @($dashboardState.SelectionItems).Count -gt 0) {
         $safeSummary = ConvertTo-CDriveCopilotSummary (Get-AssistantScanPayload)
@@ -2364,6 +2470,8 @@ $form.Add_FormClosing({
     foreach ($frame in $logoFrames) { try { $frame.Dispose() } catch {} }
     if ($logoSpriteSheet) { try { $logoSpriteSheet.Dispose() } catch {} }
     if ($logoStaticImage -and $logoFrames.Count -eq 0) { try { $logoStaticImage.Dispose() } catch {} }
+    if ($assistantAgentAvatarImage) { try { $assistantAgentAvatarImage.Dispose() } catch {} }
+    if ($assistantUserAvatarImage) { try { $assistantUserAvatarImage.Dispose() } catch {} }
 })
 
 Append-Log $log '就绪。点「开始扫描」只诊断，不会删文件。'

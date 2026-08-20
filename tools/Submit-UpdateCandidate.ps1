@@ -30,13 +30,25 @@ function Invoke-GhApi {
             [System.IO.File]::WriteAllText($inputPath, $json, (New-Object System.Text.UTF8Encoding($false)))
             $arguments += @('--input', $inputPath)
         }
-        $previousErrorActionPreference = $ErrorActionPreference
-        $ErrorActionPreference = 'Continue'
-        try {
-            $output = & gh @arguments 2>&1
-            $exitCode = $LASTEXITCODE
-        } finally {
-            $ErrorActionPreference = $previousErrorActionPreference
+        $output = @()
+        $exitCode = 1
+        $maximumAttempts = 5
+        for ($attempt = 1; $attempt -le $maximumAttempts; $attempt++) {
+            $previousErrorActionPreference = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            try {
+                $output = & gh @arguments 2>&1
+                $exitCode = $LASTEXITCODE
+            } finally {
+                $ErrorActionPreference = $previousErrorActionPreference
+            }
+            if ($exitCode -eq 0) { break }
+            $failureText = [string]::Join("`n", @($output))
+            $isTransient = $failureText -match '(?i)\bEOF\b|connection reset|timed? out|timeout|TLS handshake|HTTP 5\d\d|502 Bad Gateway|503 Service Unavailable|504 Gateway Timeout'
+            if (-not $isTransient -or $attempt -ge $maximumAttempts) { break }
+            $delaySeconds = [Math]::Min(8, [Math]::Pow(2, $attempt - 1))
+            Write-Warning "Transient GitHub API failure ($Method $Endpoint), retry $attempt/$maximumAttempts in $delaySeconds second(s)."
+            Start-Sleep -Seconds $delaySeconds
         }
         if ($exitCode -ne 0) {
             if ($AllowFailure) { return $null }
