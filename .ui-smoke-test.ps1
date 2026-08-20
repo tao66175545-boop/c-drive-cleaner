@@ -195,6 +195,9 @@ if ($userRows.Count -lt 2 -or $assistantRows.Count -lt 3) { throw 'Two-sided ass
 foreach ($row in $chatRows) {
     if ($row.Tag.Bubble.Right -gt $row.ClientSize.Width -or $row.Tag.Avatar.Right -gt $row.ClientSize.Width) { throw 'Assistant bubble or avatar overflows its message row.' }
     if ($row.Tag.Label.Bottom -gt $row.Tag.Bubble.ClientSize.Height) { throw 'Assistant message text is clipped inside its bubble.' }
+    if ($row.Tag.Label.TextAlign -ne [System.Drawing.ContentAlignment]::MiddleLeft) { throw 'Assistant message text is not vertically centered.' }
+    if ($row.Tag.Label.Left -ne 14 -or ($row.Tag.Bubble.ClientSize.Width - $row.Tag.Label.Right) -ne 14) { throw 'Assistant bubble horizontal text insets are inconsistent.' }
+    if ($row.Tag.Label.Top -ne 10 -or ($row.Tag.Bubble.ClientSize.Height - $row.Tag.Label.Bottom) -ne 10) { throw 'Assistant bubble vertical text insets are inconsistent.' }
     if ([string]$row.Tag.Role -eq 'user' -and $row.Tag.Bubble.Right -ge $row.Tag.Avatar.Left) { throw 'User message is not right aligned before its avatar.' }
 }
 $streamRows = @($assistantRows | Where-Object { $_.Tag.Label.Text -match 'Fixture stream complete\.' })

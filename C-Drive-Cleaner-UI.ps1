@@ -1187,23 +1187,27 @@ function Update-AssistantChatRowLayout {
     $Row.Width = $rowWidth
     $avatarSize = 40
     $gap = 10
+    $bubblePaddingX = 14
+    $bubblePaddingY = 10
+    $bubbleMinimumWidth = 100
+    $bubbleMinimumHeight = 42
     $maximumBubbleWidth = [Math]::Max(180, [Math]::Floor(($rowWidth - $avatarSize - $gap) * 0.72))
-    $textMaximumWidth = [Math]::Max(140, $maximumBubbleWidth - 24)
-    $flags = [System.Windows.Forms.TextFormatFlags]::WordBreak -bor [System.Windows.Forms.TextFormatFlags]::NoPrefix -bor [System.Windows.Forms.TextFormatFlags]::TextBoxControl
+    $textMaximumWidth = [Math]::Max(140, $maximumBubbleWidth - ($bubblePaddingX * 2))
+    $flags = [System.Windows.Forms.TextFormatFlags]::WordBreak -bor [System.Windows.Forms.TextFormatFlags]::NoPrefix -bor [System.Windows.Forms.TextFormatFlags]::TextBoxControl -bor [System.Windows.Forms.TextFormatFlags]::NoPadding
     $singleLine = [System.Windows.Forms.TextRenderer]::MeasureText([string]$refs.Label.Text, $refs.Label.Font)
     $textWidth = [Math]::Min($textMaximumWidth, [Math]::Max(72, $singleLine.Width))
     $measured = [System.Windows.Forms.TextRenderer]::MeasureText([string]$refs.Label.Text, $refs.Label.Font, [System.Drawing.Size]::new($textWidth, 10000), $flags)
-    $bubbleWidth = [Math]::Min($maximumBubbleWidth, [Math]::Max(96, $measured.Width + 24))
-    $labelWidth = [Math]::Max(72, $bubbleWidth - 24)
+    $bubbleWidth = [Math]::Min($maximumBubbleWidth, [Math]::Max($bubbleMinimumWidth, $measured.Width + ($bubblePaddingX * 2)))
+    $labelWidth = [Math]::Max(72, $bubbleWidth - ($bubblePaddingX * 2))
     $measured = [System.Windows.Forms.TextRenderer]::MeasureText([string]$refs.Label.Text, $refs.Label.Font, [System.Drawing.Size]::new($labelWidth, 10000), $flags)
-    $bubbleHeight = [Math]::Max(42, $measured.Height + 20)
+    $bubbleHeight = [Math]::Max($bubbleMinimumHeight, $measured.Height + ($bubblePaddingY * 2))
     $Row.Height = [Math]::Max($avatarSize, $bubbleHeight) + 10
     $refs.Avatar.Size = [System.Drawing.Size]::new($avatarSize, $avatarSize)
     $refs.Avatar.Top = 0
     $refs.Bubble.Size = [System.Drawing.Size]::new($bubbleWidth, $bubbleHeight)
     $refs.Bubble.Top = 0
-    $refs.Label.Location = [System.Drawing.Point]::new(12, 10)
-    $refs.Label.Size = [System.Drawing.Size]::new($labelWidth, [Math]::Max(20, $bubbleHeight - 20))
+    $refs.Label.Location = [System.Drawing.Point]::new($bubblePaddingX, $bubblePaddingY)
+    $refs.Label.Size = [System.Drawing.Size]::new($labelWidth, [Math]::Max(20, $bubbleHeight - ($bubblePaddingY * 2)))
     if ([string]$refs.Role -eq 'user') {
         $refs.Avatar.Left = [Math]::Max(0, $rowWidth - $avatarSize)
         $refs.Bubble.Left = [Math]::Max(0, $refs.Avatar.Left - $gap - $bubbleWidth)
@@ -1753,6 +1757,7 @@ function New-AssistantChatRow {
     $label.ForeColor = if ($Role -eq 'user') { [System.Drawing.Color]::White } else { [System.Drawing.Color]::FromArgb(49, 62, 72) }
     $label.BackColor = [System.Drawing.Color]::Transparent
     $label.Text = $Text
+    $label.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
     $label.UseCompatibleTextRendering = $false
     $label.AccessibleName = if ($Role -eq 'user') { '你的消息' } else { '智能助手消息' }
 

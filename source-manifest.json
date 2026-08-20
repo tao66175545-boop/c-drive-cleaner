@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "version": "1.4.6",
   "baseCommit": "ee20e5055aab1e34ba8152e0e3aab9435137c7bc",
-  "sourceFingerprint": "0bd8d3a2b7c2855e9b91ecfe9b9a58d32ae0e3e8a350830d81d9de4ea83efff8",
-  "generatedAt": "2026-08-20T02:40:43.3232288Z",
+  "sourceFingerprint": "156ab0e02f33c7313179288f698dcb062a10ad7d8d6b5b846a91e89fdb503bea",
+  "generatedAt": "2026-08-20T02:53:31.7455427Z",
   "files": [
     {
       "path": ".gitattributes",
@@ -37,9 +37,9 @@
     },
     {
       "path": ".ui-smoke-test.ps1",
-      "sha256": "c109d52035d9d03590bbd4d5a262a3814b2ffbef5f9f264601cdc513343b1798",
-      "gitBlobSha1": "032d9dcd7769b113a53efb06bb35f678c2884150",
-      "size": 18422
+      "sha256": "fa04ed86254a07e4c312462ce42ad75a2f80953d5fa53254808a22fc7dbff6c0",
+      "gitBlobSha1": "b6f58592eca5325a6561ec24e0c2628851778d21",
+      "size": 18918
     },
     {
       "path": "AGENTS.md",
@@ -73,9 +73,9 @@
     },
     {
       "path": "C-Drive-Cleaner-UI.ps1",
-      "sha256": "fd8e57e51a1074cc69fbe298dd6f5556ad38263678748a617571812aa44dd496",
-      "gitBlobSha1": "a67522890cc17f2cb9162821e32e8358a6f34aad",
-      "size": 134914
+      "sha256": "eb88e3f94a7f6accbb0e810c99fa53182aff8666712c14d6ead76cd8245166eb",
+      "gitBlobSha1": "a32b4a6a499a60c7c027cb189bd54a432845c903",
+      "size": 135304
     },
     {
       "path": "C-Drive-Cleaner.ps1",
@@ -187,9 +187,9 @@
     },
     {
       "path": "RELEASE_NOTES_v1.4.6.md",
-      "sha256": "1e5f5fd47e2238b93294087b23a0f36e6285ee9fb9241c56b2bed6671a5407a8",
-      "gitBlobSha1": "e049a0d83dbbb866a11860c0a8bede51a2d08bb7",
-      "size": 1206
+      "sha256": "8724c4d8ae1e4471dd0c1adf59bfde2c1346542de0f28a161ac591f060142178",
+      "gitBlobSha1": "88914586a772b61544d3904d2837b899311e68d6",
+      "size": 1376
     },
     {
       "path": "TravelHost.ps1",
@@ -199,9 +199,9 @@
     },
     {
       "path": "UI-DESIGN-RULES.md",
-      "sha256": "17a983e0e31694d7a100a0d629adba8f07b0e25a9fd65749676f6ad5e7bb22c5",
-      "gitBlobSha1": "d3b932604120a2026fc89586eee64fef1ac4682c",
-      "size": 7247
+      "sha256": "6e819701720b5ca70eaf7cab89b3815c7d56fa91fa638026b9cba7dca68a1ca2",
+      "gitBlobSha1": "3d291852a66a514424b67d25a5ba3f3bcd6e74ec",
+      "size": 7347
     },
     {
       "path": "agent-roadmap.json",
