@@ -56,6 +56,9 @@ try {
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\AgentRuntimeTests.ps1')
     if ($LASTEXITCODE -ne 0) { throw 'Agent runtime tests failed.' }
 
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\FlyAiTravelProviderTests.ps1')
+    if ($LASTEXITCODE -ne 0) { throw 'FlyAI travel provider tests failed.' }
+
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\MigrationDecisionTests.ps1')
     if ($LASTEXITCODE -ne 0) { throw 'Shell migration decision tests failed.' }
 
