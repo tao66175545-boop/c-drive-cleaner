@@ -61,6 +61,16 @@ $expectedVersion = [string]((Get-Content -LiteralPath (Join-Path $scriptDir 'ver
 if ($sideFooter.Text -ne ('版本号 v{0}' -f $expectedVersion)) {
     throw ('Version label mismatch: expected 版本号 v{0}, actual {1}' -f $expectedVersion, $sideFooter.Text)
 }
+if ($sideFooter.AutoSize -or $sideFooter.Left -ne $navOverview.Left -or $sideFooter.Width -ne $navOverview.Width -or
+    $sideFooter.TextAlign -ne [System.Drawing.ContentAlignment]::MiddleCenter) {
+    throw 'Version label spacing regression: footer must share the navigation gutter and center its text.'
+}
+$footerTextSize = [System.Windows.Forms.TextRenderer]::MeasureText($sideFooter.Text, $sideFooter.Font)
+$footerLeftInset = [Math]::Floor(($sideFooter.ClientSize.Width - $footerTextSize.Width) / 2)
+$footerRightInset = $sideFooter.ClientSize.Width - $footerTextSize.Width - $footerLeftInset
+if ([Math]::Abs($footerLeftInset - $footerRightInset) -gt 1 -or $footerLeftInset -lt 8) {
+    throw ('Version label has unbalanced horizontal insets: left={0}, right={1}' -f $footerLeftInset, $footerRightInset)
+}
 
 function Get-ButtonSurfacePixel($Button) {
     $image = [System.Drawing.Bitmap]::new($Button.Width, $Button.Height)

@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "version": "1.4.7",
   "baseCommit": "ee20e5055aab1e34ba8152e0e3aab9435137c7bc",
-  "sourceFingerprint": "a8134ef1b00d3b239c8f877f5f9235bb224325fcda6fad92ffe2b354712f8cc2",
-  "generatedAt": "2026-08-20T03:48:06.5463148Z",
+  "sourceFingerprint": "04c27a90ea5cf6830c5d8ff4e0713f678c584542126939c4495b7d6498907f4c",
+  "generatedAt": "2026-08-20T03:57:45.1853368Z",
   "files": [
     {
       "path": ".gitattributes",
@@ -37,9 +37,9 @@
     },
     {
       "path": ".ui-smoke-test.ps1",
-      "sha256": "1ca96155907019633ec7415f895c1bdf79e73d5a84fb0de61ff7c54ff7f730e0",
-      "gitBlobSha1": "73be0468ce3b9e36416e9a006a8c5b3fbf30cda9",
-      "size": 20565
+      "sha256": "feb0a0bc0fa6741aa1a27f95bfed8d91c274a91d04742ca5de397d418af5218e",
+      "gitBlobSha1": "aa3e46a61f55ae8825b4ca1566d28ec81da83c75",
+      "size": 21373
     },
     {
       "path": "AGENTS.md",
@@ -73,9 +73,9 @@
     },
     {
       "path": "C-Drive-Cleaner-UI.ps1",
-      "sha256": "ecad9ca8bc3436c33e497addf6b9a82f00daecad351777714dac53a678a09b0e",
-      "gitBlobSha1": "0e87c51e78deafb038a95f505a848b6a17ea27d0",
-      "size": 137295
+      "sha256": "5a1bb78247865c18d5341c7f523dbbe3e4b69dae0a92bb72bf900dc92bc952a5",
+      "gitBlobSha1": "258409be5740986aaeadf6825a57a149ca463067",
+      "size": 137426
     },
     {
       "path": "C-Drive-Cleaner.ps1",
@@ -193,9 +193,9 @@
     },
     {
       "path": "RELEASE_NOTES_v1.4.7.md",
-      "sha256": "e9eeb6fd59eb189da6005ee82d5cdac0d45a3fe4c902dc1acf9c466e6896c438",
-      "gitBlobSha1": "a941bd231e8a2fa7269fd084c413e9bcf23962e0",
-      "size": 812
+      "sha256": "21bbf6b9c5b43cb11e1428854f0fb601b5aa9ef59a28c6f98c9c1e55a01667b3",
+      "gitBlobSha1": "a30d3418534790bd0a9e645b0d1e4c58727d26cd",
+      "size": 965
     },
     {
       "path": "TravelHost.ps1",

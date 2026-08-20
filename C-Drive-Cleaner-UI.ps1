@@ -379,10 +379,12 @@ $sideFooter = New-Object System.Windows.Forms.Label
 $sideFooter.Text = '版本号 {0}' -f $displayVersion
 $sideFooter.Font = New-Object System.Drawing.Font('Segoe UI', 7)
 $sideFooter.ForeColor = [System.Drawing.Color]::FromArgb(147, 159, 168)
-$sideFooter.AutoSize = $true
-$sideFooter.Location = New-Object System.Drawing.Point(20, 0)
+$sideFooter.AutoSize = $false
+$sideFooter.Location = New-Object System.Drawing.Point(12, 0)
+$sideFooter.Size = New-Object System.Drawing.Size(88, 20)
+$sideFooter.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
 $sideFooter.Anchor = 'Bottom,Left'
-$sideFooter.Add_Layout({ $sideFooter.Top = $sideBar.ClientSize.Height - 28 })
+$sideFooter.Add_Layout({ $sideFooter.Top = $sideBar.ClientSize.Height - 32 })
 $sideBar.Controls.AddRange(@($sideDivider, $navOverview, $navLogs, $navSelection, $navAssistant, $sideFooter))
 
 $workspace = New-Object System.Windows.Forms.Panel
