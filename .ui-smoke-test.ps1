@@ -28,6 +28,10 @@ if ($uiSource -notmatch 'Invoke-CDriveAssistantTool' -or $uiSource -notmatch '\$
     $uiSource -notmatch 'LastProposedIds' -or $uiSource -notmatch '\$btnAssistantApply\.Add_Click') {
     throw 'Assistant UI regression: constrained tool routing or confirmation boundary is missing.'
 }
+if ($uiSource -notmatch '\$assistantChatSurface' -or $uiSource -notmatch 'New-AssistantChatRow' -or
+    $uiSource -notmatch 'assistant-agent-wave\.png' -or $uiSource -notmatch 'assistant-user-\{0\}\.png') {
+    throw 'Assistant chat regression: bubble renderer or avatar assets are missing.'
+}
 if ($uiSource -notmatch "'-SkipProfile'" -or $uiSource -notmatch "'scan\.provider\.selected'" -or $uiSource -notmatch "'scan\.incremental\.completed'") {
     throw 'Incremental scan UI regression: fast scan arguments or provider events are missing.'
 }
@@ -137,6 +141,10 @@ $onClick = [CDriveRoundedButton].GetMethod('OnClick', [System.Reflection.Binding
 if ($dashboardState.SelectedIds.Count -ne 1 -or -not $btnClean.Enabled) { throw 'Suggested selection did not enable the scoped clean action.' }
 if ($dashboardState.SelectedIds.ContainsKey('user-wechat-media')) { throw 'Suggested selection must not include user media.' }
 Set-DashboardView 'assistant'
+$initialChatRows = @($assistantChatSurface.Controls)
+if ($initialChatRows.Count -lt 1 -or [string]$initialChatRows[0].Tag.Role -ne 'assistant') { throw 'Assistant greeting bubble was not created.' }
+if ($null -eq $assistantAgentAvatarImage -or $null -eq $assistantUserAvatarImage) { throw 'Assistant or random user avatar did not load.' }
+if ($initialChatRows[0].Tag.Avatar.Left -ne 0 -or $initialChatRows[0].Tag.Bubble.Left -le $initialChatRows[0].Tag.Avatar.Right) { throw 'Assistant message is not left aligned.' }
 $assistantState.Config = $null
 $assistantInput.Text = 'recommend safe cleanup'
 Invoke-AssistantQuery
@@ -166,6 +174,19 @@ while ($assistantState.Process -and [DateTime]::UtcNow -lt $agentDeadline) {
 }
 if ($assistantState.Process) { throw 'Fixture Agent did not complete without blocking the UI.' }
 if ($assistantTranscript.Text -notmatch 'Fixture stream complete\.') { throw ('Fixture Agent stream was not rendered in the assistant transcript. Transcript: ' + $assistantTranscript.Text) }
+$chatRows = @($assistantChatSurface.Controls)
+$userRows = @($chatRows | Where-Object { [string]$_.Tag.Role -eq 'user' })
+$assistantRows = @($chatRows | Where-Object { [string]$_.Tag.Role -eq 'assistant' })
+if ($userRows.Count -lt 2 -or $assistantRows.Count -lt 3) { throw 'Two-sided assistant conversation did not render all bubbles.' }
+foreach ($row in $chatRows) {
+    if ($row.Tag.Bubble.Right -gt $row.ClientSize.Width -or $row.Tag.Avatar.Right -gt $row.ClientSize.Width) { throw 'Assistant bubble or avatar overflows its message row.' }
+    if ($row.Tag.Label.Bottom -gt $row.Tag.Bubble.ClientSize.Height) { throw 'Assistant message text is clipped inside its bubble.' }
+    if ([string]$row.Tag.Role -eq 'user' -and $row.Tag.Bubble.Right -ge $row.Tag.Avatar.Left) { throw 'User message is not right aligned before its avatar.' }
+}
+$streamRows = @($assistantRows | Where-Object { $_.Tag.Label.Text -match 'Fixture stream complete\.' })
+if ($streamRows.Count -ne 1) { throw 'Streaming response did not stay in one assistant bubble.' }
+$maximumAllowedBubbleWidth = [Math]::Floor(($streamRows[0].ClientSize.Width - 50) * 0.72) + 1
+if ($streamRows[0].Tag.Bubble.Width -gt $maximumAllowedBubbleWidth) { throw 'Assistant bubble exceeded the responsive maximum width.' }
 $assistantState.FixtureSsePath = ''
 $navCall = [PSCustomObject]@{ callId = 'ui_fixture_nav'; name = 'navigate_view'; argumentsJson = '{"view":"overview"}' }
 $navResult = Invoke-AgentUiTool $navCall
