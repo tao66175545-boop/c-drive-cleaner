@@ -1,4 +1,4 @@
-function Get-CDriveAssistantToolContract {
+﻿function Get-CDriveAssistantToolContract {
     param([string]$ContractPath)
     if (-not (Test-Path -LiteralPath $ContractPath -PathType Leaf)) { throw 'Assistant tool contract is missing.' }
     $contract = Get-Content -LiteralPath $ContractPath -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -20,6 +20,97 @@ function Assert-CDriveStableIds {
     foreach ($id in @($Ids)) {
         if ([string]$id -notmatch '^[a-z0-9]+(?:-[a-z0-9]+)*$') { throw "[ASSISTANT_ITEM_ID] Invalid stable item ID: $id" }
     }
+}
+
+function New-CDriveAssistantControlCommand {
+    param(
+        [bool]$Matched,
+        [string]$Action = '',
+        [string]$ToolName = '',
+        $Arguments = $null,
+        [string]$Code = ''
+    )
+
+    if ($null -eq $Arguments) { $Arguments = [PSCustomObject]@{} }
+    return [PSCustomObject]@{
+        Matched = $Matched
+        Action = $Action
+        ToolName = $ToolName
+        Arguments = $Arguments
+        Code = $Code
+    }
+}
+
+function Resolve-CDriveAssistantControlCommand {
+    param([string]$Text)
+
+    if ([string]::IsNullOrWhiteSpace($Text)) { return New-CDriveAssistantControlCommand $false }
+    $value = $Text.Trim()
+
+    if ($value -match '(?i)[a-z]:\\|\\\\|/users/|/home/|powershell|cmd\.exe|wscript|cscript|remove-item|del(?:ete)?\s+(?:path|file)|忽略.{0,8}(?:规则|限制)|绕过.{0,8}(?:规则|确认)|替(?:我|用户).{0,8}(?:确认|同意)|代替.{0,8}(?:确认|同意)') {
+        return New-CDriveAssistantControlCommand $true 'denied' '' $null 'UNSAFE_CONTROL_REQUEST'
+    }
+
+    if ($value -match '(?i)(?:不(?:要|用|必|需要|想|再)?|别|禁止|拒绝|don''t|do\s+not|never)\s*.{0,8}(?:扫描|清理|删除|打开|切换|勾选|选择|启动|scan|clean|delete|open|select|start)') {
+        return New-CDriveAssistantControlCommand $true 'no-op' '' $null 'NEGATED_CONTROL_REQUEST'
+    }
+
+    if ($value -match '(?i)(?:取消|停止|终止|stop|cancel).{0,6}(?:扫描|scan)|(?:扫描|scan).{0,6}(?:取消|停止|终止|stop|cancel)') {
+        return New-CDriveAssistantControlCommand $true 'tool' 'cancel_scan'
+    }
+    if ($value -match '(?i)(?:清空|取消|移除|重置|clear|reset).{0,6}(?:勾选|选择|已选|selection)|(?:勾选|选择).{0,6}(?:清空|取消|重置|clear|reset)') {
+        return New-CDriveAssistantControlCommand $true 'tool' 'clear_selection'
+    }
+    if ($value -match '(?i)(?:打开|进入|切换到?|查看|显示|go\s+to|open|show).{0,8}(?:概览|主页|首页|总览|overview|dashboard)') {
+        return New-CDriveAssistantControlCommand $true 'tool' 'navigate_view' ([PSCustomObject]@{ view = 'overview' })
+    }
+    if ($value -match '(?i)(?:打开|进入|切换到?|查看|显示|go\s+to|open|show).{0,8}(?:清理清单|清理列表|可清理项|选择页|selection|cleanup\s+list)') {
+        return New-CDriveAssistantControlCommand $true 'tool' 'navigate_view' ([PSCustomObject]@{ view = 'selection' })
+    }
+    if ($value -match '(?i)(?:打开|进入|切换到?|查看|显示|go\s+to|open|show).{0,8}(?:运行日志|日志|logs?)') {
+        return New-CDriveAssistantControlCommand $true 'tool' 'navigate_view' ([PSCustomObject]@{ view = 'logs' })
+    }
+    if ($value -match '(?i)(?:打开|进入|切换到?|查看|显示|go\s+to|open|show).{0,8}(?:智能助手|助手页|assistant|chat)') {
+        return New-CDriveAssistantControlCommand $true 'tool' 'navigate_view' ([PSCustomObject]@{ view = 'assistant' })
+    }
+    if ($value -match '(?i)(?:开始|启动|执行|重新|帮我|请|run|start|scan).{0,8}(?:完整|全面|深度|诊断|full).{0,6}(?:扫描|scan)|(?:完整|全面|深度|诊断|full).{0,6}(?:扫描|scan)') {
+        return New-CDriveAssistantControlCommand $true 'tool' 'start_scan' ([PSCustomObject]@{ scope = 'full-diagnostic' })
+    }
+    if ($value -match '(?i)(?:开始|启动|执行|重新|帮我|请|run|start|scan).{0,8}(?:用户目录|个人目录|用户文件|user\s*profile).{0,6}(?:扫描|scan)|(?:用户目录|个人目录|用户文件|user\s*profile).{0,6}(?:扫描|scan)') {
+        return New-CDriveAssistantControlCommand $true 'tool' 'start_scan' ([PSCustomObject]@{ scope = 'user-profile' })
+    }
+    if ($value -match '(?i)(?:开始|启动|执行|重新|帮我|请|现在|立即|run|start).{0,10}(?:扫描|检测|scan)|^(?:扫描|检测)(?:一下)?(?:C盘|磁盘|缓存)?[。.!！?？\s]*$|^scan(?:\s+(?:drive|cache|recommended))?[。.!！?？\s]*$') {
+        return New-CDriveAssistantControlCommand $true 'tool' 'start_scan' ([PSCustomObject]@{ scope = 'recommended' })
+    }
+    if ($value -match '(?i)(?:勾选|选中|只选|选择|应用).{0,10}(?:建议项|推荐项|低风险|安全项|recommended|low.risk)|(?:建议项|推荐项|低风险|安全项).{0,8}(?:勾选|选中|选择|应用)') {
+        return New-CDriveAssistantControlCommand $true 'select-recommended'
+    }
+    if ($value -match '(?i)(?:帮我|请|开始|执行|立即|现在).{0,10}(?:清理|释放空间)|(?:清理|释放).{0,10}(?:C盘|磁盘|缓存|低风险|建议项)|clean.{0,10}(?:drive|cache|recommended)') {
+        return New-CDriveAssistantControlCommand $true 'prepare-cleanup'
+    }
+    if ($value -match '(?i)(?:打开|查看|显示|open|show).{0,8}(?:最新)?(?:清理)?报告|(?:清理)?报告.{0,6}(?:打开|查看|显示)') {
+        return New-CDriveAssistantControlCommand $true 'tool' 'open_latest_report'
+    }
+    if ($value -match '(?i)(?:查看|显示|对比|比较|compare|show).{0,10}(?:清理前后|前后效果|空间变化|cleanup\s+results?)|(?:清理前后|前后效果).{0,8}(?:对比|比较|查看|显示)') {
+        return New-CDriveAssistantControlCommand $true 'tool' 'compare_cleanup_results'
+    }
+    if ($value -match '(?i)(?:打开|进入|open).{0,8}(?:临时文件|temporary.files).{0,6}(?:设置|settings)?') {
+        return New-CDriveAssistantControlCommand $true 'tool' 'open_system_settings' ([PSCustomObject]@{ settingId = 'temporary-files' })
+    }
+    if ($value -match '(?i)(?:打开|进入|open).{0,8}(?:应用|程序|apps?).{0,6}(?:设置|settings)') {
+        return New-CDriveAssistantControlCommand $true 'tool' 'open_system_settings' ([PSCustomObject]@{ settingId = 'apps' })
+    }
+    if ($value -match '(?i)(?:打开|进入|open).{0,8}(?:存储|磁盘|storage).{0,6}(?:设置|settings)') {
+        return New-CDriveAssistantControlCommand $true 'tool' 'open_system_settings' ([PSCustomObject]@{ settingId = 'storage' })
+    }
+    if ($value -match '(?i)^(?:当前|现在)?(?:程序|应用|扫描|清理)?(?:状态|情况)(?:怎么样|如何)?[。.!！?？\s]*$|^(?:show|get|what(?:''s|\s+is))\s+(?:the\s+)?(?:app\s+)?state[。.!！?？\s]*$') {
+        return New-CDriveAssistantControlCommand $true 'tool' 'get_app_state'
+    }
+    if ($value -match '(?i)^(?:帮助|指令|命令|你能做什么|怎么控制|如何控制|help|commands?|what\s+can\s+you\s+do)[。.!！?？\s]*$') {
+        return New-CDriveAssistantControlCommand $true 'help'
+    }
+
+    return New-CDriveAssistantControlCommand $false
 }
 
 function Invoke-CDriveAssistantTool {

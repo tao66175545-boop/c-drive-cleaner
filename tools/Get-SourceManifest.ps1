@@ -91,8 +91,10 @@ foreach ($pattern in @($policy.rootPatterns)) {
 }
 
 [void]$paths.Remove('source-manifest.json')
+$sortedPaths = @($paths)
+[Array]::Sort($sortedPaths, [System.StringComparer]::Ordinal)
 $fileRecords = @(
-    foreach ($relativePath in @($paths) | Sort-Object) {
+    foreach ($relativePath in $sortedPaths) {
         $fullPath = Join-Path $projectRoot $relativePath.Replace('/', '\')
         [ordered]@{
             path = $relativePath
