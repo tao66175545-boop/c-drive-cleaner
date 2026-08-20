@@ -8,13 +8,21 @@ try {
     $echoScript = Join-Path $testRoot 'echo.ps1'
     $echoLog = Join-Path $testRoot 'echo.log'
     [System.IO.File]::WriteAllText($echoScript, "param([string]`$Value)`r`nWrite-Output `$Value`r`n", (New-Object System.Text.UTF8Encoding($false)))
-    $expected = 'value with spaces and "quotes"'
+    $chinesePrefix = -join ([char[]]@(0x4E2D, 0x6587, 0x65E5, 0x5FD7, 0xFF1A, 0x626B, 0x63CF, 0x5FAE, 0x4FE1, 0x56FE, 0x7247, 0xFF0C))
+    $expected = $chinesePrefix + 'value with spaces and "quotes"'
     $echoProcess = Start-CDriveEngineProcess $echoScript @('-Value', $expected) $testRoot $echoLog
     $echoExit = $echoProcess.Complete()
     if ($echoExit -ne 0) { throw "Typed argument process failed: $echoExit" }
     $actual = (Get-Content -LiteralPath $echoLog -Raw -Encoding UTF8).Trim()
-    if ($actual -ne $expected) { throw "Typed argument round-trip failed: $actual" }
-    Write-Output '[OK] typed process arguments -> no command-string interpolation'
+    if ($actual -cne $expected) {
+        $difference = 0
+        while ($difference -lt [Math]::Min($actual.Length, $expected.Length) -and $actual[$difference] -ceq $expected[$difference]) { $difference++ }
+        $expectedCode = if ($difference -lt $expected.Length) { [int]$expected[$difference] } else { -1 }
+        $actualCode = if ($difference -lt $actual.Length) { [int]$actual[$difference] } else { -1 }
+        throw "Typed argument round-trip failed: expectedLength=$($expected.Length), actualLength=$($actual.Length), index=$difference, expectedCode=$expectedCode, actualCode=$actualCode"
+    }
+    if ($actual.Contains([char]0xFFFD)) { throw 'UTF-8 process log contains a decoder replacement character.' }
+    Write-Output '[OK] typed process arguments and UTF-8 logs -> no interpolation or Chinese mojibake'
 
     $sleepScript = Join-Path $testRoot 'sleep.ps1'
     $sleepLog = Join-Path $testRoot 'sleep.log'

@@ -1,495 +1,543 @@
 {
-    "schemaVersion":  1,
-    "version":  "1.4.5",
-    "baseCommit":  "71f8fc13b4253c0a92568ecdfa412ccf4fd8c5c5",
-    "sourceFingerprint":  "3df1522b2247c6808d410275fd55554aea3e7e75ec45207d0ffffc70973bd803",
-    "generatedAt":  "2026-08-20T01:14:12.2882804Z",
-    "files":  [
-                  {
-                      "path":  ".gitattributes",
-                      "sha256":  "908e7736cb5efdaeb5ad6d78b118fcba2d1717a671063f2138f0ee1b30a4cebc",
-                      "gitBlobSha1":  "8605483ca4d6434b4d96c54fc3ceea242d5b76a3",
-                      "size":  151
-                  },
-                  {
-                      "path":  ".github/workflows/consistency.yml",
-                      "sha256":  "a86847a03811dce94cc02507d0aa4b18e4c41d46f2a60da45c6a1e143c7b0201",
-                      "gitBlobSha1":  "30fa0f9ea17f5806c764b4ae2519226c159d8201",
-                      "size":  3381
-                  },
-                  {
-                      "path":  ".github/workflows/release.yml",
-                      "sha256":  "9e61e671423ef835c111ea52e690dea4d6ecb77b6c05da42ae2767f1ac0ea92d",
-                      "gitBlobSha1":  "30f4d8c193623306b7c4d6f87638f300e6a4e1fe",
-                      "size":  3873
-                  },
-                  {
-                      "path":  ".github/workflows/validate.yml",
-                      "sha256":  "cd9f8b912e0c331eeef53cea01f30be7cc0a567a20fe1bbc74bfaeb982a03bc8",
-                      "gitBlobSha1":  "ef8462609fef7516b2bbfb31839521fe115c2dc6",
-                      "size":  994
-                  },
-                  {
-                      "path":  ".gitignore",
-                      "sha256":  "e872df7578160a73a424d7697870cea475de7db3a00ffcbeae886942ab58c466",
-                      "gitBlobSha1":  "69d34bd508bddc30b65f64429e95953ead2204b9",
-                      "size":  673
-                  },
-                  {
-                      "path":  ".ui-smoke-test.ps1",
-                      "sha256":  "05138acfddb33c176814c95f59cac1acfa6194904f1743137ae64ea040bd77bc",
-                      "gitBlobSha1":  "7a99111d17742c3dfc22244e5a96407a263019c9",
-                      "size":  16995
-                  },
-                  {
-                      "path":  "AgentHost.ps1",
-                      "sha256":  "c88b79481b495133446ce6af8a473eddb80acdc4aeca31bffbac0a99cd0e92ba",
-                      "gitBlobSha1":  "06147c41e1bdc683e74fc5138ab674605b7d08ba",
-                      "size":  9247
-                  },
-                  {
-                      "path":  "agent-roadmap.json",
-                      "sha256":  "c15bc11d924b9b06e31de8951a5e8b9fc069a888e07b3f84e659333b7e75467c",
-                      "gitBlobSha1":  "3c02484131331606ef227460a4b069dd2c254628",
-                      "size":  2698
-                  },
-                  {
-                      "path":  "AGENTS.md",
-                      "sha256":  "896a7a7e741ab42c80c98a2c09266ae40893d414773ad889b637215bf2f62d43",
-                      "gitBlobSha1":  "40f2768e901540cec10f0c1c35dda6e05f3ecb72",
-                      "size":  2546
-                  },
-                  {
-                      "path":  "AI-AGENT-架构方案.md",
-                      "sha256":  "f64eadd14c05130446806730acc382928d5ab65c3c1f27c708f014acfb721bc5",
-                      "gitBlobSha1":  "3199b6ffce805641462f9062c359c6a5cac40230",
-                      "size":  14382
-                  },
-                  {
-                      "path":  "AI自动化GitHub发布工作流.md",
-                      "sha256":  "8d8e70a1ea4365b72833146cba8ff8afb62d2a002491dd13df5d9aca302ea3fc",
-                      "gitBlobSha1":  "23b81bdf9658466eb94901e2284eb5f8968a0a6d",
-                      "size":  8204
-                  },
-                  {
-                      "path":  "ARCHITECTURE.md",
-                      "sha256":  "ee88393bf8f009a1e185370219419f2b7210dfc72b58b2cf0b4922dd6bc59a5d",
-                      "gitBlobSha1":  "c577cbea64a5fe4308ab16cdcffd634f07621af8",
-                      "size":  7771
-                  },
-                  {
-                      "path":  "architecture-loop.json",
-                      "sha256":  "57347031233743242e92c77377f536d4f7a979cdffdee065872c261579c38642",
-                      "gitBlobSha1":  "c0d311e1df6903943bee9d98f1a6ae6fac7cd859",
-                      "size":  3076
-                  },
-                  {
-                      "path":  "assets/assistant-agent-wave.png",
-                      "sha256":  "f30e4daa9e969b02eb51429e437965d0d949c59103c93b27e8bdf7865746f970",
-                      "gitBlobSha1":  "c4d0f2d747efe8946e251bb1d14ea033446a4ee1",
-                      "size":  82517
-                  },
-                  {
-                      "path":  "assets/assistant-agent-wave-v2.png",
-                      "sha256":  "1d09b8778c3df9be85a2b9d612ca70f8e53d859ceb0409731d6b970443ec1155",
-                      "gitBlobSha1":  "1505c0d3af810e073f683e1d6fddc4e9147b5057",
-                      "size":  86209
-                  },
-                  {
-                      "path":  "assets/assistant-user-1.png",
-                      "sha256":  "8cf4917b7ceda0a3197509fac02ad99ae37018694626c367f7b42a03dad8e897",
-                      "gitBlobSha1":  "f606244b7cd7ff48e9dec88d4b18418343d8b66f",
-                      "size":  4592
-                  },
-                  {
-                      "path":  "assets/assistant-user-2.png",
-                      "sha256":  "6247a6cd19a920550df91dbaa42bb8d0809d87dffac4643a931a9ec2fca1e6b7",
-                      "gitBlobSha1":  "a5bc6b424f22804edc58ab8ae24007cb3db2448f",
-                      "size":  4655
-                  },
-                  {
-                      "path":  "assets/assistant-user-3.png",
-                      "sha256":  "16ca797022cd57f5d748b5f7cc401376a65a1057e6205cbbc0663758eebdc91d",
-                      "gitBlobSha1":  "7f9d2c8fac086206a579d7aeac22314e5dfd15a7",
-                      "size":  4439
-                  },
-                  {
-                      "path":  "assets/assistant-user-4.png",
-                      "sha256":  "c8be24fbd1b2470069fe6d37cd25090d6f156fd5e04a9020d78b897cef08e4e5",
-                      "gitBlobSha1":  "06e36a1bcc3606cc4dd425218725a9648bbb9424",
-                      "size":  4596
-                  },
-                  {
-                      "path":  "assets/assistant-user-5.png",
-                      "sha256":  "e2a6cc415d7f4aada6ff4e494daf9650086b72eef87505fa37b21179ad4c9e68",
-                      "gitBlobSha1":  "300f8a002a928d9795d38521f3ce43ab86d565fa",
-                      "size":  4700
-                  },
-                  {
-                      "path":  "assets/assistant-user-6.png",
-                      "sha256":  "dc9fe5f5e6e39963243031238d66c0fefaae7b8917ee9b81bf847b5b6a4524f7",
-                      "gitBlobSha1":  "18beaf71e2e96b45978c73eb469a5fa7b2807a96",
-                      "size":  4429
-                  },
-                  {
-                      "path":  "assets/cleaning-sprite-source.png",
-                      "sha256":  "fcbf44f7dbcdeff3973aceb58cd3d18268bf5ac38e4024dfc5299383ae15a9ad",
-                      "gitBlobSha1":  "4fb79de41f21f4f1c6fa3626f4d93bf45b983a93",
-                      "size":  984741
-                  },
-                  {
-                      "path":  "assets/logo-animated.svg",
-                      "sha256":  "bc30fe9c4f610dea9d3eef5d252bdae19c10811e47a4d65c191ebc7bce76556f",
-                      "gitBlobSha1":  "6a522c708b71ece92b781ff027bab4aa259e7bf1",
-                      "size":  64339
-                  },
-                  {
-                      "path":  "assets/logo-animated-sprite.png",
-                      "sha256":  "b7e6cfcdb4889e8f60609c4b2539fb828716be0d6c49c6dd826ea0b388b3e3c4",
-                      "gitBlobSha1":  "23a196dcc0321c55112c61c8cfeb49171564d36f",
-                      "size":  173175
-                  },
-                  {
-                      "path":  "assets/sugon-cloud-logo-red.png",
-                      "sha256":  "4f62330214f946a1ae1f6ab655e222f28268389d6d0ad835d58fa07c7faefc68",
-                      "gitBlobSha1":  "825213fe0288e75e54cc362d757f1f093ad3afef",
-                      "size":  13260
-                  },
-                  {
-                      "path":  "C-Drive-Cleaner.ps1",
-                      "sha256":  "03cacdc30681d930c91f12ee96af22aae77eb489bba2fef6587cd2b2cffc2c37",
-                      "gitBlobSha1":  "a4430c97e3268373ddd8b1f5972a4854e40c04a8",
-                      "size":  54518
-                  },
-                  {
-                      "path":  "C-Drive-Cleaner-UI.ps1",
-                      "sha256":  "e4dbec791bfb66d72e0f5f725c1d723d2b932177b77471f41d3ba326b7239e34",
-                      "gitBlobSha1":  "28a26a47954cb54803462227d4663262be82af35",
-                      "size":  127043
-                  },
-                  {
-                      "path":  "contracts/assistant-tools.json",
-                      "sha256":  "4b5118afe50124778bd5f3f00ad4a815075a1e694a2f53e9fe6e7d6a318ba53c",
-                      "gitBlobSha1":  "2ad71f0cc0b59b6d6ac91d63f80b6cd8f75e17cc",
-                      "size":  5324
-                  },
-                  {
-                      "path":  "core/AgentConfig.ps1",
-                      "sha256":  "a2bf2c63806640d26cc5cea6132d551c1bf84650fffec4525eac5c779feca14c",
-                      "gitBlobSha1":  "4adbae1efc583aba1640fc76888fab2200002b5e",
-                      "size":  6835
-                  },
-                  {
-                      "path":  "core/AgentProtocol.ps1",
-                      "sha256":  "770b336f79a040f92aeadc58730d916fff370931ca49dfe26925449ceba61a4a",
-                      "gitBlobSha1":  "82844d860647c789e174777c458bc2986bbcc898",
-                      "size":  2891
-                  },
-                  {
-                      "path":  "core/AgentProvider.ps1",
-                      "sha256":  "65e7ce250c6bf2dff81e85a831d7827074ef8d847f3f10b2a693e3fca7ade7c0",
-                      "gitBlobSha1":  "53c2e62855e24d5c6219d0414d4cb647d9c41e77",
-                      "size":  11904
-                  },
-                  {
-                      "path":  "core/AssistantToolRouter.ps1",
-                      "sha256":  "b41ea30734eda3d372ed536321aa09f8992b4b66308eb5ace82301302212f1e8",
-                      "gitBlobSha1":  "081eeac831ae95e584c878d4dbaa1a0dba1c0fe3",
-                      "size":  5610
-                  },
-                  {
-                      "path":  "core/Copilot.ps1",
-                      "sha256":  "cdf0c3c1da71dba0f977506f78edcdeff076b3e297b812bca01c7d9316fb7177",
-                      "gitBlobSha1":  "ba89c4e8777bf1b2cc049d8f91d89f2f11e92905",
-                      "size":  5381
-                  },
-                  {
-                      "path":  "core/EventProtocol.ps1",
-                      "sha256":  "0a13fd385e0f12695859d0cffaba7cfe424483e653d31015365e185ecbaf7863",
-                      "gitBlobSha1":  "09a5e5b9117bfa01da62c627896cf0e3a8055c59",
-                      "size":  1378
-                  },
-                  {
-                      "path":  "core/ExecutionBroker.ps1",
-                      "sha256":  "21735cce94140efd483e093c856f8db307da1cc524ba8567fe0e350cd5414aac",
-                      "gitBlobSha1":  "c216c0350813b1a893db8388c342deb090646d71",
-                      "size":  7203
-                  },
-                  {
-                      "path":  "core/IncrementalScanIndex.ps1",
-                      "sha256":  "0b7ea3dd95b8fd7791fa06635fed388200a4b24262f4722b8749452760c38ef5",
-                      "gitBlobSha1":  "404003cfdb454495628b032d2db793f489ea0335",
-                      "size":  12989
-                  },
-                  {
-                      "path":  "core/OperationJournal.ps1",
-                      "sha256":  "066ff17db3428f74779521b73be0ffbccb517afd64741da879ad0cad72f36c65",
-                      "gitBlobSha1":  "7d483e94070fc76a6601cc4ab153488ab818b3cc",
-                      "size":  3479
-                  },
-                  {
-                      "path":  "core/ProcessOrchestrator.ps1",
-                      "sha256":  "2680a5ed9e230e411a35ba046b4beb053e035b75576f42bd7cbd957fb1241b8e",
-                      "gitBlobSha1":  "2a42fc4ce03b5c7c5a7da16ba645fd01845628a3",
-                      "size":  5384
-                  },
-                  {
-                      "path":  "core/RuleCatalog.ps1",
-                      "sha256":  "04cf09eda24ee94fce974cae80210b73787c9dc6a5218252db235e6165e0c37f",
-                      "gitBlobSha1":  "087b526e4c751a74dba618063a6292dfb228af1f",
-                      "size":  4493
-                  },
-                  {
-                      "path":  "core/ScanProvider.ps1",
-                      "sha256":  "adce9691d4db085d518a58e680bd9dd61dca5173bcdbea3fd1cbaa8f154e2c49",
-                      "gitBlobSha1":  "47f610937b200306204f1635d5b07e9cf90e1e46",
-                      "size":  15316
-                  },
-                  {
-                      "path":  "core/UiActionBroker.ps1",
-                      "sha256":  "e91e613d46a62b72d6e6378b394650d690dff3eed490ea6bc63b4c92fd027c1b",
-                      "gitBlobSha1":  "2116c43448bda2025ef4a21df72e1e27cc77654c",
-                      "size":  4602
-                  },
-                  {
-                      "path":  "C盘清理.bat",
-                      "sha256":  "917864c4542bacb45d704b633f3b42ab1c003860cabe53cba0f4c925853cb97d",
-                      "gitBlobSha1":  "fd3149844ac7bf882e61e3d131a8b5d585f1b170",
-                      "size":  354
-                  },
-                  {
-                      "path":  "migration-decision.json",
-                      "sha256":  "383fcbe0b43d7b8280fcb3ed5a971672799982c1fcdc696bc37cdf2863dcf49b",
-                      "gitBlobSha1":  "b0f3eda2d79bbc336e9a16851fee1acd638af893",
-                      "size":  1592
-                  },
-                  {
-                      "path":  "OTA-在线升级方案.md",
-                      "sha256":  "5a46e6229f80dce32327b291bd40c85263beeca28db0f02327339529c7f40ff2",
-                      "gitBlobSha1":  "634e55a3002825da5d070722cb09ace1f25dbd22",
-                      "size":  4001
-                  },
-                  {
-                      "path":  "README.md",
-                      "sha256":  "00caded7ca3bdf9fde0845cc31d892c93002a6cb857e63cc0ffcb215236a3b9c",
-                      "gitBlobSha1":  "95029cbffeab3e89c52978c15b05905721a32161",
-                      "size":  6845
-                  },
-                  {
-                      "path":  "README-使用说明.txt",
-                      "sha256":  "fb32cfe6b36cfae1d6c880b6df1d1643855165759812c167295e1b17af32bc0c",
-                      "gitBlobSha1":  "e82e1795a86de3bb2613a0fdf488aace927e427b",
-                      "size":  3911
-                  },
-                  {
-                      "path":  "RELEASE_NOTES_v1.0.0.md",
-                      "sha256":  "5e4b153ccc4dd9ffcedcadbd8aa6b82f7faf5925f2b5315c4828d895c19c50a2",
-                      "gitBlobSha1":  "4132574b2263793e40be3ee0c85a0c7deb47b833",
-                      "size":  830
-                  },
-                  {
-                      "path":  "RELEASE_NOTES_v1.1.0.md",
-                      "sha256":  "276cd27f7a0f97670da6fa3b8fcae665c95898b929deee3ae5918b49d592d0fc",
-                      "gitBlobSha1":  "c406a1b82e2cffaa37692a7cc1b8d3174cbd46fb",
-                      "size":  1234
-                  },
-                  {
-                      "path":  "RELEASE_NOTES_v1.1.1.md",
-                      "sha256":  "d7e147e0e8758bb83ea1fb3d133a4f2f3907597998d56833141e37b7535856ec",
-                      "gitBlobSha1":  "a36d082718999a603cbf06a73de17d60166c5448",
-                      "size":  713
-                  },
-                  {
-                      "path":  "RELEASE_NOTES_v1.1.2.md",
-                      "sha256":  "8ed1d5c1e388aae733e22823ba1f074746bdcc9574099c357ceb46fb939f866f",
-                      "gitBlobSha1":  "6ffe982cb4eace3498b0f247363ae29bf6297440",
-                      "size":  598
-                  },
-                  {
-                      "path":  "RELEASE_NOTES_v1.2.0.md",
-                      "sha256":  "c7b905497fb8e9e8a2b13e64d0cfe1731875984b222f9eaae31332a1fcb49bc1",
-                      "gitBlobSha1":  "b4ab918c7d029204cc31a8917ee907b4e7114b43",
-                      "size":  1771
-                  },
-                  {
-                      "path":  "RELEASE_NOTES_v1.3.0.md",
-                      "sha256":  "0ba1ce5ed8cd7d92fed29b1113221d75ea7a9a145a9ec19bc2baec19527e0a86",
-                      "gitBlobSha1":  "ec04a4022ec5d3f108abc6efe5497143dfddf3ea",
-                      "size":  1479
-                  },
-                  {
-                      "path":  "RELEASE_NOTES_v1.4.0.md",
-                      "sha256":  "af8415b48e1184e4ecdda42e38ee0a59e0467bd09e3b10d54e28409d74121972",
-                      "gitBlobSha1":  "6d8550ad4a2b3783177d40de44f8c4bcfb4e6157",
-                      "size":  1388
-                  },
-                  {
-                      "path":  "RELEASE_NOTES_v1.4.1.md",
-                      "sha256":  "d4c388ad38c6854b738ebf15f86c1283202b502d5860c6d1dc802295b9ee35ce",
-                      "gitBlobSha1":  "7212ebefb3e9280736b0a66270aa5d3d22dbffce",
-                      "size":  994
-                  },
-                  {
-                      "path":  "RELEASE_NOTES_v1.4.2.md",
-                      "sha256":  "58ed3d24b102765e6efaa7092d2694d6f7a47606d2fec2d2765c0795310580f5",
-                      "gitBlobSha1":  "5974566bcbea1a6b28b24ae3425f2c9aea73f494",
-                      "size":  686
-                  },
-                  {
-                      "path":  "RELEASE_NOTES_v1.4.3.md",
-                      "sha256":  "8d827753afa0c5301c76542eaebd0c739fcbb9e2686090952ac657f62528e571",
-                      "gitBlobSha1":  "f6b455aac41e4ed72ba4a697c688e9093a24a667",
-                      "size":  978
-                  },
-                  {
-                      "path":  "RELEASE_NOTES_v1.4.4.md",
-                      "sha256":  "d1d5acedb5fb2101fc20d6b4fe780fa44e5f064eac9aeb3b77bd574fc90822b1",
-                      "gitBlobSha1":  "95de8d3f99bb37f31a9da8e3685fdd142f065b11",
-                      "size":  1138
-                  },
-                  {
-                      "path":  "RELEASE_NOTES_v1.4.5.md",
-                      "sha256":  "99924e00f4729d1c82b83583800592190e166ccb7168ced72845b22b461ea0f9",
-                      "gitBlobSha1":  "d11a976ff991ed574e7b9d3db8905119deb98f1b",
-                      "size":  597
-                  },
-                  {
-                      "path":  "rules/cleanup-rules.json",
-                      "sha256":  "4dbd5f9fe7264a64939a4532402116042accb4fd219220aae3fe0852fb316457",
-                      "gitBlobSha1":  "a411bcedcd6ef05ce3f4e4d167777d0df800a862",
-                      "size":  15322
-                  },
-                  {
-                      "path":  "source-policy.json",
-                      "sha256":  "0f04d55378e00def82f4e91b31d83535ef574c6916daa922f32ed9929d9d438e",
-                      "gitBlobSha1":  "da24d9d036c188d849e9685d0996b12bb438242f",
-                      "size":  923
-                  },
-                  {
-                      "path":  "tests/AgentRuntimeTests.ps1",
-                      "sha256":  "273f7dfa0d487f8ecf2ec04bffc65b725101bcc9b21de4ae4f15dab7c88c9069",
-                      "gitBlobSha1":  "b2593e81720efb53a42345650314d5db90a755dd",
-                      "size":  16226
-                  },
-                  {
-                      "path":  "tests/ArchitectureContractTests.ps1",
-                      "sha256":  "10787cfa8811fb59a6ac0313f748aedb9a6e6abeb3614caff80be52181fbc2d0",
-                      "gitBlobSha1":  "6616b6a02873a8e601eafd9b9178d4a3247bd911",
-                      "size":  3068
-                  },
-                  {
-                      "path":  "tests/AssistantToolTests.ps1",
-                      "sha256":  "f7319e99a5aa3e3b55ef1998a83de5f607c818ad1a9f6b0e5c1697bfec1c2176",
-                      "gitBlobSha1":  "583ac737150a905d3f03d16d07d2f45e6408bcb4",
-                      "size":  3137
-                  },
-                  {
-                      "path":  "tests/CopilotTests.ps1",
-                      "sha256":  "4230317a76aaf2a8cd06a028e23b7ba0465da47714a06680fdc465dec051e363",
-                      "gitBlobSha1":  "a6900b4ca01ee82d9c9c0815c8c88d45d68b1b9f",
-                      "size":  2724
-                  },
-                  {
-                      "path":  "tests/ExecutionBrokerTests.ps1",
-                      "sha256":  "38102abef7731ac26f8faef4a25408e7308359d26dc9d7e1be5bfa0b344d2030",
-                      "gitBlobSha1":  "ecc9937c680fe41d64ac83fada62eb7a8a2175db",
-                      "size":  3142
-                  },
-                  {
-                      "path":  "tests/IncrementalScanTests.ps1",
-                      "sha256":  "6fa06c4b658c341676ea6998727fee6702f9867bde7d81859ac035a458a58837",
-                      "gitBlobSha1":  "7d6ce49f973e5c0fd8e9f2c4d0a4e6cd043bbeef",
-                      "size":  8026
-                  },
-                  {
-                      "path":  "tests/MigrationDecisionTests.ps1",
-                      "sha256":  "af81b618b13cb412f445a48eb8bbfb7a721ca5454b5bda3d5fa6cfca28b194e8",
-                      "gitBlobSha1":  "fa1a354b086a7834e78b4ea6b687380fba58d7a9",
-                      "size":  2497
-                  },
-                  {
-                      "path":  "tests/PlanContractTests.ps1",
-                      "sha256":  "54b4492b9003e9cbe13657d1da8e8537226d80422366de64004172d96197c7bb",
-                      "gitBlobSha1":  "096fa900ab27790ce5416db3528777ecf8bf6bad",
-                      "size":  2734
-                  },
-                  {
-                      "path":  "tests/ProcessContractTests.ps1",
-                      "sha256":  "c0e8c4281db05c6c68a7b0c024852ff6eb0dc7f3038af97099c2392d45345b0a",
-                      "gitBlobSha1":  "4f5f2d153c3fc110ae31b026321fa6396895996a",
-                      "size":  1720
-                  },
-                  {
-                      "path":  "tests/ScanProviderTests.ps1",
-                      "sha256":  "a0025d3798939909dba6980be6eeca5c92c6c1685a74b99799b31170118ba30b",
-                      "gitBlobSha1":  "52f5e8840ae240e6be10216b5c33c1aadb23badd",
-                      "size":  3154
-                  },
-                  {
-                      "path":  "tools/Complete-ApprovedCandidate.ps1",
-                      "sha256":  "171ed5c6f67dea61aa56626f102251ca07a81f88c95f9498e50b3d795e814def",
-                      "gitBlobSha1":  "86be1f99bd4c291b2e55e65c3ff4dc6e1af9b0f0",
-                      "size":  8478
-                  },
-                  {
-                      "path":  "tools/Enable-GitHubWorkflowGuard.ps1",
-                      "sha256":  "05cdf2efd39cfd6ec1e62f1ce8da46d3af0fae737334a2e32ef3feb26d4d524e",
-                      "gitBlobSha1":  "a1187ab0367a4d26db3239855bb4592c0db1b11d",
-                      "size":  2224
-                  },
-                  {
-                      "path":  "tools/Generate-AssistantAvatars.ps1",
-                      "sha256":  "ca7f3a8be625dabdf92201ad1421d05a35e7fab0a2c0ed7ce50eb88bdca5da65",
-                      "gitBlobSha1":  "d1a4c56a3d12aadebbf705dcb36816818bea2321",
-                      "size":  7347
-                  },
-                  {
-                      "path":  "tools/Get-SourceManifest.ps1",
-                      "sha256":  "8c4b0b91d74d8c6abd50d6129a2cf1f7a7a340b8e7308bfb6fc8e58b2ac6a9d0",
-                      "gitBlobSha1":  "d3189ed1f238218ec2c3593e4a7f19ea7c6134c3",
-                      "size":  6882
-                  },
-                  {
-                      "path":  "tools/Invoke-ArchitectureLoop.ps1",
-                      "sha256":  "89840d0fdcea01e205eebbbfb2ab96a014f516a2ea0ac602cc4d4e104bb92511",
-                      "gitBlobSha1":  "e64bb7284543e8e6126366cd9e3a807786f85a64",
-                      "size":  5819
-                  },
-                  {
-                      "path":  "tools/Invoke-ProjectValidation.ps1",
-                      "sha256":  "bd5edb4d796191a5e1bb7b55ac34809a92475a56e74b26a560149056ee22adcb",
-                      "gitBlobSha1":  "ba6dbec120f6198e106edae09ad785bda4960e79",
-                      "size":  4829
-                  },
-                  {
-                      "path":  "tools/New-ReleasePackage.ps1",
-                      "sha256":  "3b5aab8ce42aefe9eb2f62bbdbce3bc84d8778919f324eb5ab16bbd181266be8",
-                      "gitBlobSha1":  "4ddbcce9e69fb9a26933809f38a10239f645077a",
-                      "size":  4224
-                  },
-                  {
-                      "path":  "tools/Submit-UpdateCandidate.ps1",
-                      "sha256":  "56a2cf076fcaa8cf0f3cc5f24b61fd831d1f6c24e3444aa72ade6afd32b59871",
-                      "gitBlobSha1":  "9c84e276a8bfa9be513e4f2d2f2e7b56e7f0766c",
-                      "size":  14027
-                  },
-                  {
-                      "path":  "tools/Test-VersionPolicy.ps1",
-                      "sha256":  "00da5c5e5b0e118edb557556d46cb8c9e203c8d2dfa695c72f6412e655e2e3ee",
-                      "gitBlobSha1":  "534f9b14d95dfa66a85e26ad5031cce96798a2b5",
-                      "size":  3833
-                  },
-                  {
-                      "path":  "UI-DESIGN-RULES.md",
-                      "sha256":  "5997bc0d650558f9fcff37f906bc0394e278280faee7e20fda4c9cad207cb05f",
-                      "gitBlobSha1":  "654acb161e772223ab8e8d834cd24e3de6efee04",
-                      "size":  7253
-                  },
-                  {
-                      "path":  "version.json",
-                      "sha256":  "5402f6bdaf42a50bf7c1983289cf2ef93f83f6759f5a4d8f59f1a6eecb634a63",
-                      "gitBlobSha1":  "eb8c3950e9ca2b47ffc6887b43b3e74b13025c29",
-                      "size":  178
-                  }
-              ]
+  "schemaVersion": 1,
+  "version": "1.4.7",
+  "baseCommit": "ee20e5055aab1e34ba8152e0e3aab9435137c7bc",
+  "sourceFingerprint": "e0e2b9cd33a3844d611d9d2000b8ed9203f17ce2eba2449feb43069ccd231d41",
+  "generatedAt": "2026-08-20T06:04:27.1348839Z",
+  "files": [
+    {
+      "path": ".gitattributes",
+      "sha256": "908e7736cb5efdaeb5ad6d78b118fcba2d1717a671063f2138f0ee1b30a4cebc",
+      "gitBlobSha1": "8605483ca4d6434b4d96c54fc3ceea242d5b76a3",
+      "size": 151
+    },
+    {
+      "path": ".github/workflows/consistency.yml",
+      "sha256": "a86847a03811dce94cc02507d0aa4b18e4c41d46f2a60da45c6a1e143c7b0201",
+      "gitBlobSha1": "30fa0f9ea17f5806c764b4ae2519226c159d8201",
+      "size": 3381
+    },
+    {
+      "path": ".github/workflows/release.yml",
+      "sha256": "9e61e671423ef835c111ea52e690dea4d6ecb77b6c05da42ae2767f1ac0ea92d",
+      "gitBlobSha1": "30f4d8c193623306b7c4d6f87638f300e6a4e1fe",
+      "size": 3873
+    },
+    {
+      "path": ".github/workflows/validate.yml",
+      "sha256": "cd9f8b912e0c331eeef53cea01f30be7cc0a567a20fe1bbc74bfaeb982a03bc8",
+      "gitBlobSha1": "ef8462609fef7516b2bbfb31839521fe115c2dc6",
+      "size": 994
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "e872df7578160a73a424d7697870cea475de7db3a00ffcbeae886942ab58c466",
+      "gitBlobSha1": "69d34bd508bddc30b65f64429e95953ead2204b9",
+      "size": 673
+    },
+    {
+      "path": ".ui-smoke-test.ps1",
+      "sha256": "5879f7b25fc77a56182feacd8b8b66abfcce050cba9ccf9c101af9fac1d10c64",
+      "gitBlobSha1": "ced4b403bac4a35dbc9518c073b431437cac0db8",
+      "size": 23959
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "896a7a7e741ab42c80c98a2c09266ae40893d414773ad889b637215bf2f62d43",
+      "gitBlobSha1": "40f2768e901540cec10f0c1c35dda6e05f3ecb72",
+      "size": 2546
+    },
+    {
+      "path": "AI-AGENT-架构方案.md",
+      "sha256": "f64eadd14c05130446806730acc382928d5ab65c3c1f27c708f014acfb721bc5",
+      "gitBlobSha1": "3199b6ffce805641462f9062c359c6a5cac40230",
+      "size": 14382
+    },
+    {
+      "path": "AI自动化GitHub发布工作流.md",
+      "sha256": "8d8e70a1ea4365b72833146cba8ff8afb62d2a002491dd13df5d9aca302ea3fc",
+      "gitBlobSha1": "23b81bdf9658466eb94901e2284eb5f8968a0a6d",
+      "size": 8204
+    },
+    {
+      "path": "ARCHITECTURE.md",
+      "sha256": "33cfbdf0207a628a86621835357b1cfea25fdef86c69d343d3fc3a3a3cc2a8ee",
+      "gitBlobSha1": "58950d4059bfd19ca0df08de8196633516bf4739",
+      "size": 8607
+    },
+    {
+      "path": "AgentHost.ps1",
+      "sha256": "c88b79481b495133446ce6af8a473eddb80acdc4aeca31bffbac0a99cd0e92ba",
+      "gitBlobSha1": "06147c41e1bdc683e74fc5138ab674605b7d08ba",
+      "size": 9247
+    },
+    {
+      "path": "C-Drive-Cleaner-UI.ps1",
+      "sha256": "8ffee55574435326a8932debca542b05ae728a4fbf625e94e361fdfc94ef9acb",
+      "gitBlobSha1": "231c993fbb4bc6fe20ab11eeb0247ecbe7799de1",
+      "size": 139519
+    },
+    {
+      "path": "C-Drive-Cleaner.ps1",
+      "sha256": "03cacdc30681d930c91f12ee96af22aae77eb489bba2fef6587cd2b2cffc2c37",
+      "gitBlobSha1": "a4430c97e3268373ddd8b1f5972a4854e40c04a8",
+      "size": 54518
+    },
+    {
+      "path": "C盘清理.bat",
+      "sha256": "917864c4542bacb45d704b633f3b42ab1c003860cabe53cba0f4c925853cb97d",
+      "gitBlobSha1": "fd3149844ac7bf882e61e3d131a8b5d585f1b170",
+      "size": 354
+    },
+    {
+      "path": "FLYAI-接入调研与架构.md",
+      "sha256": "ff5d8eac422782e370eb3bd98a3fb542fabe47b46b84b4c865f3d56c9b056cc4",
+      "gitBlobSha1": "21ae15029282e321b0500f042dd52b4b428a42da",
+      "size": 2424
+    },
+    {
+      "path": "OTA-在线升级方案.md",
+      "sha256": "5a46e6229f80dce32327b291bd40c85263beeca28db0f02327339529c7f40ff2",
+      "gitBlobSha1": "634e55a3002825da5d070722cb09ace1f25dbd22",
+      "size": 4001
+    },
+    {
+      "path": "README-使用说明.txt",
+      "sha256": "39c836dd609e2963f0fb63869cc8ef9439f741b660d500fdddfe763b2ad5c907",
+      "gitBlobSha1": "4e0609e1278777cc61a17b09b877c6d895e1e686",
+      "size": 4871
+    },
+    {
+      "path": "README.md",
+      "sha256": "17e3f02c3e731824988eeee0e854e95f120641c9cb353ed3e24fb20b24a9f00c",
+      "gitBlobSha1": "1dd39b015e43f822ceb431ca87fce21baac496e9",
+      "size": 8110
+    },
+    {
+      "path": "RELEASE_NOTES_v1.0.0.md",
+      "sha256": "5e4b153ccc4dd9ffcedcadbd8aa6b82f7faf5925f2b5315c4828d895c19c50a2",
+      "gitBlobSha1": "4132574b2263793e40be3ee0c85a0c7deb47b833",
+      "size": 830
+    },
+    {
+      "path": "RELEASE_NOTES_v1.1.0.md",
+      "sha256": "276cd27f7a0f97670da6fa3b8fcae665c95898b929deee3ae5918b49d592d0fc",
+      "gitBlobSha1": "c406a1b82e2cffaa37692a7cc1b8d3174cbd46fb",
+      "size": 1234
+    },
+    {
+      "path": "RELEASE_NOTES_v1.1.1.md",
+      "sha256": "d7e147e0e8758bb83ea1fb3d133a4f2f3907597998d56833141e37b7535856ec",
+      "gitBlobSha1": "a36d082718999a603cbf06a73de17d60166c5448",
+      "size": 713
+    },
+    {
+      "path": "RELEASE_NOTES_v1.1.2.md",
+      "sha256": "8ed1d5c1e388aae733e22823ba1f074746bdcc9574099c357ceb46fb939f866f",
+      "gitBlobSha1": "6ffe982cb4eace3498b0f247363ae29bf6297440",
+      "size": 598
+    },
+    {
+      "path": "RELEASE_NOTES_v1.2.0.md",
+      "sha256": "c7b905497fb8e9e8a2b13e64d0cfe1731875984b222f9eaae31332a1fcb49bc1",
+      "gitBlobSha1": "b4ab918c7d029204cc31a8917ee907b4e7114b43",
+      "size": 1771
+    },
+    {
+      "path": "RELEASE_NOTES_v1.3.0.md",
+      "sha256": "0ba1ce5ed8cd7d92fed29b1113221d75ea7a9a145a9ec19bc2baec19527e0a86",
+      "gitBlobSha1": "ec04a4022ec5d3f108abc6efe5497143dfddf3ea",
+      "size": 1479
+    },
+    {
+      "path": "RELEASE_NOTES_v1.4.0.md",
+      "sha256": "af8415b48e1184e4ecdda42e38ee0a59e0467bd09e3b10d54e28409d74121972",
+      "gitBlobSha1": "6d8550ad4a2b3783177d40de44f8c4bcfb4e6157",
+      "size": 1388
+    },
+    {
+      "path": "RELEASE_NOTES_v1.4.1.md",
+      "sha256": "d4c388ad38c6854b738ebf15f86c1283202b502d5860c6d1dc802295b9ee35ce",
+      "gitBlobSha1": "7212ebefb3e9280736b0a66270aa5d3d22dbffce",
+      "size": 994
+    },
+    {
+      "path": "RELEASE_NOTES_v1.4.2.md",
+      "sha256": "58ed3d24b102765e6efaa7092d2694d6f7a47606d2fec2d2765c0795310580f5",
+      "gitBlobSha1": "5974566bcbea1a6b28b24ae3425f2c9aea73f494",
+      "size": 686
+    },
+    {
+      "path": "RELEASE_NOTES_v1.4.3.md",
+      "sha256": "8d827753afa0c5301c76542eaebd0c739fcbb9e2686090952ac657f62528e571",
+      "gitBlobSha1": "f6b455aac41e4ed72ba4a697c688e9093a24a667",
+      "size": 978
+    },
+    {
+      "path": "RELEASE_NOTES_v1.4.4.md",
+      "sha256": "d1d5acedb5fb2101fc20d6b4fe780fa44e5f064eac9aeb3b77bd574fc90822b1",
+      "gitBlobSha1": "95de8d3f99bb37f31a9da8e3685fdd142f065b11",
+      "size": 1138
+    },
+    {
+      "path": "RELEASE_NOTES_v1.4.5.md",
+      "sha256": "99924e00f4729d1c82b83583800592190e166ccb7168ced72845b22b461ea0f9",
+      "gitBlobSha1": "d11a976ff991ed574e7b9d3db8905119deb98f1b",
+      "size": 597
+    },
+    {
+      "path": "RELEASE_NOTES_v1.4.6.md",
+      "sha256": "922db032f1b8d07bc918e3e998efe44ba840baea08f493291564ba73fa2cbe19",
+      "gitBlobSha1": "011d3b9501af0684d31314b50f7b217633ccd2a8",
+      "size": 1534
+    },
+    {
+      "path": "RELEASE_NOTES_v1.4.7.md",
+      "sha256": "90d3e63b1cc1c0247423510308644885259ce6cb2bd73595d730a52d527e54de",
+      "gitBlobSha1": "506a17035fbc4b70c23345a83d192168005ee088",
+      "size": 2052
+    },
+    {
+      "path": "TravelHost.ps1",
+      "sha256": "052afbbf30d56dce60a551ab83d8a367109fb3a09c186bb38db209d5139f7ab0",
+      "gitBlobSha1": "2efd8304632a62c41f7adea4e953df871a31d731",
+      "size": 1054
+    },
+    {
+      "path": "UI-DESIGN-RULES.md",
+      "sha256": "572ddaca3fd8ec3125be8576fa4bc89ca3d829a9af43ca8eb8d50388b6d534fc",
+      "gitBlobSha1": "49de1fc86362c30d7cbc220f7bc0352e3da64694",
+      "size": 7605
+    },
+    {
+      "path": "agent-roadmap.json",
+      "sha256": "c15bc11d924b9b06e31de8951a5e8b9fc069a888e07b3f84e659333b7e75467c",
+      "gitBlobSha1": "3c02484131331606ef227460a4b069dd2c254628",
+      "size": 2698
+    },
+    {
+      "path": "architecture-loop.json",
+      "sha256": "1691911e5d8ba64247f5d57f6f0fcee06a192ad505940018dcb476c8936a6954",
+      "gitBlobSha1": "f65d54f83338150e4a1d2386ccff08e2149c293d",
+      "size": 3410
+    },
+    {
+      "path": "assets/assistant-agent-wave-v2.png",
+      "sha256": "1d09b8778c3df9be85a2b9d612ca70f8e53d859ceb0409731d6b970443ec1155",
+      "gitBlobSha1": "1505c0d3af810e073f683e1d6fddc4e9147b5057",
+      "size": 86209
+    },
+    {
+      "path": "assets/assistant-agent-wave.png",
+      "sha256": "f30e4daa9e969b02eb51429e437965d0d949c59103c93b27e8bdf7865746f970",
+      "gitBlobSha1": "c4d0f2d747efe8946e251bb1d14ea033446a4ee1",
+      "size": 82517
+    },
+    {
+      "path": "assets/assistant-user-1.png",
+      "sha256": "8cf4917b7ceda0a3197509fac02ad99ae37018694626c367f7b42a03dad8e897",
+      "gitBlobSha1": "f606244b7cd7ff48e9dec88d4b18418343d8b66f",
+      "size": 4592
+    },
+    {
+      "path": "assets/assistant-user-2.png",
+      "sha256": "6247a6cd19a920550df91dbaa42bb8d0809d87dffac4643a931a9ec2fca1e6b7",
+      "gitBlobSha1": "a5bc6b424f22804edc58ab8ae24007cb3db2448f",
+      "size": 4655
+    },
+    {
+      "path": "assets/assistant-user-3.png",
+      "sha256": "16ca797022cd57f5d748b5f7cc401376a65a1057e6205cbbc0663758eebdc91d",
+      "gitBlobSha1": "7f9d2c8fac086206a579d7aeac22314e5dfd15a7",
+      "size": 4439
+    },
+    {
+      "path": "assets/assistant-user-4.png",
+      "sha256": "c8be24fbd1b2470069fe6d37cd25090d6f156fd5e04a9020d78b897cef08e4e5",
+      "gitBlobSha1": "06e36a1bcc3606cc4dd425218725a9648bbb9424",
+      "size": 4596
+    },
+    {
+      "path": "assets/assistant-user-5.png",
+      "sha256": "e2a6cc415d7f4aada6ff4e494daf9650086b72eef87505fa37b21179ad4c9e68",
+      "gitBlobSha1": "300f8a002a928d9795d38521f3ce43ab86d565fa",
+      "size": 4700
+    },
+    {
+      "path": "assets/assistant-user-6.png",
+      "sha256": "dc9fe5f5e6e39963243031238d66c0fefaae7b8917ee9b81bf847b5b6a4524f7",
+      "gitBlobSha1": "18beaf71e2e96b45978c73eb469a5fa7b2807a96",
+      "size": 4429
+    },
+    {
+      "path": "assets/assistant-user-custom.png",
+      "sha256": "7d79372d175a7918d3d2a24a4fb0b57da5902551899e73485bf426c0758af590",
+      "gitBlobSha1": "66f5b5db27354ddc8ef5cc4f78bda2b6c8f49e7d",
+      "size": 5308
+    },
+    {
+      "path": "assets/cleaning-sprite-source.png",
+      "sha256": "fcbf44f7dbcdeff3973aceb58cd3d18268bf5ac38e4024dfc5299383ae15a9ad",
+      "gitBlobSha1": "4fb79de41f21f4f1c6fa3626f4d93bf45b983a93",
+      "size": 984741
+    },
+    {
+      "path": "assets/logo-animated-sprite.png",
+      "sha256": "b7e6cfcdb4889e8f60609c4b2539fb828716be0d6c49c6dd826ea0b388b3e3c4",
+      "gitBlobSha1": "23a196dcc0321c55112c61c8cfeb49171564d36f",
+      "size": 173175
+    },
+    {
+      "path": "assets/logo-animated.svg",
+      "sha256": "bc30fe9c4f610dea9d3eef5d252bdae19c10811e47a4d65c191ebc7bce76556f",
+      "gitBlobSha1": "6a522c708b71ece92b781ff027bab4aa259e7bf1",
+      "size": 64339
+    },
+    {
+      "path": "assets/sugon-cloud-logo-red.png",
+      "sha256": "4f62330214f946a1ae1f6ab655e222f28268389d6d0ad835d58fa07c7faefc68",
+      "gitBlobSha1": "825213fe0288e75e54cc362d757f1f093ad3afef",
+      "size": 13260
+    },
+    {
+      "path": "contracts/assistant-tools.json",
+      "sha256": "4b5118afe50124778bd5f3f00ad4a815075a1e694a2f53e9fe6e7d6a318ba53c",
+      "gitBlobSha1": "2ad71f0cc0b59b6d6ac91d63f80b6cd8f75e17cc",
+      "size": 5324
+    },
+    {
+      "path": "core/AgentConfig.ps1",
+      "sha256": "a2bf2c63806640d26cc5cea6132d551c1bf84650fffec4525eac5c779feca14c",
+      "gitBlobSha1": "4adbae1efc583aba1640fc76888fab2200002b5e",
+      "size": 6835
+    },
+    {
+      "path": "core/AgentProtocol.ps1",
+      "sha256": "770b336f79a040f92aeadc58730d916fff370931ca49dfe26925449ceba61a4a",
+      "gitBlobSha1": "82844d860647c789e174777c458bc2986bbcc898",
+      "size": 2891
+    },
+    {
+      "path": "core/AgentProvider.ps1",
+      "sha256": "65e7ce250c6bf2dff81e85a831d7827074ef8d847f3f10b2a693e3fca7ade7c0",
+      "gitBlobSha1": "53c2e62855e24d5c6219d0414d4cb647d9c41e77",
+      "size": 11904
+    },
+    {
+      "path": "core/AssistantToolRouter.ps1",
+      "sha256": "b41ea30734eda3d372ed536321aa09f8992b4b66308eb5ace82301302212f1e8",
+      "gitBlobSha1": "081eeac831ae95e584c878d4dbaa1a0dba1c0fe3",
+      "size": 5610
+    },
+    {
+      "path": "core/Copilot.ps1",
+      "sha256": "cdf0c3c1da71dba0f977506f78edcdeff076b3e297b812bca01c7d9316fb7177",
+      "gitBlobSha1": "ba89c4e8777bf1b2cc049d8f91d89f2f11e92905",
+      "size": 5381
+    },
+    {
+      "path": "core/EventProtocol.ps1",
+      "sha256": "0a13fd385e0f12695859d0cffaba7cfe424483e653d31015365e185ecbaf7863",
+      "gitBlobSha1": "09a5e5b9117bfa01da62c627896cf0e3a8055c59",
+      "size": 1378
+    },
+    {
+      "path": "core/ExecutionBroker.ps1",
+      "sha256": "21735cce94140efd483e093c856f8db307da1cc524ba8567fe0e350cd5414aac",
+      "gitBlobSha1": "c216c0350813b1a893db8388c342deb090646d71",
+      "size": 7203
+    },
+    {
+      "path": "core/FlyAiTravelProvider.ps1",
+      "sha256": "179fd5269f7e15e8ddd0499e759d80f46fd046ec60b7f42bec0d01fb083ea08e",
+      "gitBlobSha1": "c7d399a979d99dc366d984e4dbc079b35956782f",
+      "size": 13622
+    },
+    {
+      "path": "core/IncrementalScanIndex.ps1",
+      "sha256": "0b7ea3dd95b8fd7791fa06635fed388200a4b24262f4722b8749452760c38ef5",
+      "gitBlobSha1": "404003cfdb454495628b032d2db793f489ea0335",
+      "size": 12989
+    },
+    {
+      "path": "core/OperationJournal.ps1",
+      "sha256": "066ff17db3428f74779521b73be0ffbccb517afd64741da879ad0cad72f36c65",
+      "gitBlobSha1": "7d483e94070fc76a6601cc4ab153488ab818b3cc",
+      "size": 3479
+    },
+    {
+      "path": "core/ProcessOrchestrator.ps1",
+      "sha256": "72ca60be27806d8b1a7b4c913d09146036ccbeea6226af0a8a8cd202beb2586c",
+      "gitBlobSha1": "c09bdd90b7990b3e47b5bd31efb0a00c6264bb57",
+      "size": 5641
+    },
+    {
+      "path": "core/RuleCatalog.ps1",
+      "sha256": "04cf09eda24ee94fce974cae80210b73787c9dc6a5218252db235e6165e0c37f",
+      "gitBlobSha1": "087b526e4c751a74dba618063a6292dfb228af1f",
+      "size": 4493
+    },
+    {
+      "path": "core/ScanProvider.ps1",
+      "sha256": "adce9691d4db085d518a58e680bd9dd61dca5173bcdbea3fd1cbaa8f154e2c49",
+      "gitBlobSha1": "47f610937b200306204f1635d5b07e9cf90e1e46",
+      "size": 15316
+    },
+    {
+      "path": "core/UiActionBroker.ps1",
+      "sha256": "e91e613d46a62b72d6e6378b394650d690dff3eed490ea6bc63b4c92fd027c1b",
+      "gitBlobSha1": "2116c43448bda2025ef4a21df72e1e27cc77654c",
+      "size": 4602
+    },
+    {
+      "path": "core/Utf8ProcessHost.ps1",
+      "sha256": "36a5b25bb36cad57e49bd2efb50b8b2d289ba4fbfa65afe869248cd1c901651d",
+      "gitBlobSha1": "d108db860a9d33512a54e7c5ec5b8985b69bf745",
+      "size": 1638
+    },
+    {
+      "path": "migration-decision.json",
+      "sha256": "383fcbe0b43d7b8280fcb3ed5a971672799982c1fcdc696bc37cdf2863dcf49b",
+      "gitBlobSha1": "b0f3eda2d79bbc336e9a16851fee1acd638af893",
+      "size": 1592
+    },
+    {
+      "path": "rules/cleanup-rules.json",
+      "sha256": "4dbd5f9fe7264a64939a4532402116042accb4fd219220aae3fe0852fb316457",
+      "gitBlobSha1": "a411bcedcd6ef05ce3f4e4d167777d0df800a862",
+      "size": 15322
+    },
+    {
+      "path": "source-policy.json",
+      "sha256": "6ebc73e9c6e5ecfd409af4a6f898cfed53ff58edeed53645c5a7326a47f04fa9",
+      "gitBlobSha1": "4315db1c0ee267c833c6015c823c8d43c143fba2",
+      "size": 1005
+    },
+    {
+      "path": "tests/AgentRuntimeTests.ps1",
+      "sha256": "273f7dfa0d487f8ecf2ec04bffc65b725101bcc9b21de4ae4f15dab7c88c9069",
+      "gitBlobSha1": "b2593e81720efb53a42345650314d5db90a755dd",
+      "size": 16226
+    },
+    {
+      "path": "tests/ArchitectureContractTests.ps1",
+      "sha256": "10787cfa8811fb59a6ac0313f748aedb9a6e6abeb3614caff80be52181fbc2d0",
+      "gitBlobSha1": "6616b6a02873a8e601eafd9b9178d4a3247bd911",
+      "size": 3068
+    },
+    {
+      "path": "tests/AssistantToolTests.ps1",
+      "sha256": "f7319e99a5aa3e3b55ef1998a83de5f607c818ad1a9f6b0e5c1697bfec1c2176",
+      "gitBlobSha1": "583ac737150a905d3f03d16d07d2f45e6408bcb4",
+      "size": 3137
+    },
+    {
+      "path": "tests/CopilotTests.ps1",
+      "sha256": "4230317a76aaf2a8cd06a028e23b7ba0465da47714a06680fdc465dec051e363",
+      "gitBlobSha1": "a6900b4ca01ee82d9c9c0815c8c88d45d68b1b9f",
+      "size": 2724
+    },
+    {
+      "path": "tests/ExecutionBrokerTests.ps1",
+      "sha256": "38102abef7731ac26f8faef4a25408e7308359d26dc9d7e1be5bfa0b344d2030",
+      "gitBlobSha1": "ecc9937c680fe41d64ac83fada62eb7a8a2175db",
+      "size": 3142
+    },
+    {
+      "path": "tests/FlyAiTravelProviderTests.ps1",
+      "sha256": "9ddc2321203511e89c1fc72fbfe0b61330caf170bd13c49c697469abbc96ee9d",
+      "gitBlobSha1": "09d0d3c30dd2499a4fdc971841114ba064c7887d",
+      "size": 4761
+    },
+    {
+      "path": "tests/IncrementalScanTests.ps1",
+      "sha256": "6fa06c4b658c341676ea6998727fee6702f9867bde7d81859ac035a458a58837",
+      "gitBlobSha1": "7d6ce49f973e5c0fd8e9f2c4d0a4e6cd043bbeef",
+      "size": 8026
+    },
+    {
+      "path": "tests/MigrationDecisionTests.ps1",
+      "sha256": "af81b618b13cb412f445a48eb8bbfb7a721ca5454b5bda3d5fa6cfca28b194e8",
+      "gitBlobSha1": "fa1a354b086a7834e78b4ea6b687380fba58d7a9",
+      "size": 2497
+    },
+    {
+      "path": "tests/PlanContractTests.ps1",
+      "sha256": "54b4492b9003e9cbe13657d1da8e8537226d80422366de64004172d96197c7bb",
+      "gitBlobSha1": "096fa900ab27790ce5416db3528777ecf8bf6bad",
+      "size": 2734
+    },
+    {
+      "path": "tests/ProcessContractTests.ps1",
+      "sha256": "4a87bd9836d1adc33288becb1c5703640b1e8da97eec0f9fc36eb4197d52c3d0",
+      "gitBlobSha1": "a8b4007c7714a7fd346976e10e2fa1e4136c79f2",
+      "size": 2527
+    },
+    {
+      "path": "tests/ScanProviderTests.ps1",
+      "sha256": "a0025d3798939909dba6980be6eeca5c92c6c1685a74b99799b31170118ba30b",
+      "gitBlobSha1": "52f5e8840ae240e6be10216b5c33c1aadb23badd",
+      "size": 3154
+    },
+    {
+      "path": "tools/Complete-ApprovedCandidate.ps1",
+      "sha256": "171ed5c6f67dea61aa56626f102251ca07a81f88c95f9498e50b3d795e814def",
+      "gitBlobSha1": "86be1f99bd4c291b2e55e65c3ff4dc6e1af9b0f0",
+      "size": 8478
+    },
+    {
+      "path": "tools/Enable-GitHubWorkflowGuard.ps1",
+      "sha256": "05cdf2efd39cfd6ec1e62f1ce8da46d3af0fae737334a2e32ef3feb26d4d524e",
+      "gitBlobSha1": "a1187ab0367a4d26db3239855bb4592c0db1b11d",
+      "size": 2224
+    },
+    {
+      "path": "tools/Generate-AssistantAvatars.ps1",
+      "sha256": "ca7f3a8be625dabdf92201ad1421d05a35e7fab0a2c0ed7ce50eb88bdca5da65",
+      "gitBlobSha1": "d1a4c56a3d12aadebbf705dcb36816818bea2321",
+      "size": 7347
+    },
+    {
+      "path": "tools/Get-SourceManifest.ps1",
+      "sha256": "df32e0d04981c23cd64d7bf2b90828460f371a7fb20bd42d56013c17d8f436ee",
+      "gitBlobSha1": "ffb1a7e2f2b314e1d9376803a5e670eee4dc2315",
+      "size": 6958
+    },
+    {
+      "path": "tools/Invoke-ArchitectureLoop.ps1",
+      "sha256": "cb6112b6410d2b055be827e2170cf588586c23313b1526cb7715bd42f1e5a564",
+      "gitBlobSha1": "abc2a94c4e3d40359f1f679422ed01898347db0a",
+      "size": 6244
+    },
+    {
+      "path": "tools/Invoke-ProjectValidation.ps1",
+      "sha256": "90fda4fae40b7ada12ffd193f5bb7efd0a50c4cb2ca40fcaa3aa3cf0c3180686",
+      "gitBlobSha1": "6da7c57840c6ac97d9ed56e4205ee33edf5f08c6",
+      "size": 5031
+    },
+    {
+      "path": "tools/New-ReleasePackage.ps1",
+      "sha256": "486a0aa0be008b5376493eb13d60b2b74b9e975f5762f4c00a23ecae9d7bb974",
+      "gitBlobSha1": "74772a38b47c8382b287e3596bba431ea1e76233",
+      "size": 4284
+    },
+    {
+      "path": "tools/Submit-UpdateCandidate.ps1",
+      "sha256": "56a2cf076fcaa8cf0f3cc5f24b61fd831d1f6c24e3444aa72ade6afd32b59871",
+      "gitBlobSha1": "9c84e276a8bfa9be513e4f2d2f2e7b56e7f0766c",
+      "size": 14027
+    },
+    {
+      "path": "tools/Test-VersionPolicy.ps1",
+      "sha256": "00da5c5e5b0e118edb557556d46cb8c9e203c8d2dfa695c72f6412e655e2e3ee",
+      "gitBlobSha1": "534f9b14d95dfa66a85e26ad5031cce96798a2b5",
+      "size": 3833
+    },
+    {
+      "path": "version.json",
+      "sha256": "8b8cb9760e2d8f37a6f0a393a211bcf150000f3042ac22d257caca3eb287d2ab",
+      "gitBlobSha1": "8c3ee5e35c74e7c74a54440ec4406e35854e1752",
+      "size": 178
+    }
+  ]
 }
