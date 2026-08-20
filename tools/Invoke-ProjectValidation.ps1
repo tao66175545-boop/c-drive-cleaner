@@ -53,8 +53,14 @@ try {
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\AssistantToolTests.ps1')
     if ($LASTEXITCODE -ne 0) { throw 'Constrained assistant tool tests failed.' }
 
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\ConversationalControlTests.ps1')
+    if ($LASTEXITCODE -ne 0) { throw 'Conversational UI control tests failed.' }
+
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\AgentRuntimeTests.ps1')
     if ($LASTEXITCODE -ne 0) { throw 'Agent runtime tests failed.' }
+
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\FlyAiTravelProviderTests.ps1')
+    if ($LASTEXITCODE -ne 0) { throw 'FlyAI travel provider tests failed.' }
 
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\MigrationDecisionTests.ps1')
     if ($LASTEXITCODE -ne 0) { throw 'Shell migration decision tests failed.' }

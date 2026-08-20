@@ -143,6 +143,15 @@ function Start-CDriveEngineProcess {
         [string]$LogPath
     )
 
-    $processArguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $EnginePath) + @($Arguments)
+    $utf8HostPath = Join-Path $PSScriptRoot 'Utf8ProcessHost.ps1'
+    if (-not (Test-Path -LiteralPath $utf8HostPath -PathType Leaf)) {
+        throw 'UTF-8 process host is missing.'
+    }
+    $processArguments = @(
+        '-NoProfile',
+        '-ExecutionPolicy', 'Bypass',
+        '-File', $utf8HostPath,
+        '-ScriptPath', $EnginePath
+    ) + @($Arguments)
     return [CDriveCleaner.EngineProcess]::Start('powershell.exe', $processArguments, $WorkingDirectory, $LogPath)
 }

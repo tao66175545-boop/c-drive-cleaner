@@ -85,7 +85,7 @@ if ([string]$phase.id -eq 'P7-incremental-scan') {
     }
 }
 
-if ([string]$phase.id -match '^P(?:8|9|10|11|12|13)-') {
+if ([string]$phase.id -match '^P(?:8|9|10|11|12|13|14|15)-') {
     try {
         & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\AgentRuntimeTests.ps1') | Out-Host
         Add-LoopCheck 'agent_runtime_contracts' ($LASTEXITCODE -eq 0) 'tests/AgentRuntimeTests.ps1'
@@ -97,6 +97,24 @@ if ([string]$phase.id -match '^P(?:8|9|10|11|12|13)-') {
         Add-LoopCheck 'agent_ui_smoke' ($LASTEXITCODE -eq 0) '.ui-smoke-test.ps1'
     } catch {
         Add-LoopCheck 'agent_ui_smoke' $false $_.Exception.Message
+    }
+}
+
+if ([string]$phase.id -eq 'P15-conversational-ui-control') {
+    try {
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\ConversationalControlTests.ps1') | Out-Host
+        Add-LoopCheck 'conversational_control_contracts' ($LASTEXITCODE -eq 0) 'tests/ConversationalControlTests.ps1'
+    } catch {
+        Add-LoopCheck 'conversational_control_contracts' $false $_.Exception.Message
+    }
+}
+
+if ([string]$phase.id -eq 'P14-conversational-cleanup-and-travel') {
+    try {
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'tests\FlyAiTravelProviderTests.ps1') | Out-Host
+        Add-LoopCheck 'flyai_travel_contracts' ($LASTEXITCODE -eq 0) 'tests/FlyAiTravelProviderTests.ps1'
+    } catch {
+        Add-LoopCheck 'flyai_travel_contracts' $false $_.Exception.Message
     }
 }
 

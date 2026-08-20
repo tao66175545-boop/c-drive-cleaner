@@ -201,8 +201,11 @@ $assistantRouterModule = Join-Path $scriptDir 'core\AssistantToolRouter.ps1'
 $agentConfigModule = Join-Path $scriptDir 'core\AgentConfig.ps1'
 $agentProtocolModule = Join-Path $scriptDir 'core\AgentProtocol.ps1'
 $uiActionBrokerModule = Join-Path $scriptDir 'core\UiActionBroker.ps1'
+$flyAiTravelProviderModule = Join-Path $scriptDir 'core\FlyAiTravelProvider.ps1'
 $agentHostScript = Join-Path $scriptDir 'AgentHost.ps1'
+$travelHostScript = Join-Path $scriptDir 'TravelHost.ps1'
 $assistantContractPath = Join-Path $scriptDir 'contracts\assistant-tools.json'
+$versionManifestPath = Join-Path $scriptDir 'version.json'
 $localDataRoot = if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'CDriveCleaner' } else { Join-Path $env:TEMP 'CDriveCleaner' }
 $reportPath = Join-Path (Join-Path $localDataRoot 'reports') 'C盘清理诊断报告.html'
 $spriteSheetPath = Join-Path $scriptDir 'assets\cleaning-sprite-source.png'
@@ -213,7 +216,19 @@ $assistantAgentAvatarPaths = @(
     (Join-Path $scriptDir 'assets\assistant-agent-wave-v2.png'),
     (Join-Path $scriptDir 'assets\assistant-agent-wave.png')
 )
-$assistantUserAvatarPaths = @(1..6 | ForEach-Object { Join-Path $scriptDir ("assets\assistant-user-{0}.png" -f $_) })
+$assistantUserAvatarPaths = @(
+    (Join-Path $scriptDir 'assets\assistant-user-custom.png')
+) + @(1..6 | ForEach-Object { Join-Path $scriptDir ("assets\assistant-user-{0}.png" -f $_) })
+
+$displayVersion = '未知'
+try {
+    $versionManifest = Get-Content -LiteralPath $versionManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    if (-not [string]::IsNullOrWhiteSpace([string]$versionManifest.version)) {
+        $displayVersion = 'v{0}' -f [string]$versionManifest.version
+    }
+} catch {
+    # 版本信息不应阻止主界面启动。
+}
 
 if (-not (Test-Path -LiteralPath $mainScript)) {
     [System.Windows.Forms.MessageBox]::Show("找不到主程序：`n$mainScript", 'C盘清理', 'OK', 'Error') | Out-Null
@@ -222,7 +237,8 @@ if (-not (Test-Path -LiteralPath $mainScript)) {
 if (-not (Test-Path -LiteralPath $processOrchestrator) -or -not (Test-Path -LiteralPath $ruleCatalogModule) -or
     -not (Test-Path -LiteralPath $copilotModule) -or -not (Test-Path -LiteralPath $assistantRouterModule) -or
     -not (Test-Path -LiteralPath $agentConfigModule) -or -not (Test-Path -LiteralPath $agentProtocolModule) -or
-    -not (Test-Path -LiteralPath $uiActionBrokerModule) -or -not (Test-Path -LiteralPath $agentHostScript) -or
+    -not (Test-Path -LiteralPath $uiActionBrokerModule) -or -not (Test-Path -LiteralPath $flyAiTravelProviderModule) -or
+    -not (Test-Path -LiteralPath $agentHostScript) -or -not (Test-Path -LiteralPath $travelHostScript) -or
     -not (Test-Path -LiteralPath $assistantContractPath)) {
     [System.Windows.Forms.MessageBox]::Show('缺少核心模块或助手契约，程序无法安全启动。', 'C盘清理', 'OK', 'Error') | Out-Null
     exit 1
@@ -234,6 +250,7 @@ if (-not (Test-Path -LiteralPath $processOrchestrator) -or -not (Test-Path -Lite
 . $agentConfigModule
 . $agentProtocolModule
 . $uiActionBrokerModule
+. $flyAiTravelProviderModule
 $copilotTargets = @(Get-CDriveCleanupTargets)
 
 function Get-CFreeText {
@@ -250,6 +267,19 @@ function Append-Log {
     $Box.AppendText($Text + [Environment]::NewLine)
     $Box.SelectionStart = $Box.Text.Length
     $Box.ScrollToCaret()
+}
+
+function Read-CDriveUtf8LogSnapshot {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    $stream = [System.IO.File]::Open($Path, 'Open', 'Read', 'ReadWrite')
+    $reader = $null
+    try {
+        $utf8 = New-Object System.Text.UTF8Encoding($false, $true)
+        $reader = New-Object System.IO.StreamReader($stream, $utf8, $true)
+        return $reader.ReadToEnd()
+    } finally {
+        if ($reader) { $reader.Dispose() } else { $stream.Dispose() }
+    }
 }
 
 function Format-UiBytes {
@@ -358,15 +388,21 @@ $navAssistant.SelectedPressedBackColor = [System.Drawing.Color]::FromArgb(247, 2
 $navAssistant.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 9, [System.Drawing.FontStyle]::Bold)
 $navAssistant.Cursor = [System.Windows.Forms.Cursors]::Hand
 
+$sideFooterHost = New-Object System.Windows.Forms.Panel
+$sideFooterHost.Dock = 'Bottom'
+$sideFooterHost.Height = 28
+$sideFooterHost.BackColor = [System.Drawing.Color]::White
+
 $sideFooter = New-Object System.Windows.Forms.Label
-$sideFooter.Text = '本地工具'
+$sideFooter.Text = '版本号 {0}' -f $displayVersion
 $sideFooter.Font = New-Object System.Drawing.Font('Segoe UI', 7)
 $sideFooter.ForeColor = [System.Drawing.Color]::FromArgb(147, 159, 168)
-$sideFooter.AutoSize = $true
-$sideFooter.Location = New-Object System.Drawing.Point(20, 0)
-$sideFooter.Anchor = 'Bottom,Left'
-$sideFooter.Add_Layout({ $sideFooter.Top = $sideBar.ClientSize.Height - 28 })
-$sideBar.Controls.AddRange(@($sideDivider, $navOverview, $navLogs, $navSelection, $navAssistant, $sideFooter))
+$sideFooter.AutoSize = $false
+$sideFooter.Location = New-Object System.Drawing.Point(12, 0)
+$sideFooter.Size = New-Object System.Drawing.Size(88, 20)
+$sideFooter.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
+$sideFooterHost.Controls.Add($sideFooter)
+$sideBar.Controls.AddRange(@($sideDivider, $sideFooterHost, $navOverview, $navLogs, $navSelection, $navAssistant))
 
 $workspace = New-Object System.Windows.Forms.Panel
 $workspace.Dock = 'Fill'
@@ -987,7 +1023,7 @@ $assistantStatus.ForeColor = [System.Drawing.Color]::FromArgb(181, 30, 40)
 $assistantStatus.Location = New-Object System.Drawing.Point(92, 7)
 $assistantStatus.AutoSize = $true
 $assistantDescription = New-Object System.Windows.Forms.Label
-$assistantDescription.Text = '可解释扫描结果并调整勾选；最终清理由你确认。'
+$assistantDescription.Text = '可对话清理磁盘，也可用飞猪规划旅行；最终操作由你确认。'
 $assistantDescription.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 8)
 $assistantDescription.ForeColor = [System.Drawing.Color]::FromArgb(122, 137, 149)
 $assistantDescription.Location = New-Object System.Drawing.Point(1, 31)
@@ -1027,7 +1063,7 @@ try {
     }
     $availableUserAvatars = @($assistantUserAvatarPaths | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf })
     if ($availableUserAvatars.Count -gt 0) {
-        $assistantUserAvatarImage = [System.Drawing.Image]::FromFile((Get-Random -InputObject $availableUserAvatars))
+        $assistantUserAvatarImage = [System.Drawing.Image]::FromFile([string]$availableUserAvatars[0])
     }
 } catch {
     $assistantAgentAvatarImage = $null
@@ -1110,9 +1146,19 @@ $assistantState = @{
     ToolCalls = 0
     AssistantBubbleOpen = $false
     ActiveBubble = $null
+    PendingCleanupAfterScan = $false
     Config = $null
     FixtureResponsePath = ''
     FixtureSsePath = ''
+}
+$travelState = @{
+    Process = $null
+    RequestFile = ''
+    OutputFile = ''
+    LogFile = ''
+    ActiveQuestion = ''
+    PendingDetails = $false
+    PendingQuestion = ''
 }
 
 $toolTips = New-Object System.Windows.Forms.ToolTip
@@ -1121,7 +1167,7 @@ $toolTips.ReshowDelay = 120
 $toolTips.SetToolTip($navOverview, '概览：统计、磁盘状态和清理对比')
 $toolTips.SetToolTip($navSelection, '清理清单：查看扫描到的候选项并自行选择')
 $toolTips.SetToolTip($navLogs, '日志：专注查看实时输出')
-$toolTips.SetToolTip($navAssistant, '智能助手：解释扫描结果并提供可撤销的勾选建议')
+$toolTips.SetToolTip($navAssistant, '智能助手：用对话控制扫描、页面和可撤销的清理选择')
 $toolTips.SetToolTip($btnScan, '扫描可安全清理项，不会删除文件')
 $toolTips.SetToolTip($btnReport, '打开最新的 HTML 诊断报告')
 $toolTips.SetToolTip($btnClean, '清理缓存和临时文件，执行前会再次确认')
@@ -1173,23 +1219,29 @@ function Update-AssistantChatRowLayout {
     $Row.Width = $rowWidth
     $avatarSize = 40
     $gap = 10
+    $bubblePaddingX = 14
+    $bubblePaddingY = 10
+    $bubbleMinimumWidth = 100
+    $bubbleMinimumHeight = 42
     $maximumBubbleWidth = [Math]::Max(180, [Math]::Floor(($rowWidth - $avatarSize - $gap) * 0.72))
-    $textMaximumWidth = [Math]::Max(140, $maximumBubbleWidth - 24)
-    $flags = [System.Windows.Forms.TextFormatFlags]::WordBreak -bor [System.Windows.Forms.TextFormatFlags]::NoPrefix -bor [System.Windows.Forms.TextFormatFlags]::TextBoxControl
+    $textMaximumWidth = [Math]::Max(140, $maximumBubbleWidth - ($bubblePaddingX * 2))
+    $flags = [System.Windows.Forms.TextFormatFlags]::WordBreak -bor [System.Windows.Forms.TextFormatFlags]::NoPrefix -bor [System.Windows.Forms.TextFormatFlags]::TextBoxControl -bor [System.Windows.Forms.TextFormatFlags]::NoPadding
     $singleLine = [System.Windows.Forms.TextRenderer]::MeasureText([string]$refs.Label.Text, $refs.Label.Font)
     $textWidth = [Math]::Min($textMaximumWidth, [Math]::Max(72, $singleLine.Width))
     $measured = [System.Windows.Forms.TextRenderer]::MeasureText([string]$refs.Label.Text, $refs.Label.Font, [System.Drawing.Size]::new($textWidth, 10000), $flags)
-    $bubbleWidth = [Math]::Min($maximumBubbleWidth, [Math]::Max(96, $measured.Width + 24))
-    $labelWidth = [Math]::Max(72, $bubbleWidth - 24)
+    $bubbleWidth = [Math]::Min($maximumBubbleWidth, [Math]::Max($bubbleMinimumWidth, $measured.Width + ($bubblePaddingX * 2)))
+    $labelWidth = [Math]::Max(72, $bubbleWidth - ($bubblePaddingX * 2))
     $measured = [System.Windows.Forms.TextRenderer]::MeasureText([string]$refs.Label.Text, $refs.Label.Font, [System.Drawing.Size]::new($labelWidth, 10000), $flags)
-    $bubbleHeight = [Math]::Max(42, $measured.Height + 20)
+    $bubbleHeight = [Math]::Max($bubbleMinimumHeight, $measured.Height + ($bubblePaddingY * 2))
     $Row.Height = [Math]::Max($avatarSize, $bubbleHeight) + 10
     $refs.Avatar.Size = [System.Drawing.Size]::new($avatarSize, $avatarSize)
     $refs.Avatar.Top = 0
     $refs.Bubble.Size = [System.Drawing.Size]::new($bubbleWidth, $bubbleHeight)
     $refs.Bubble.Top = 0
-    $refs.Label.Location = [System.Drawing.Point]::new(12, 10)
-    $refs.Label.Size = [System.Drawing.Size]::new($labelWidth, [Math]::Max(20, $bubbleHeight - 20))
+    $textControlHeight = [Math]::Min($bubbleHeight - ($bubblePaddingY * 2), [Math]::Max($refs.Label.Font.Height + 2, $measured.Height + 2))
+    $textControlTop = [Math]::Max($bubblePaddingY, [int][Math]::Floor(($bubbleHeight - $textControlHeight) / 2))
+    $refs.Label.Location = [System.Drawing.Point]::new($bubblePaddingX, $textControlTop)
+    $refs.Label.Size = [System.Drawing.Size]::new($labelWidth, $textControlHeight)
     if ([string]$refs.Role -eq 'user') {
         $refs.Avatar.Left = [Math]::Max(0, $rowWidth - $avatarSize)
         $refs.Bubble.Left = [Math]::Max(0, $refs.Avatar.Left - $gap - $bubbleWidth)
@@ -1608,10 +1660,7 @@ $poll.Add_Tick({
     $file = $jobState.LogFile
     if ($file -and (Test-Path -LiteralPath $file)) {
         try {
-            $fs = [System.IO.File]::Open($file, 'Open', 'Read', 'ReadWrite')
-            $sr = New-Object System.IO.StreamReader($fs, [System.Text.Encoding]::Default)
-            $text = $sr.ReadToEnd()
-            $sr.Close(); $fs.Close()
+            $text = Read-CDriveUtf8LogSnapshot $file
             if ($text.Length -gt $jobState.LastLen) {
                 $chunk = $text.Substring($jobState.LastLen)
                 $jobState.LastLen = $text.Length
@@ -1619,6 +1668,8 @@ $poll.Add_Tick({
                 $log.SelectionStart = $log.Text.Length
                 $log.ScrollToCaret()
             }
+        } catch [System.Text.DecoderFallbackException] {
+            # 子进程可能正写到一个 UTF-8 多字节字符中间，下一次轮询读取完整快照。
         } catch {}
     }
     $process = $jobState.Process
@@ -1645,6 +1696,13 @@ $poll.Add_Tick({
         Update-Dashboard
         if ($succeeded -and $selectionOutput -and (Test-Path -LiteralPath $selectionOutput)) {
             Show-CleanupSelection $selectionOutput
+        }
+        if ($succeeded -and -not $dashboardState.IsCleaning -and $assistantState.PendingCleanupAfterScan -and @($dashboardState.SelectionItems).Count -gt 0) {
+            $assistantState.PendingCleanupAfterScan = $false
+            $form.BeginInvoke([System.Action]{ Invoke-AssistantCleanupWorkflow }) | Out-Null
+        } elseif (-not $succeeded -and $assistantState.PendingCleanupAfterScan) {
+            $assistantState.PendingCleanupAfterScan = $false
+            Add-AssistantMessage '助手' '只读扫描未成功完成，因此没有选择或执行任何清理项。'
         }
         $jobState.SelectionOutput = ''
         $jobState.SelectionFile = ''
@@ -1726,14 +1784,34 @@ function New-AssistantChatRow {
         $bubble.BorderColor = [System.Drawing.Color]::FromArgb(220, 226, 231)
     }
 
-    $label = New-Object System.Windows.Forms.Label
-    $label.AutoSize = $false
+    $label = New-Object System.Windows.Forms.TextBox
     $label.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 9)
     $label.ForeColor = if ($Role -eq 'user') { [System.Drawing.Color]::White } else { [System.Drawing.Color]::FromArgb(49, 62, 72) }
-    $label.BackColor = [System.Drawing.Color]::Transparent
+    $label.BackColor = $bubble.BackColor
     $label.Text = $Text
-    $label.UseCompatibleTextRendering = $false
+    $label.ReadOnly = $true
+    $label.BorderStyle = [System.Windows.Forms.BorderStyle]::None
+    $label.Multiline = $true
+    $label.ScrollBars = [System.Windows.Forms.ScrollBars]::None
+    $label.WordWrap = $true
+    $label.ShortcutsEnabled = $true
+    $label.HideSelection = $false
+    $label.TabStop = $true
+    $label.Cursor = [System.Windows.Forms.Cursors]::IBeam
+    $label.AccessibleRole = [System.Windows.Forms.AccessibleRole]::StaticText
     $label.AccessibleName = if ($Role -eq 'user') { '你的消息' } else { '智能助手消息' }
+
+    $messageMenu = New-Object System.Windows.Forms.ContextMenuStrip
+    $copyMessage = $messageMenu.Items.Add('复制')
+    $selectAllMessage = $messageMenu.Items.Add('全选')
+    $messageMenu.Add_Opening({
+        param($sender, $eventArgs)
+        $copyMessage.Enabled = $label.SelectionLength -gt 0
+        $selectAllMessage.Enabled = $label.TextLength -gt 0
+    }.GetNewClosure())
+    $copyMessage.Add_Click({ if ($label.SelectionLength -gt 0) { $label.Copy() } }.GetNewClosure())
+    $selectAllMessage.Add_Click({ $label.SelectAll(); $label.Focus() }.GetNewClosure())
+    $label.ContextMenuStrip = $messageMenu
 
     $bubble.Controls.Add($label)
     $row.Controls.AddRange(@($avatar, $bubble))
@@ -1774,7 +1852,7 @@ function Complete-AssistantDelta {
     $assistantState.ActiveBubble = $null
 }
 
-Add-AssistantMessage '助手' '你好，我是你的智能清理助手。请先开始扫描；扫描完成后，我可以解释项目并给出可撤销的勾选建议。'
+Add-AssistantMessage '助手' '你好，我是你的智能助手。你可以直接让我切换页面、扫描、勾选建议项、查看报告或准备清理；输入旅行问题时，我会在后台仅将本条问题交给飞猪查询。最终清理和旅行预订都由你确认。'
 
 function Update-AgentMode {
     $assistantState.Config = $null
@@ -1975,6 +2053,11 @@ function Invoke-OfflineAssistantQuery {
         Add-AssistantMessage '你' $question
         $assistantInput.Clear()
     }
+    if (Test-CDriveTravelIntent $question) {
+        Invoke-AssistantTravelQuery $question
+        return
+    }
+    if (Invoke-AssistantLocalControl $question) { return }
     if (@($dashboardState.SelectionItems).Count -eq 0) {
         Add-AssistantMessage '助手' '还没有可分析的扫描结果。请先点击“开始扫描”。扫描过程不会删除文件。'
         return
@@ -2013,6 +2096,128 @@ function Invoke-OfflineAssistantQuery {
         Add-AssistantMessage '助手' ('请求未执行：' + $_.Exception.Message)
     }
 }
+
+function Test-AssistantCleanupCommand {
+    param([string]$Text)
+    $command = Resolve-CDriveAssistantControlCommand $Text
+    return [bool]($command.Matched -and [string]$command.Action -eq 'prepare-cleanup')
+}
+
+function Invoke-AssistantCleanupWorkflow {
+    if ($jobState.Process) {
+        Add-AssistantMessage '助手' '当前已有扫描或清理任务在运行。我会保留现有任务，完成后你可以继续让我处理建议项。'
+        return
+    }
+    if (@($dashboardState.SelectionItems).Count -eq 0) {
+        $assistantState.PendingCleanupAfterScan = $true
+        Add-AssistantMessage '助手' '我先执行只读扫描；扫描完成后会自动勾选低风险建议项，并打开原生清理确认。扫描不会删除文件。'
+        $null = Invoke-LocalAssistantUiTool 'start_scan' ([PSCustomObject]@{ scope = 'recommended' })
+        return
+    }
+
+    $selection = Invoke-AssistantRecommendedSelection
+    $selected = @($selection.selectedItemIds)
+    if ($selected.Count -eq 0) {
+        Add-AssistantMessage '助手' '本次扫描没有低风险建议项，我没有替你勾选或执行任何清理。你可以在“清理清单”中查看谨慎项目。'
+        $null = Invoke-LocalAssistantUiTool 'navigate_view' ([PSCustomObject]@{ view = 'selection' })
+        return
+    }
+    $assistantState.PendingCleanupAfterScan = $false
+    Add-AssistantMessage '助手' ('已选择 {0} 个低风险建议项。接下来打开系统原生确认框；只有你点击“是”后才会执行清理。' -f $selected.Count)
+    $null = Invoke-LocalAssistantUiTool 'show_cleanup_confirmation' ([PSCustomObject]@{ planId = [string]$dashboardState.ScanId })
+}
+
+function Invoke-AssistantTravelQuery {
+    param([string]$Question)
+    if (-not (Test-CDriveTravelQueryComplete $Question)) {
+        $travelState.PendingDetails = $true
+        $travelState.PendingQuestion = $Question
+        Add-AssistantMessage '助手' '可以。先告诉我目的地、从哪里出发、计划几天，以及预算或偏好；例如“从上海出发，去杭州两天，偏好人文和安静住宿”。'
+        return
+    }
+    $flyAi = Get-CDriveFlyAiExecutable
+    if ([string]::IsNullOrWhiteSpace($flyAi)) {
+        Add-AssistantMessage '助手' '我可以帮你做一次“心理空间清洁”，规划旅行、查询酒店、机票、火车和景点。当前未安装飞猪官方 FlyAI CLI；管理员安装后即可启用，C 盘清理功能不受影响。'
+        return
+    }
+    if ($travelState.Process) {
+        Add-AssistantMessage '助手' '上一条旅行建议仍在查询，请稍等。'
+        return
+    }
+    $travelState.RequestFile = Join-Path $env:TEMP ('cdc-flyai-request-' + [guid]::NewGuid().ToString('N') + '.json')
+    $travelState.OutputFile = Join-Path $env:TEMP ('cdc-flyai-output-' + [guid]::NewGuid().ToString('N') + '.json')
+    $travelState.LogFile = Join-Path $env:TEMP ('cdc-flyai-log-' + [guid]::NewGuid().ToString('N') + '.txt')
+    [System.IO.File]::WriteAllText($travelState.RequestFile, ([PSCustomObject]@{ query = $Question; mode = 'ai-search' } | ConvertTo-Json -Compress), [System.Text.UTF8Encoding]::new($false))
+    $travelState.ActiveQuestion = $Question
+    $travelState.PendingDetails = $false
+    $travelState.PendingQuestion = ''
+    $travelState.Process = Start-CDriveEngineProcess $travelHostScript @('-RequestPath', $travelState.RequestFile, '-OutputPath', $travelState.OutputFile) $scriptDir $travelState.LogFile
+    Set-AgentBusy $true
+    $assistantStatus.Text = 'FLYAI · SEARCHING'
+    $travelPoll.Start()
+}
+
+function Remove-TravelTurnFiles {
+    foreach ($path in @($travelState.RequestFile, $travelState.OutputFile, $travelState.LogFile)) {
+        if ($path -and (Test-Path -LiteralPath $path -PathType Leaf)) { try { Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue } catch {} }
+    }
+    $travelState.RequestFile = ''
+    $travelState.OutputFile = ''
+    $travelState.LogFile = ''
+}
+
+function Stop-TravelQuery {
+    param([bool]$ShowMessage = $false)
+    $travelPoll.Stop()
+    if ($travelState.Process) {
+        try { $travelState.Process.Dispose() } catch {}
+        $travelState.Process = $null
+    }
+    Remove-TravelTurnFiles
+    $travelState.ActiveQuestion = ''
+    $travelState.PendingDetails = $false
+    $travelState.PendingQuestion = ''
+    Set-AgentBusy $false
+    Update-AgentMode
+    if ($ShowMessage) { Add-AssistantMessage '助手' '已停止本次旅行搜索，扫描和清理状态未改变。' }
+}
+
+$travelPoll = New-Object System.Windows.Forms.Timer
+$travelPoll.Interval = 150
+$travelPoll.Add_Tick({
+    if (-not $travelState.Process -or -not $travelState.Process.HasExited) { return }
+    $travelPoll.Stop()
+    try { $exitCode = [int]$travelState.Process.Complete() } catch { $exitCode = 1 }
+    $travelState.Process = $null
+    try {
+        $payload = Get-Content -LiteralPath $travelState.OutputFile -Raw -Encoding UTF8 | ConvertFrom-Json
+        if (-not $payload.ok) { throw ('[' + [string]$payload.errorCode + '] ' + [string]$payload.message) }
+        Add-AssistantMessage '助手' (Format-CDriveFlyAiResult $payload.response)
+        $travelState.PendingDetails = $false
+        $travelState.PendingQuestion = ''
+    } catch {
+        $message = if ($_.Exception.Message -match 'FLYAI_NOT_INSTALLED') {
+            '飞猪 FlyAI 尚未安装，暂时不能查询旅行建议。'
+        } elseif ($_.Exception.Message -match 'FLYAI_TLS') {
+            '飞猪安全连接失败。已尝试继承 Windows 系统代理，请检查代理是否可用或稍后重试。'
+        } elseif ($_.Exception.Message -match 'FLYAI_NETWORK') {
+            '飞猪网络连接失败，请检查网络或代理设置后重试。'
+        } elseif ($_.Exception.Message -match 'FLYAI_TIMEOUT') {
+            '飞猪旅行搜索超过 90 秒仍未完成，已安全停止，请稍后重试。'
+        } elseif ($_.Exception.Message -match 'FLYAI_EMPTY') {
+            $travelState.PendingDetails = $true
+            $travelState.PendingQuestion = $travelState.ActiveQuestion
+            '飞猪没有返回可展示的结果。请补充或调整目的地、出发地、天数和预算，我会继续查询。'
+        } else {
+            '飞猪旅行搜索失败，未改变任何清理或界面状态。'
+        }
+        Add-AssistantMessage '助手' $message
+    }
+    Remove-TravelTurnFiles
+    $travelState.ActiveQuestion = ''
+    Set-AgentBusy $false
+    Update-AgentMode
+})
 
 function Set-AgentBusy {
     param([bool]$Busy)
@@ -2196,6 +2401,84 @@ function Invoke-AgentUiTool {
     return Invoke-CDriveUiActionBroker ([string]$Call.callId) ([string]$Call.name) $arguments (Get-AssistantToolContext) $assistantContractPath $handlers $assistantState.ReplayCache
 }
 
+function Invoke-LocalAssistantUiTool {
+    param([string]$ToolName, $Arguments = $null)
+    if ($null -eq $Arguments) { $Arguments = [PSCustomObject]@{} }
+    $call = [PSCustomObject]@{
+        callId = 'local_' + [guid]::NewGuid().ToString('N')
+        name = $ToolName
+        argumentsJson = ($Arguments | ConvertTo-Json -Depth 8 -Compress)
+    }
+    return Invoke-AgentUiTool $call
+}
+
+function Invoke-AssistantRecommendedSelection {
+    $proposal = Invoke-LocalAssistantUiTool 'propose_selection' ([PSCustomObject]@{ goal = 'low-risk'; riskLevel = 'recommended-only' })
+    return Invoke-LocalAssistantUiTool 'set_selection' ([PSCustomObject]@{ itemIds = @($proposal.proposedItemIds) })
+}
+
+function Invoke-AssistantLocalControl {
+    param([string]$Question)
+
+    $command = Resolve-CDriveAssistantControlCommand $Question
+    if (-not $command.Matched) { return $false }
+    try {
+        switch ([string]$command.Action) {
+            'denied' {
+                Add-AssistantMessage '助手' '这个请求涉及路径、命令、绕过规则或替代最终确认，已被安全边界拒绝。你可以让我控制清理工具内的受限操作。'
+            }
+            'no-op' {
+                Add-AssistantMessage '助手' '明白，我没有执行这项操作，当前界面和清理选择保持不变。'
+            }
+            'help' {
+                Add-AssistantMessage '助手' "我可以切换概览、清理清单、运行日志和助手页面，开始或停止只读扫描，勾选低风险建议项、清空选择、查看报告和清理前后对比，以及打开清理确认。`r`n我不会执行任意系统命令，也不会替你确认最终删除。"
+            }
+            'select-recommended' {
+                if (@($dashboardState.SelectionItems).Count -eq 0) {
+                    Add-AssistantMessage '助手' '还没有扫描结果。我已开始只读扫描；扫描完成后，你可以再让我勾选低风险建议项。'
+                    $null = Invoke-LocalAssistantUiTool 'start_scan' ([PSCustomObject]@{ scope = 'recommended' })
+                } else {
+                    $selection = Invoke-AssistantRecommendedSelection
+                    $null = Invoke-LocalAssistantUiTool 'navigate_view' ([PSCustomObject]@{ view = 'selection' })
+                    Add-AssistantMessage '助手' ('已在清理清单中勾选 {0} 个低风险建议项。你仍可逐项修改；目前没有开始清理。' -f @($selection.selectedItemIds).Count)
+                }
+            }
+            'prepare-cleanup' {
+                Invoke-AssistantCleanupWorkflow
+            }
+            'tool' {
+                $result = Invoke-LocalAssistantUiTool ([string]$command.ToolName) $command.Arguments
+                switch ([string]$command.ToolName) {
+                    'navigate_view' {
+                        $name = switch ([string]$result.view) { 'overview' { '概览' } 'selection' { '清理清单' } 'logs' { '运行日志' } default { '智能助手' } }
+                        Add-AssistantMessage '助手' ('已切换到“{0}”。' -f $name)
+                    }
+                    'start_scan' { Add-AssistantMessage '助手' '已开始只读扫描。扫描只统计可清理项，不会删除文件。' }
+                    'cancel_scan' { Add-AssistantMessage '助手' '扫描已停止，没有执行清理。' }
+                    'clear_selection' { Add-AssistantMessage '助手' '已清空当前勾选，没有删除任何文件。' }
+                    'open_latest_report' { Add-AssistantMessage '助手' '已打开最新清理报告。' }
+                    'open_system_settings' { Add-AssistantMessage '助手' '已打开系统设置。' }
+                    'compare_cleanup_results' {
+                        if ([double]$result.beforeFreeBytes -le 0 -or [double]$result.afterFreeBytes -le 0) {
+                            Add-AssistantMessage '助手' '还没有完整的清理前后数据。完成一次清理后，我可以展示实测空间变化。'
+                        } else {
+                            $null = Invoke-LocalAssistantUiTool 'navigate_view' ([PSCustomObject]@{ view = 'overview' })
+                            Add-AssistantMessage '助手' ('最近一次清理前可用 {0}，清理后可用 {1}，实测变化 {2}。' -f (Format-UiBytes ([double]$result.beforeFreeBytes)), (Format-UiBytes ([double]$result.afterFreeBytes)), (Format-UiBytes ([Math]::Max(0, [double]$result.deltaBytes))))
+                        }
+                    }
+                    'get_app_state' {
+                        $taskText = if ($result.cleanupRunning) { '正在清理' } elseif ($result.scanRunning) { '正在扫描' } else { '空闲' }
+                        Add-AssistantMessage '助手' ('当前位于 {0}，任务状态：{1}；扫描候选 {2} 项，已勾选 {3} 项。' -f $result.view, $taskText, $result.candidateCount, $result.selectedCount)
+                    }
+                }
+            }
+        }
+    } catch {
+        Add-AssistantMessage '助手' ('操作未执行：' + $_.Exception.Message)
+    }
+    return $true
+}
+
 function Start-AgentModelCall {
     if ($assistantState.Process) { return }
     if ($assistantState.ModelCalls -ge 6) {
@@ -2327,9 +2610,36 @@ function Invoke-CloudAssistantQuery {
 
 function Invoke-AssistantQuery {
     $question = [string]$assistantInput.Text
-    if ([string]::IsNullOrWhiteSpace($question) -or $assistantState.Process) { return }
+    if ([string]::IsNullOrWhiteSpace($question) -or $assistantState.Process -or $travelState.Process) { return }
     Add-AssistantMessage '你' $question
     $assistantInput.Clear()
+    if ($travelState.PendingDetails) {
+        if ($question -match '^(?i:取消|不用|算了|停止|不查了|cancel|never mind)[。.!！?？\s]*$') {
+            $travelState.PendingDetails = $false
+            $travelState.PendingQuestion = ''
+            Add-AssistantMessage '助手' '已取消旅行查询，没有发送新的数据。'
+            return
+        }
+        $pendingControl = Resolve-CDriveAssistantControlCommand $question
+        if ($pendingControl.Matched) {
+            $travelState.PendingDetails = $false
+            $travelState.PendingQuestion = ''
+            $null = Invoke-AssistantLocalControl $question
+            return
+        }
+        if (-not (Test-CDriveTravelQueryComplete $question)) {
+            Add-AssistantMessage '助手' '还需要一个具体目的地或出发地，以及大致天数。例如：“从上海去杭州两天”。'
+            return
+        }
+        $combinedQuestion = Join-CDriveTravelQuestion $travelState.PendingQuestion $question
+        Invoke-AssistantTravelQuery $combinedQuestion
+        return
+    }
+    if (Test-CDriveTravelIntent $question) {
+        Invoke-AssistantTravelQuery $question
+        return
+    }
+    if (Invoke-AssistantLocalControl $question) { return }
     if ($null -eq $assistantState.Config) {
         Invoke-OfflineAssistantQuery -Question $question -ShowUser $false
         return
@@ -2354,7 +2664,7 @@ $navAssistant.Add_Click({ Set-DashboardView 'assistant' })
 
 $btnAssistantSend.Add_Click({ Invoke-AssistantQuery })
 $btnAssistantSettings.Add_Click({ Show-AgentSettingsDialog })
-$btnAssistantStop.Add_Click({ Stop-AgentTurn $true })
+$btnAssistantStop.Add_Click({ if ($travelState.Process) { Stop-TravelQuery $true } else { Stop-AgentTurn $true } })
 $assistantInput.Add_KeyDown({
     param($sender, $eventArgs)
     if ($eventArgs.KeyCode -eq [System.Windows.Forms.Keys]::Enter) {
@@ -2459,8 +2769,10 @@ $btnExit.Add_Click({
 $form.Add_FormClosing({
     $poll.Stop()
     $agentPoll.Stop()
+    $travelPoll.Stop()
     $livePulseTimer.Stop()
     Stop-AgentTurn
+    Stop-TravelQuery
     Stop-LogoAnimation
     Stop-CleanAnimation
     Stop-UiJob $true | Out-Null
