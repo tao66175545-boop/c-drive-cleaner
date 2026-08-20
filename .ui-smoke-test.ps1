@@ -139,7 +139,7 @@ function Invoke-ButtonLifecycle($Button, [string]$Method, [object[]]$Arguments) 
     [void]$callback.Invoke($Button, $Arguments)
 }
 
-$allButtons = @($navOverview, $navLogs, $navSelection, $navAssistant, $btnScan, $btnReport, $btnClean, $btnExit, $btnAssistantSettings, $btnAssistantStop, $btnAssistantApply, $btnAssistantSend)
+$allButtons = @($navOverview, $navLogs, $navSelection, $navAssistant, $btnScan, $btnReport, $btnClean, $btnExit, $btnSelectSuggested, $btnSelectAll, $btnClearSelection, $btnAssistantSettings, $btnAssistantStop, $btnAssistantApply, $btnAssistantSend)
 foreach ($button in $allButtons) {
     if ($button.GetType().BaseType -ne [System.Windows.Forms.Control]) {
         throw ('Incorrect button base class: ' + $button.Text)
@@ -190,7 +190,10 @@ Show-CleanupSelection $selectionFixturePath
 if ($dashboardState.SelectionItems.Count -ne 2 -or $navigationState.View -ne 'selection') { throw 'Selection screen did not load scanned items.' }
 if ($contentHost.Top -ne $topBar.Bottom -or $contentHost.ClientSize.Height -lt 1) { throw 'Content host is not positioned below the top bar.' }
 if ([Math]::Abs(($btnSelectSuggested.Top * 2 + $btnSelectSuggested.Height) - $selectionActionBar.ClientSize.Height) -gt 1) { throw 'Suggested-selection button is not vertically centered.' }
+if ([Math]::Abs(($btnSelectAll.Top * 2 + $btnSelectAll.Height) - $selectionActionBar.ClientSize.Height) -gt 1) { throw 'Select-all button is not vertically centered.' }
 if ([Math]::Abs(($btnClearSelection.Top * 2 + $btnClearSelection.Height) - $selectionActionBar.ClientSize.Height) -gt 1) { throw 'Clear-selection button is not vertically centered.' }
+if (($btnSelectAll.Left - $btnSelectSuggested.Right) -ne 8 -or ($btnClearSelection.Left - $btnSelectAll.Right) -ne 8) { throw 'Selection action buttons do not use the shared 8px gap.' }
+if ($selectionSummary.Right -gt ($btnSelectSuggested.Left - 12)) { throw 'Selection summary overlaps the bulk action buttons.' }
 $selectionRows = @($selectionItemsPanel.Controls | Where-Object { $_ -is [CDriveRoundedPanel] -and $null -ne $_.Tag.SizeLabel })
 if ($selectionRows.Count -ne 2) { throw 'Selection row components were not created for every scanned item.' }
 foreach ($row in $selectionRows) {
@@ -216,6 +219,12 @@ $onClick = [CDriveRoundedButton].GetMethod('OnClick', [System.Reflection.Binding
 [void]$onClick.Invoke($btnSelectSuggested, [object[]]@([EventArgs]::Empty))
 if ($dashboardState.SelectedIds.Count -ne 1 -or -not $btnClean.Enabled) { throw 'Suggested selection did not enable the scoped clean action.' }
 if ($dashboardState.SelectedIds.ContainsKey('user-wechat-media')) { throw 'Suggested selection must not include user media.' }
+[void]$onClick.Invoke($btnSelectAll, [object[]]@([EventArgs]::Empty))
+if ($dashboardState.SelectedIds.Count -ne 2 -or -not $dashboardState.SelectedIds.ContainsKey('user-wechat-media')) { throw 'Explicit select-all did not include every scanned stable item ID.' }
+if ($btnSelectAll.Enabled) { throw 'Select-all must be disabled when every scanned item is selected.' }
+[void]$onClick.Invoke($btnClearSelection, [object[]]@([EventArgs]::Empty))
+if ($dashboardState.SelectedIds.Count -ne 0 -or $btnClean.Enabled) { throw 'Clear selection did not reset the select-all state.' }
+[void]$onClick.Invoke($btnSelectSuggested, [object[]]@([EventArgs]::Empty))
 Set-DashboardView 'assistant'
 $initialChatRows = @($assistantChatSurface.Controls)
 if ($initialChatRows.Count -lt 1 -or [string]$initialChatRows[0].Tag.Role -ne 'assistant') { throw 'Assistant greeting bubble was not created.' }
