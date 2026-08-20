@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $projectRoot 'core\FlyAiTravelProvider.ps1')
 
@@ -33,8 +33,49 @@ $fixture = [PSCustomObject]@{
     }
 }
 $formatted = Format-CDriveFlyAiResult $fixture
-if ($formatted -notmatch 'West Lake Hotel' -or $formatted -notmatch 'https://example.com/hotel' -or $formatted -notmatch 'never places an order') {
+if ($formatted -notmatch 'West Lake Hotel' -or $formatted -notmatch 'https://example.com/hotel' -or $formatted -notmatch '不会自动预订或下单') {
     throw 'FlyAI result formatting lost required safety or display content.'
+}
+$displayModel = ConvertTo-CDriveFlyAiDisplayModel $fixture
+$displaySections = [object[]]$displayModel.Sections
+$displayItems = [object[]]$displaySections[0].Items
+if ($displayModel.Title -ne '飞猪旅行规划' -or $displaySections.Count -ne 1 -or $displayItems.Count -eq 0) {
+    throw 'FlyAI structured display model lost keyword-search results.'
+}
+
+$markdownFixture = [PSCustomObject]@{
+    result = [PSCustomObject]@{
+        data = "基于实时结果整理两日行程。`r`n`r`n## 交通`r`n- **G7509**：上海南 10:43 → 杭州东 11:53`r`n`r`n## 人文景点`r`n**[浙江省博物馆](https://router.feizhu.com/detail)**`r`n- **亮点**：了解浙江历史`r`n- **权衡**：周一闭馆`r`n`r`n## 预算`r`n- **合计**：约 1000 元"
+        systemMessage = '*当前为体验模式*'
+    }
+    visualResult = [PSCustomObject]@{
+        result = [PSCustomObject]@{
+            data = [PSCustomObject]@{
+                itemList = @([PSCustomObject]@{ info = [PSCustomObject]@{ title = '杭州安静酒店'; star = '3'; jumpUrl = 'https://router.feizhu.com/hotel'; picUrl = 'https://img.alicdn.com/hotel.jpg' } })
+            }
+        }
+    }
+}
+$markdownModel = ConvertTo-CDriveFlyAiDisplayModel $markdownFixture
+$markdownSections = [object[]]$markdownModel.Sections
+$markdownFormatted = Format-CDriveFlyAiResult $markdownFixture
+if ($markdownModel.Summary -notmatch '两日行程' -or $markdownSections.Count -ne 4 -or $markdownFormatted -match '\*\*|##') {
+    throw 'FlyAI Markdown was not converted into a readable hierarchy.'
+}
+if (-not $markdownModel.HasImages -or [string]$markdownSections[3].Items[0].ImageUrl -notmatch '^https://img\.alicdn\.com/') {
+    throw 'FlyAI trusted visual recommendation was not retained.'
+}
+if (Get-CDriveFlyAiSafeImageUrl 'https://tracking.example.com/photo.jpg') { throw 'Untrusted travel image domain was accepted.' }
+if (Get-CDriveFlyAiSafeHttpsUrl 'http://router.feizhu.com/insecure') { throw 'Insecure travel detail URL was accepted.' }
+if ((Remove-CDriveFlyAiMarkdownDecoration '*当前为体验模式*') -ne '当前为体验模式') { throw 'Markdown notice decoration was not removed.' }
+$providerSource = Get-Content -LiteralPath (Join-Path $projectRoot 'core\FlyAiTravelProvider.ps1') -Raw -Encoding UTF8
+if ($providerSource -notmatch "ValidateRange\(1, 3\).*MaximumImages" -or
+    $providerSource -notmatch 'Select-Object -First \$MaximumImages' -or
+    $providerSource -notmatch "ValidateRange\(262144, 5242880\).*MaximumBytes" -or
+    $providerSource -notmatch "ContentType -notmatch '\^image/" -or
+    $providerSource -notmatch 'Image\]::FromStream\(\$bufferStream, \$true, \$true\)' -or
+    $providerSource -notmatch "Accept = 'image/jpeg,image/png") {
+    throw 'FlyAI preview image count, size, or content-type boundary is missing.'
 }
 
 try { $null = Invoke-CDriveFlyAiSearch -Query 'Hangzhou travel' -ExecutablePath (Join-Path $env:TEMP 'missing-flyai.cjs'); throw 'Missing FlyAI executable was accepted.' }

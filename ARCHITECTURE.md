@@ -52,6 +52,12 @@ session consent. Scan results, paths, logs, machine identity, and cleanup plans
 are never included. FlyAI results may contain HTTPS detail or booking links,
 but the application never purchases, books, or submits traveler data.
 
+Travel rendering never executes provider HTML or Markdown. The isolated host
+converts provider output into a typed display model; HTTPS links remain explicit
+user actions. Optional preview images accept only FlyAI/Alibaba CDN hosts, are
+bounded by count, size, time, content type, and decoded dimensions, and are
+copied to temporary local PNG files before the desktop UI loads them.
+
 ## Quantified target
 
 | Area | Target |
@@ -85,6 +91,7 @@ but the application never purchases, books, or submits traveler data.
 14. P13 Hardening: verify privacy request snapshots, credential removal, injection rejection, UI cancellation, packaging, and full release gates.
 15. P14 Conversational cleanup and travel: accept explicit affirmative cleanup requests, select only recommended stable IDs, preserve native final confirmation, use a fixed user avatar, and isolate consented FlyAI read-only travel search from all cleanup data.
 16. P15 Conversational UI control: map deterministic local-language commands to the existing allowlisted UI broker for navigation, scan control, stable-ID selection, reports, settings, comparison, and native cleanup confirmation.
+17. P16 Structured travel results: parse FlyAI Markdown into a typed local display model, render readable itinerary sections and explicit detail links, and optionally cache at most three validated FlyAI/Alibaba CDN preview images through the isolated Travel Host.
 
 P6 currently defers a full rewrite. Directory sizing and child-process control
 already use focused C# implementations, while the PowerShell contracts retain

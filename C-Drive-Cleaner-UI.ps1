@@ -1252,7 +1252,10 @@ function Update-AssistantChatRowLayout {
 }
 
 function Update-AssistantChatLayout {
-    foreach ($row in @($assistantChatSurface.Controls)) { Update-AssistantChatRowLayout $row }
+    foreach ($row in @($assistantChatSurface.Controls)) {
+        if ($row.Tag -and [string]$row.Tag.Type -eq 'travel') { Update-AssistantTravelRowLayout $row }
+        else { Update-AssistantChatRowLayout $row }
+    }
 }
 
 $assistantChatSurface.Add_Resize({ Update-AssistantChatLayout })
@@ -1822,6 +1825,237 @@ function New-AssistantChatRow {
     return $row
 }
 
+function Set-AssistantSelectableTextBehavior {
+    param($Control)
+    $messageMenu = New-Object System.Windows.Forms.ContextMenuStrip
+    $copyMessage = $messageMenu.Items.Add('复制')
+    $selectAllMessage = $messageMenu.Items.Add('全选')
+    $messageMenu.Add_Opening({
+        param($sender, $eventArgs)
+        $copyMessage.Enabled = $Control.SelectionLength -gt 0
+        $selectAllMessage.Enabled = $Control.TextLength -gt 0
+    }.GetNewClosure())
+    $copyMessage.Add_Click({ if ($Control.SelectionLength -gt 0) { $Control.Copy() } }.GetNewClosure())
+    $selectAllMessage.Add_Click({ $Control.SelectAll(); $Control.Focus() }.GetNewClosure())
+    $Control.ContextMenuStrip = $messageMenu
+}
+
+function New-AssistantTravelText {
+    param([string]$Text, [System.Drawing.Font]$Font, [System.Drawing.Color]$Color, [System.Drawing.Color]$BackColor)
+    $control = New-Object System.Windows.Forms.TextBox
+    $control.Text = $Text
+    $control.Font = $Font
+    $control.ForeColor = $Color
+    $control.BackColor = $BackColor
+    $control.ReadOnly = $true
+    $control.BorderStyle = [System.Windows.Forms.BorderStyle]::None
+    $control.Multiline = $true
+    $control.ScrollBars = [System.Windows.Forms.ScrollBars]::None
+    $control.WordWrap = $true
+    $control.ShortcutsEnabled = $true
+    $control.HideSelection = $false
+    $control.TabStop = $true
+    $control.Cursor = [System.Windows.Forms.Cursors]::IBeam
+    Set-AssistantSelectableTextBehavior $control
+    return $control
+}
+
+function Get-AssistantTravelTextHeight {
+    param($Control, [int]$Width)
+    $flags = [System.Windows.Forms.TextFormatFlags]::WordBreak -bor [System.Windows.Forms.TextFormatFlags]::NoPrefix -bor [System.Windows.Forms.TextFormatFlags]::TextBoxControl -bor [System.Windows.Forms.TextFormatFlags]::NoPadding
+    $measured = [System.Windows.Forms.TextRenderer]::MeasureText([string]$Control.Text, $Control.Font, [System.Drawing.Size]::new([Math]::Max(80, $Width), 10000), $flags)
+    return [Math]::Max($Control.Font.Height + 4, $measured.Height + 4)
+}
+
+function Update-AssistantTravelRowLayout {
+    param($Row)
+    if ($null -eq $Row -or $null -eq $Row.Tag) { return }
+    $refs = $Row.Tag
+    $rowWidth = [Math]::Max(300, $assistantChatSurface.ClientSize.Width - 18)
+    $avatarSize = 40
+    $gap = 10
+    $contentWidth = [Math]::Max(260, $rowWidth - $avatarSize - $gap)
+    $Row.Width = $rowWidth
+    $refs.Avatar.SetBounds(0, 0, $avatarSize, $avatarSize)
+    $refs.Content.Left = $avatarSize + $gap
+    $refs.Content.Top = 0
+    $refs.Content.Width = $contentWidth
+    $y = 0
+    foreach ($element in @($refs.Elements)) {
+        switch ([string]$element.Kind) {
+            'header' {
+                $element.Control.SetBounds(0, $y, $contentWidth, 28)
+                $y += 34
+            }
+            'text' {
+                $height = Get-AssistantTravelTextHeight $element.Control $contentWidth
+                $element.Control.SetBounds(0, $y, $contentWidth, $height)
+                $y += $height + 12
+            }
+            'section' {
+                $element.Bar.SetBounds(0, $y + 3, 3, 18)
+                $element.Control.SetBounds(11, $y, [Math]::Max(80, $contentWidth - 11), 24)
+                $y += 30
+            }
+            'item' {
+                $panel = $element.Panel
+                $panelWidth = $contentWidth
+                $innerX = 12
+                $innerWidth = $panelWidth - 24
+                if ($element.Image.Visible) {
+                    $imageWidth = [Math]::Min(132, [Math]::Max(96, [int]($panelWidth * 0.22)))
+                    $element.Image.SetBounds(10, 10, $imageWidth, 84)
+                    $innerX = 20 + $imageWidth
+                    $innerWidth = [Math]::Max(120, $panelWidth - $innerX - 12)
+                }
+                $titleHeight = Get-AssistantTravelTextHeight $element.Title $innerWidth
+                $element.Title.SetBounds($innerX, 11, $innerWidth, $titleHeight)
+                $detailsTop = 11 + $titleHeight + 5
+                $detailsHeight = if ($element.Details.TextLength -gt 0) { Get-AssistantTravelTextHeight $element.Details $innerWidth } else { 0 }
+                $element.Details.SetBounds($innerX, $detailsTop, $innerWidth, $detailsHeight)
+                $linkTop = $detailsTop + $detailsHeight + $(if ($detailsHeight -gt 0) { 6 } else { 0 })
+                if ($element.Link.Visible) { $element.Link.SetBounds($innerX, $linkTop, [Math]::Min(110, $innerWidth), 24) }
+                $contentHeight = $linkTop + $(if ($element.Link.Visible) { 28 } else { 8 })
+                $panelHeight = [Math]::Max($(if ($element.Image.Visible) { 104 } else { 0 }), $contentHeight + 4)
+                $panel.SetBounds(0, $y, $panelWidth, $panelHeight)
+                $y += $panelHeight + 8
+            }
+            'notice' {
+                $height = Get-AssistantTravelTextHeight $element.Control ([Math]::Max(80, $contentWidth - 22))
+                $element.Panel.SetBounds(0, $y, $contentWidth, $height + 18)
+                $element.Control.SetBounds(11, 9, [Math]::Max(80, $contentWidth - 22), $height)
+                $y += $height + 26
+            }
+        }
+    }
+    $refs.Content.Height = [Math]::Max(40, $y)
+    $Row.Height = [Math]::Max($avatarSize, $refs.Content.Height) + 10
+}
+
+function New-AssistantTravelResultRow {
+    param($Response)
+    $model = ConvertTo-CDriveFlyAiDisplayModel $Response
+    $row = New-Object System.Windows.Forms.Panel
+    $row.BackColor = [System.Drawing.Color]::Transparent
+    $row.Margin = New-Object System.Windows.Forms.Padding(0)
+    $row.TabStop = $false
+
+    $avatar = New-Object System.Windows.Forms.PictureBox
+    $avatar.SizeMode = 'Zoom'
+    $avatar.BackColor = [System.Drawing.Color]::Transparent
+    $avatar.Image = $assistantAgentAvatarImage
+    $avatar.AccessibleName = '智能助手旅行规划头像'
+
+    $content = New-Object System.Windows.Forms.Panel
+    $content.BackColor = [System.Drawing.Color]::Transparent
+    $elements = New-Object System.Collections.Generic.List[object]
+    $title = New-Object System.Windows.Forms.Label
+    $title.Text = [string]$model.Title
+    $title.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 12, [System.Drawing.FontStyle]::Bold)
+    $title.ForeColor = [System.Drawing.Color]::FromArgb(35, 46, 55)
+    $title.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
+    $title.AccessibleName = '飞猪旅行规划'
+    $content.Controls.Add($title)
+    $elements.Add([PSCustomObject]@{ Kind = 'header'; Control = $title })
+
+    if (-not [string]::IsNullOrWhiteSpace([string]$model.Summary)) {
+        $summary = New-AssistantTravelText ([string]$model.Summary) (New-Object System.Drawing.Font('Microsoft YaHei UI', 9)) ([System.Drawing.Color]::FromArgb(49, 62, 72)) ([System.Drawing.Color]::FromArgb(247, 249, 250))
+        $summary.AccessibleName = '旅行规划摘要'
+        $content.Controls.Add($summary)
+        $elements.Add([PSCustomObject]@{ Kind = 'text'; Control = $summary })
+    }
+
+    $mediaByTitle = @{}
+    foreach ($media in @($Response.visualMedia)) {
+        if ($media.Title -and $media.LocalPath -and (Test-Path -LiteralPath ([string]$media.LocalPath) -PathType Leaf)) {
+            $mediaByTitle[[string]$media.Title] = [string]$media.LocalPath
+        }
+    }
+    foreach ($section in @($model.Sections)) {
+        $bar = New-Object System.Windows.Forms.Panel
+        $bar.BackColor = [System.Drawing.Color]::FromArgb(181, 30, 40)
+        $heading = New-Object System.Windows.Forms.Label
+        $heading.Text = [string]$section.Title
+        $heading.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 10, [System.Drawing.FontStyle]::Bold)
+        $heading.ForeColor = [System.Drawing.Color]::FromArgb(35, 46, 55)
+        $heading.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
+        $content.Controls.AddRange(@($bar, $heading))
+        $elements.Add([PSCustomObject]@{ Kind = 'section'; Bar = $bar; Control = $heading })
+
+        $bodyLines = New-Object System.Collections.Generic.List[string]
+        foreach ($line in @($section.Lines)) { if ($line) { $bodyLines.Add(('• ' + [string]$line)) } }
+        foreach ($note in @($section.Notes)) { if ($note) { $bodyLines.Add(('提示：' + [string]$note)) } }
+        if ($bodyLines.Count -gt 0) {
+            $body = New-AssistantTravelText ($bodyLines.ToArray() -join "`r`n") (New-Object System.Drawing.Font('Microsoft YaHei UI', 9)) ([System.Drawing.Color]::FromArgb(73, 87, 98)) ([System.Drawing.Color]::FromArgb(247, 249, 250))
+            $content.Controls.Add($body)
+            $elements.Add([PSCustomObject]@{ Kind = 'text'; Control = $body })
+        }
+
+        $sectionItems = [object[]]$section.Items
+        foreach ($item in $sectionItems) {
+            $itemPanel = New-Object CDriveRoundedPanel
+            $itemPanel.BackColor = [System.Drawing.Color]::White
+            $itemPanel.BorderColor = [System.Drawing.Color]::FromArgb(220, 226, 231)
+            $itemPanel.CornerRadius = 8
+            $itemImage = New-Object System.Windows.Forms.PictureBox
+            $itemImage.SizeMode = [System.Windows.Forms.PictureBoxSizeMode]::Zoom
+            $itemImage.BackColor = [System.Drawing.Color]::FromArgb(244, 247, 249)
+            $itemImage.Visible = $false
+            $imagePath = if ($mediaByTitle.ContainsKey([string]$item.Title)) { [string]$mediaByTitle[[string]$item.Title] } else { '' }
+            if ($imagePath) {
+                try {
+                    $sourceImage = [System.Drawing.Image]::FromFile($imagePath)
+                    try { $itemImage.Image = New-Object System.Drawing.Bitmap($sourceImage) } finally { $sourceImage.Dispose() }
+                    $itemImage.Visible = $true
+                } catch { $itemImage.Visible = $false }
+            }
+            $itemImage.Add_Disposed({
+                if ($itemImage.Image) { try { $itemImage.Image.Dispose() } catch {}; $itemImage.Image = $null }
+            }.GetNewClosure())
+            $itemTitle = New-AssistantTravelText ([string]$item.Title) (New-Object System.Drawing.Font('Microsoft YaHei UI', 9, [System.Drawing.FontStyle]::Bold)) ([System.Drawing.Color]::FromArgb(35, 46, 55)) ([System.Drawing.Color]::White)
+            $itemDetails = New-AssistantTravelText (@($item.Details) -join "`r`n") (New-Object System.Drawing.Font('Microsoft YaHei UI', 8.5)) ([System.Drawing.Color]::FromArgb(91, 105, 116)) ([System.Drawing.Color]::White)
+            $itemLink = New-Object System.Windows.Forms.LinkLabel
+            $itemLink.Text = '飞猪详情  >'
+            $itemLink.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 8.5, [System.Drawing.FontStyle]::Bold)
+            $itemLink.LinkColor = [System.Drawing.Color]::FromArgb(181, 30, 40)
+            $itemLink.ActiveLinkColor = [System.Drawing.Color]::FromArgb(140, 21, 30)
+            $itemLink.VisitedLinkColor = [System.Drawing.Color]::FromArgb(181, 30, 40)
+            $itemLink.LinkBehavior = [System.Windows.Forms.LinkBehavior]::HoverUnderline
+            $safeLink = Get-CDriveFlyAiSafeHttpsUrl ([string]$item.Link)
+            $itemLink.Visible = -not [string]::IsNullOrWhiteSpace($safeLink)
+            $itemLink.AccessibleName = ('在飞猪查看 ' + [string]$item.Title)
+            if ($safeLink) { $itemLink.Add_LinkClicked({ Start-Process -FilePath $safeLink }.GetNewClosure()) }
+            $itemPanel.Controls.AddRange(@($itemImage, $itemTitle, $itemDetails, $itemLink))
+            $content.Controls.Add($itemPanel)
+            $elements.Add([PSCustomObject]@{ Kind = 'item'; Panel = $itemPanel; Image = $itemImage; Title = $itemTitle; Details = $itemDetails; Link = $itemLink })
+        }
+    }
+
+    $noticePanel = New-Object CDriveRoundedPanel
+    $noticePanel.BackColor = [System.Drawing.Color]::FromArgb(252, 246, 247)
+    $noticePanel.BorderColor = [System.Drawing.Color]::FromArgb(236, 211, 214)
+    $noticePanel.CornerRadius = 8
+    $noticeText = New-AssistantTravelText ([string]$model.Notice) (New-Object System.Drawing.Font('Microsoft YaHei UI', 8)) ([System.Drawing.Color]::FromArgb(119, 72, 77)) $noticePanel.BackColor
+    $noticeText.AccessibleName = '旅行信息提示'
+    $noticePanel.Controls.Add($noticeText)
+    $content.Controls.Add($noticePanel)
+    $elements.Add([PSCustomObject]@{ Kind = 'notice'; Panel = $noticePanel; Control = $noticeText })
+
+    $row.Controls.AddRange(@($avatar, $content))
+    $row.Tag = [PSCustomObject]@{ Type = 'travel'; Role = 'assistant'; Avatar = $avatar; Content = $content; Elements = $elements.ToArray() }
+    $assistantChatSurface.Controls.Add($row)
+    Update-AssistantTravelRowLayout $row
+    $assistantChatSurface.ScrollControlIntoView($row)
+    return $row
+}
+
+function Add-AssistantTravelResult {
+    param($Response)
+    $plainText = Format-CDriveFlyAiResult $Response
+    $assistantTranscript.AppendText('助手  ' + $plainText + "`r`n`r`n")
+    $null = New-AssistantTravelResultRow $Response
+}
+
 function Add-AssistantMessage {
     param([string]$Role, [string]$Text)
     if ([string]::IsNullOrWhiteSpace($Text)) { return }
@@ -2158,8 +2392,12 @@ function Invoke-AssistantTravelQuery {
 }
 
 function Remove-TravelTurnFiles {
+    $mediaDirectory = if ($travelState.OutputFile) { [string]$travelState.OutputFile + '.media' } else { '' }
     foreach ($path in @($travelState.RequestFile, $travelState.OutputFile, $travelState.LogFile)) {
         if ($path -and (Test-Path -LiteralPath $path -PathType Leaf)) { try { Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue } catch {} }
+    }
+    if ($mediaDirectory -and (Test-Path -LiteralPath $mediaDirectory -PathType Container)) {
+        try { Remove-Item -LiteralPath $mediaDirectory -Recurse -Force -ErrorAction SilentlyContinue } catch {}
     }
     $travelState.RequestFile = ''
     $travelState.OutputFile = ''
@@ -2192,7 +2430,7 @@ $travelPoll.Add_Tick({
     try {
         $payload = Get-Content -LiteralPath $travelState.OutputFile -Raw -Encoding UTF8 | ConvertFrom-Json
         if (-not $payload.ok) { throw ('[' + [string]$payload.errorCode + '] ' + [string]$payload.message) }
-        Add-AssistantMessage '助手' (Format-CDriveFlyAiResult $payload.response)
+        Add-AssistantTravelResult $payload.response
         $travelState.PendingDetails = $false
         $travelState.PendingQuestion = ''
     } catch {

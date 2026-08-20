@@ -274,6 +274,51 @@ $copyFixture[0].Tag.Label.Select(0, 0)
 $streamRows = $copyFixture
 $maximumAllowedBubbleWidth = [Math]::Floor(($streamRows[0].ClientSize.Width - 50) * 0.72) + 1
 if ($streamRows[0].Tag.Bubble.Width -gt $maximumAllowedBubbleWidth) { throw 'Assistant bubble exceeded the responsive maximum width.' }
+$travelImagePath = Join-Path (Get-Location) 'assets\assistant-user-custom.png'
+$travelResponse = [PSCustomObject]@{
+    result = [PSCustomObject]@{
+        data = "已按预算整理两日人文行程。`r`n`r`n## 交通`r`n- **G7509**：上海南 10:43 → 杭州东 11:53`r`n`r`n## 人文景点`r`n**[浙江省博物馆](https://router.feizhu.com/detail)**`r`n- **亮点**：了解浙江历史`r`n- **权衡**：周一闭馆`r`n`r`n## 住宿`r`n**[杭州安静酒店](https://router.feizhu.com/hotel)**`r`n- **推荐理由**：位置安静，交通方便`r`n`r`n## 预算`r`n- **合计**：约 1000 元"
+        systemMessage = '*当前为体验模式*'
+    }
+    visualResult = [PSCustomObject]@{
+        result = [PSCustomObject]@{
+            data = [PSCustomObject]@{
+                itemList = @([PSCustomObject]@{ info = [PSCustomObject]@{ title = '杭州实时推荐'; jumpUrl = 'https://router.feizhu.com/realtime'; picUrl = 'https://img.alicdn.com/preview.jpg' } })
+            }
+        }
+    }
+    visualMedia = @([PSCustomObject]@{ Title = '杭州实时推荐'; Link = 'https://router.feizhu.com/realtime'; LocalPath = $travelImagePath })
+}
+Add-AssistantTravelResult $travelResponse
+[System.Windows.Forms.Application]::DoEvents()
+$travelRows = @($assistantChatSurface.Controls | Where-Object { $_.Tag -and [string]$_.Tag.Type -eq 'travel' })
+if ($travelRows.Count -ne 1) { throw 'Structured FlyAI travel result did not render exactly once.' }
+$travelRow = $travelRows[0]
+if ($travelRow.Tag.Content.Right -gt $travelRow.ClientSize.Width -or $travelRow.Tag.Content.Width -lt 260) { throw 'Structured travel result overflows its message row.' }
+$travelItems = @($travelRow.Tag.Elements | Where-Object Kind -eq 'item')
+if ($travelItems.Count -lt 3 -or @($travelItems | Where-Object { $_.Image.Visible }).Count -ne 1) { throw 'Travel cards or trusted visual preview are missing.' }
+if (@($travelItems | Where-Object { $_.Link.Visible }).Count -lt 3) { throw 'Travel detail links are not exposed as readable actions.' }
+$travelTexts = @($travelRow.Tag.Elements | Where-Object { $_.Kind -in @('text', 'notice') } | ForEach-Object Control)
+if ($travelTexts.Count -lt 3 -or @($travelTexts | Where-Object { $_ -isnot [System.Windows.Forms.TextBox] -or -not $_.ReadOnly -or $null -eq $_.ContextMenuStrip }).Count -gt 0) {
+    throw 'Structured travel text is not selectable and copyable.'
+}
+$travelTexts[0].Select(0, 2)
+if ($travelTexts[0].SelectedText.Length -ne 2) { throw 'Travel summary text cannot be selected.' }
+$travelOriginalSize = $form.Size
+$form.Size = [System.Drawing.Size]::new(1060, 680)
+[System.Windows.Forms.Application]::DoEvents()
+Update-AssistantTravelRowLayout $travelRow
+if ($travelRow.Tag.Content.Right -gt $travelRow.ClientSize.Width -or @($travelItems | Where-Object { $_.Panel.Right -gt $travelRow.Tag.Content.ClientSize.Width }).Count -gt 0) {
+    throw 'Structured travel result overflows at the compact window size.'
+}
+$form.Size = $travelOriginalSize
+[System.Windows.Forms.Application]::DoEvents()
+$assistantChatSurface.ScrollControlIntoView($travelRow)
+[System.Windows.Forms.Application]::DoEvents()
+$travelPreview = [System.Drawing.Bitmap]::new($form.ClientSize.Width, $form.ClientSize.Height)
+$form.DrawToBitmap($travelPreview, [System.Drawing.Rectangle]::new(0, 0, $travelPreview.Width, $travelPreview.Height))
+$travelPreview.Save((Join-Path (Get-Location) 'ui-travel-preview.png'), [System.Drawing.Imaging.ImageFormat]::Png)
+$travelPreview.Dispose()
 $assistantState.FixtureSsePath = ''
 $navCall = [PSCustomObject]@{ callId = 'ui_fixture_nav'; name = 'navigate_view'; argumentsJson = '{"view":"overview"}' }
 $navResult = Invoke-AgentUiTool $navCall
