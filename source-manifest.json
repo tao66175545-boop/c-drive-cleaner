@@ -2,8 +2,8 @@
     "schemaVersion":  1,
     "version":  "1.4.4",
     "baseCommit":  "b0d1adb1323389ad0f280e6821d84c1cf51366b6",
-    "sourceFingerprint":  "4349de511500c805de8d3f6497d44d551e865a8f7c40f2ed6894e9094357fb56",
-    "generatedAt":  "2026-08-20T00:21:11.5770123Z",
+    "sourceFingerprint":  "b2ea9406c45a5b4ff5d4c821c8a389d7b35a133b331fb6c0361c42cb5214e87f",
+    "generatedAt":  "2026-08-20T00:26:56.1645490Z",
     "files":  [
                   {
                       "path":  ".gitattributes",
@@ -427,9 +427,9 @@
                   },
                   {
                       "path":  "tools/Generate-AssistantAvatars.ps1",
-                      "sha256":  "52689b443fd8fcd947e208de5e7a6daac64f3787e11f7464b4244dcc141f08ae",
-                      "gitBlobSha1":  "2a1872ebee4642c32cd078be32cbbd0a604c815d",
-                      "size":  7659
+                      "sha256":  "fada19701559fc8170ce45ce01bcd8878ade4616c7061d4179c56817a630ac43",
+                      "gitBlobSha1":  "d656f9fe38095216c3af0c945c20eea59271c48e",
+                      "size":  7589
                   },
                   {
                       "path":  "tools/Get-SourceManifest.ps1",

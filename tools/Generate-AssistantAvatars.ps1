@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$SourcePath = 'F:\参考\AI生成\chatGPT-4o\曙光云IP_云沐曦\ChatGPT-Image-2025年8月15日-15_37_07.png',
+    [Parameter(Mandatory = $true)][string]$SourcePath,
     [string]$OutputDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) 'assets')
 )
 
