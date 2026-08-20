@@ -22,6 +22,11 @@ if ($uiSource -notmatch '\$versionManifestPath\s*=\s*Join-Path\s+\$scriptDir\s+'
     $uiSource -notmatch '\$sideFooter\.Text\s*=\s*''版本号 \{0\}''\s+-f\s+\$displayVersion') {
     throw 'Version label regression: sidebar footer is not bound to version.json.'
 }
+if ($uiSource -match 'StreamReader\(\$fs,\s*\[System\.Text\.Encoding\]::Default\)' -or
+    $uiSource -notmatch 'function Read-CDriveUtf8LogSnapshot' -or
+    $uiSource -notmatch 'UTF8Encoding\(\$false,\s*\$true\)') {
+    throw 'Log encoding regression: runtime log snapshots must use strict UTF-8.'
+}
 if ($uiSource -notmatch 'SelectionOutput|SelectionFile|Show-CleanupSelection|New-SelectedCleanupFile') {
     throw 'Selection workflow regression: scan-to-selection pipeline is missing.'
 }
@@ -70,6 +75,25 @@ $footerLeftInset = [Math]::Floor(($sideFooter.ClientSize.Width - $footerTextSize
 $footerRightInset = $sideFooter.ClientSize.Width - $footerTextSize.Width - $footerLeftInset
 if ([Math]::Abs($footerLeftInset - $footerRightInset) -gt 1 -or $footerLeftInset -lt 8) {
     throw ('Version label has unbalanced horizontal insets: left={0}, right={1}' -f $footerLeftInset, $footerRightInset)
+}
+$footerBottomInset = $sideFooterHost.ClientSize.Height - $sideFooter.Bottom
+if ($footerBottomInset -ne 8) {
+    throw ('Version label bottom spacing regression: expected 8, actual {0}' -f $footerBottomInset)
+}
+if ($sideFooterHost.Dock -ne [System.Windows.Forms.DockStyle]::Bottom -or $sideFooterHost.Bottom -ne $sideBar.ClientSize.Height) {
+    throw 'Version label host is not docked to the bottom of the sidebar.'
+}
+
+$utf8LogFixturePath = Join-Path $env:TEMP ('cdc-ui-utf8-log-' + [guid]::NewGuid().ToString('N') + '.log')
+try {
+    $utf8LogFixture = '正在扫描：微信图片与视频附件；清理完成。'
+    [System.IO.File]::WriteAllText($utf8LogFixturePath, $utf8LogFixture, [System.Text.UTF8Encoding]::new($false))
+    $utf8LogActual = Read-CDriveUtf8LogSnapshot $utf8LogFixturePath
+    if ($utf8LogActual -ne $utf8LogFixture) {
+        throw ('UTF-8 log rendering regression: expected {0}, actual {1}' -f $utf8LogFixture, $utf8LogActual)
+    }
+} finally {
+    if (Test-Path -LiteralPath $utf8LogFixturePath) { Remove-Item -LiteralPath $utf8LogFixturePath -Force }
 }
 
 function Get-ButtonSurfacePixel($Button) {

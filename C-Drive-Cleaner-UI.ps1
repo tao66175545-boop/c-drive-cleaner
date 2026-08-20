@@ -269,6 +269,19 @@ function Append-Log {
     $Box.ScrollToCaret()
 }
 
+function Read-CDriveUtf8LogSnapshot {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    $stream = [System.IO.File]::Open($Path, 'Open', 'Read', 'ReadWrite')
+    $reader = $null
+    try {
+        $utf8 = New-Object System.Text.UTF8Encoding($false, $true)
+        $reader = New-Object System.IO.StreamReader($stream, $utf8, $true)
+        return $reader.ReadToEnd()
+    } finally {
+        if ($reader) { $reader.Dispose() } else { $stream.Dispose() }
+    }
+}
+
 function Format-UiBytes {
     param([double]$Bytes)
     if ($Bytes -ge 1TB) { return ('{0:F2} TB' -f ($Bytes / 1TB)) }
@@ -375,6 +388,11 @@ $navAssistant.SelectedPressedBackColor = [System.Drawing.Color]::FromArgb(247, 2
 $navAssistant.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 9, [System.Drawing.FontStyle]::Bold)
 $navAssistant.Cursor = [System.Windows.Forms.Cursors]::Hand
 
+$sideFooterHost = New-Object System.Windows.Forms.Panel
+$sideFooterHost.Dock = 'Bottom'
+$sideFooterHost.Height = 28
+$sideFooterHost.BackColor = [System.Drawing.Color]::White
+
 $sideFooter = New-Object System.Windows.Forms.Label
 $sideFooter.Text = '版本号 {0}' -f $displayVersion
 $sideFooter.Font = New-Object System.Drawing.Font('Segoe UI', 7)
@@ -383,9 +401,8 @@ $sideFooter.AutoSize = $false
 $sideFooter.Location = New-Object System.Drawing.Point(12, 0)
 $sideFooter.Size = New-Object System.Drawing.Size(88, 20)
 $sideFooter.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
-$sideFooter.Anchor = 'Bottom,Left'
-$sideFooter.Add_Layout({ $sideFooter.Top = $sideBar.ClientSize.Height - 32 })
-$sideBar.Controls.AddRange(@($sideDivider, $navOverview, $navLogs, $navSelection, $navAssistant, $sideFooter))
+$sideFooterHost.Controls.Add($sideFooter)
+$sideBar.Controls.AddRange(@($sideDivider, $sideFooterHost, $navOverview, $navLogs, $navSelection, $navAssistant))
 
 $workspace = New-Object System.Windows.Forms.Panel
 $workspace.Dock = 'Fill'
@@ -1641,10 +1658,7 @@ $poll.Add_Tick({
     $file = $jobState.LogFile
     if ($file -and (Test-Path -LiteralPath $file)) {
         try {
-            $fs = [System.IO.File]::Open($file, 'Open', 'Read', 'ReadWrite')
-            $sr = New-Object System.IO.StreamReader($fs, [System.Text.Encoding]::Default)
-            $text = $sr.ReadToEnd()
-            $sr.Close(); $fs.Close()
+            $text = Read-CDriveUtf8LogSnapshot $file
             if ($text.Length -gt $jobState.LastLen) {
                 $chunk = $text.Substring($jobState.LastLen)
                 $jobState.LastLen = $text.Length
@@ -1652,6 +1666,8 @@ $poll.Add_Tick({
                 $log.SelectionStart = $log.Text.Length
                 $log.ScrollToCaret()
             }
+        } catch [System.Text.DecoderFallbackException] {
+            # 子进程可能正写到一个 UTF-8 多字节字符中间，下一次轮询读取完整快照。
         } catch {}
     }
     $process = $jobState.Process
