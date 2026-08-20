@@ -1,4 +1,4 @@
-$uiScriptPath = Join-Path $PSScriptRoot 'C-Drive-Cleaner-UI.ps1'
+﻿$uiScriptPath = Join-Path $PSScriptRoot 'C-Drive-Cleaner-UI.ps1'
 $uiSource = [System.IO.File]::ReadAllText($uiScriptPath, [System.Text.Encoding]::UTF8)
 if ($uiSource -match 'CDriveRoundedButton\s*:\s*Button|\.FlatStyle|\.FlatAppearance|UseVisualStyleBackColor') {
     throw 'Button regression: detected WinForms Button rendering residue.'
@@ -18,6 +18,10 @@ if ($uiSource -notmatch '\$logoStaticImage\s*=\s*\$logoFrames\[\$logoFrames\.Cou
 if ($uiSource -notmatch '\$contentHost\.Controls\.AddRange' -or $uiSource -notmatch '\$contentHost\.Location') {
     throw 'Layout regression: content host separation is missing.'
 }
+if ($uiSource -notmatch '\$versionManifestPath\s*=\s*Join-Path\s+\$scriptDir\s+''version\.json''' -or
+    $uiSource -notmatch '\$sideFooter\.Text\s*=\s*''版本号 \{0\}''\s+-f\s+\$displayVersion') {
+    throw 'Version label regression: sidebar footer is not bound to version.json.'
+}
 if ($uiSource -notmatch 'SelectionOutput|SelectionFile|Show-CleanupSelection|New-SelectedCleanupFile') {
     throw 'Selection workflow regression: scan-to-selection pipeline is missing.'
 }
@@ -29,8 +33,17 @@ if ($uiSource -notmatch 'Invoke-CDriveAssistantTool' -or $uiSource -notmatch '\$
     throw 'Assistant UI regression: constrained tool routing or confirmation boundary is missing.'
 }
 if ($uiSource -notmatch '\$assistantChatSurface' -or $uiSource -notmatch 'New-AssistantChatRow' -or
-    $uiSource -notmatch 'assistant-agent-wave-v2\.png' -or $uiSource -notmatch 'assistant-user-\{0\}\.png') {
+    $uiSource -notmatch 'assistant-agent-wave-v2\.png' -or $uiSource -notmatch 'assistant-user-custom\.png') {
     throw 'Assistant chat regression: bubble renderer or avatar assets are missing.'
+}
+if ($uiSource -notmatch 'Test-AssistantCleanupCommand' -or $uiSource -notmatch 'Invoke-AssistantCleanupWorkflow' -or
+    $uiSource -notmatch 'Invoke-SelectedCleanupConfirmation' -or $uiSource -notmatch "RecommendationLevel -eq 'Recommended'") {
+    throw 'Conversational cleanup regression: stable recommendation selection or native confirmation bridge is missing.'
+}
+if ($uiSource -notmatch 'Test-CDriveTravelIntent' -or $uiSource -notmatch 'Invoke-AssistantTravelQuery' -or
+    $uiSource -notmatch 'TravelHost\.ps1' -or $uiSource -notmatch '\$travelState\.Consent' -or
+    $uiSource -notmatch 'FLYAI.*SEARCHING') {
+    throw 'FlyAI regression: travel routing, isolation host, or consent boundary is missing.'
 }
 if ($uiSource -notmatch "'-SkipProfile'" -or $uiSource -notmatch "'scan\.provider\.selected'" -or $uiSource -notmatch "'scan\.incremental\.completed'") {
     throw 'Incremental scan UI regression: fast scan arguments or provider events are missing.'
@@ -42,6 +55,11 @@ if ($uiSource -notmatch '\$exitCode' -or $uiSource -notmatch '\$succeeded') {
 $replacement = @'
 $form.Show()
 [System.Windows.Forms.Application]::DoEvents()
+
+$expectedVersion = [string]((Get-Content -LiteralPath (Join-Path $scriptDir 'version.json') -Raw -Encoding UTF8 | ConvertFrom-Json).version)
+if ($sideFooter.Text -ne ('版本号 v{0}' -f $expectedVersion)) {
+    throw ('Version label mismatch: expected 版本号 v{0}, actual {1}' -f $expectedVersion, $sideFooter.Text)
+}
 
 function Get-ButtonSurfacePixel($Button) {
     $image = [System.Drawing.Bitmap]::new($Button.Width, $Button.Height)
@@ -143,7 +161,12 @@ if ($dashboardState.SelectedIds.ContainsKey('user-wechat-media')) { throw 'Sugge
 Set-DashboardView 'assistant'
 $initialChatRows = @($assistantChatSurface.Controls)
 if ($initialChatRows.Count -lt 1 -or [string]$initialChatRows[0].Tag.Role -ne 'assistant') { throw 'Assistant greeting bubble was not created.' }
-if ($null -eq $assistantAgentAvatarImage -or $null -eq $assistantUserAvatarImage) { throw 'Assistant or random user avatar did not load.' }
+if ($null -eq $assistantAgentAvatarImage -or $null -eq $assistantUserAvatarImage) { throw 'Assistant or fixed user avatar did not load.' }
+if ([System.IO.Path]::GetFileName([string]$availableUserAvatars[0]) -ne 'assistant-user-custom.png') { throw 'Uploaded custom user avatar is not the first fixed avatar source.' }
+if (-not (Test-AssistantCleanupCommand '请帮我清理低风险缓存')) { throw 'Explicit conversational cleanup command was not recognized.' }
+if (Test-AssistantCleanupCommand '不要清理 C盘') { throw 'Negated cleanup request was incorrectly treated as execution approval.' }
+if (-not (Test-CDriveTravelIntent 'plan a weekend trip to Hangzhou')) { throw 'Travel request was not routed to the isolated provider.' }
+if (Test-CDriveTravelIntent 'clean recommended cache') { throw 'Cleanup request leaked into travel routing.' }
 if ($initialChatRows[0].Tag.Avatar.Left -ne 0 -or $initialChatRows[0].Tag.Bubble.Left -le $initialChatRows[0].Tag.Avatar.Right) { throw 'Assistant message is not left aligned.' }
 $assistantState.Config = $null
 $assistantInput.Text = 'recommend safe cleanup'
@@ -181,10 +204,21 @@ if ($userRows.Count -lt 2 -or $assistantRows.Count -lt 3) { throw 'Two-sided ass
 foreach ($row in $chatRows) {
     if ($row.Tag.Bubble.Right -gt $row.ClientSize.Width -or $row.Tag.Avatar.Right -gt $row.ClientSize.Width) { throw 'Assistant bubble or avatar overflows its message row.' }
     if ($row.Tag.Label.Bottom -gt $row.Tag.Bubble.ClientSize.Height) { throw 'Assistant message text is clipped inside its bubble.' }
+    if ($row.Tag.Label -isnot [System.Windows.Forms.TextBox] -or -not $row.Tag.Label.ReadOnly -or -not $row.Tag.Label.Multiline -or $row.Tag.Label.BorderStyle -ne [System.Windows.Forms.BorderStyle]::None) { throw 'Assistant message text is not a selectable read-only control.' }
+    if (-not $row.Tag.Label.ShortcutsEnabled -or $row.Tag.Label.HideSelection -or $row.Tag.Label.Cursor -ne [System.Windows.Forms.Cursors]::IBeam) { throw 'Assistant message text does not expose visible standard selection and copy interaction.' }
+    if ($null -eq $row.Tag.Label.ContextMenuStrip -or $row.Tag.Label.ContextMenuStrip.Items.Count -lt 2) { throw 'Assistant message copy context menu is missing.' }
+    if ($row.Tag.Label.Left -ne 14 -or ($row.Tag.Bubble.ClientSize.Width - $row.Tag.Label.Right) -ne 14) { throw 'Assistant bubble horizontal text insets are inconsistent.' }
+    $topInset = $row.Tag.Label.Top
+    $bottomInset = $row.Tag.Bubble.ClientSize.Height - $row.Tag.Label.Bottom
+    if ($topInset -lt 10 -or $bottomInset -lt 10 -or [Math]::Abs($topInset - $bottomInset) -gt 1) { throw 'Assistant message text is not vertically centered with safe insets.' }
     if ([string]$row.Tag.Role -eq 'user' -and $row.Tag.Bubble.Right -ge $row.Tag.Avatar.Left) { throw 'User message is not right aligned before its avatar.' }
 }
-$streamRows = @($assistantRows | Where-Object { $_.Tag.Label.Text -match 'Fixture stream complete\.' })
-if ($streamRows.Count -ne 1) { throw 'Streaming response did not stay in one assistant bubble.' }
+$copyFixture = $streamRows = @($assistantRows | Where-Object { $_.Tag.Label.Text -match 'Fixture stream complete\.' })
+if ($copyFixture.Count -ne 1) { throw 'Streaming response did not stay in one assistant bubble.' }
+$copyFixture[0].Tag.Label.Select(0, 7)
+if ([string]$copyFixture[0].Tag.Label.SelectedText -ne 'Fixture') { throw 'Assistant message text cannot be selected programmatically.' }
+$copyFixture[0].Tag.Label.Select(0, 0)
+$streamRows = $copyFixture
 $maximumAllowedBubbleWidth = [Math]::Floor(($streamRows[0].ClientSize.Width - 50) * 0.72) + 1
 if ($streamRows[0].Tag.Bubble.Width -gt $maximumAllowedBubbleWidth) { throw 'Assistant bubble exceeded the responsive maximum width.' }
 $assistantState.FixtureSsePath = ''

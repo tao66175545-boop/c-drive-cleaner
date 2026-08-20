@@ -29,6 +29,7 @@ Desktop UI
       -> Execution broker (future isolated/elevated process)
       -> Event stream and report store
       -> AI copilot (optional explanation/orchestration layer)
+      -> Travel provider (optional FlyAI read-only search process)
 ```
 
 The model is outside the deletion trust boundary. It may read redacted scan
@@ -45,6 +46,12 @@ paths, shell commands, rule-bypass instructions, or delegated cleanup approval
 is rejected before dispatch. Selection tools can only return stable IDs and
 change reversible UI state; they cannot start the cleanup process.
 
+Travel search is a separate optional trust domain. The desktop app passes only
+the user's current travel question to an isolated FlyAI process after explicit
+session consent. Scan results, paths, logs, machine identity, and cleanup plans
+are never included. FlyAI results may contain HTTPS detail or booking links,
+but the application never purchases, books, or submits traveler data.
+
 ## Quantified target
 
 | Area | Target |
@@ -56,6 +63,7 @@ change reversible UI state; they cannot start the cleanup process.
 | Performance | Warm repeat scan is at least 3x faster where the NTFS USN provider is readable; journal reset, permission failure, oversized indexes, and unsupported volumes fall back to correct filesystem enumeration. |
 | Recovery | User-content attachments are sent to the Windows Recycle Bin and cannot be selected in the same operation as recycle-bin purging. |
 | AI | Core functionality works with AI disabled; every action is a schema-bound allowlisted tool. |
+| Travel | FlyAI is optional, read-only, consented per app session, and cannot call cleanup tools or complete bookings. |
 | Privacy | Cloud mode sends no raw path, user name, log, or file content unless separately previewed and approved. |
 | Release | Candidate SHA, source fingerprint, tests, package, and Release remain auditable. |
 
@@ -75,6 +83,7 @@ change reversible UI state; they cannot start the cleanup process.
 12. P11 Reversible UI: broker navigation, scan control, and stable-ID selection with replay rejection and hard loop limits.
 13. P12 Confirmation bridge: route Agent cleanup intent through the same native selection checks and user confirmation as the toolbar.
 14. P13 Hardening: verify privacy request snapshots, credential removal, injection rejection, UI cancellation, packaging, and full release gates.
+15. P14 Conversational cleanup and travel: accept explicit affirmative cleanup requests, select only recommended stable IDs, preserve native final confirmation, use a fixed user avatar, and isolate consented FlyAI read-only travel search from all cleanup data.
 
 P6 currently defers a full rewrite. Directory sizing and child-process control
 already use focused C# implementations, while the PowerShell contracts retain
