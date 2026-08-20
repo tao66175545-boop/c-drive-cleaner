@@ -296,9 +296,13 @@ $streamRows = $copyFixture
 $maximumAllowedBubbleWidth = [Math]::Floor(($streamRows[0].ClientSize.Width - 50) * 0.72) + 1
 if ($streamRows[0].Tag.Bubble.Width -gt $maximumAllowedBubbleWidth) { throw 'Assistant bubble exceeded the responsive maximum width.' }
 $travelImagePath = Join-Path (Get-Location) 'assets\assistant-user-custom.png'
+$calendarDecoration = -join ([char[]]@(0xD83D, 0xDDD3, 0xFE0F))
+$subwayDecoration = -join ([char[]]@(0xD83D, 0xDE87, 0xFE0F))
+$sunDecoration = -join ([char[]]@(0x2600, 0xFE0F))
+$compassDecoration = -join ([char[]]@(0xD83E, 0xDDED))
 $travelResponse = [PSCustomObject]@{
     result = [PSCustomObject]@{
-        data = "已按预算整理两日人文行程。`r`n`r`n## 交通`r`n- **G7509**：上海南 10:43 → 杭州东 11:53`r`n`r`n## 人文景点`r`n**[浙江省博物馆](https://router.feizhu.com/detail)**`r`n- **亮点**：了解浙江历史`r`n- **权衡**：周一闭馆`r`n`r`n## 住宿`r`n**[杭州安静酒店](https://router.feizhu.com/hotel)**`r`n- **推荐理由**：位置安静，交通方便`r`n`r`n## 预算`r`n- **合计**：约 1000 元"
+        data = "已按预算整理两日人文行程。$compassDecoration`r`n`r`n## $calendarDecoration 交通`r`n- $subwayDecoration **G7509**：上海南 10:43 → 杭州东 11:53`r`n`r`n## $sunDecoration 人文景点`r`n**[浙江省博物馆](https://router.feizhu.com/detail)**`r`n- **亮点**：了解浙江历史`r`n- **权衡**：周一闭馆`r`n`r`n## 住宿`r`n**[杭州安静酒店](https://router.feizhu.com/hotel)**`r`n- **推荐理由**：位置安静，交通方便`r`n`r`n## 预算`r`n- **合计**：约 1000 元"
         systemMessage = '*当前为体验模式*'
     }
     visualResult = [PSCustomObject]@{
@@ -322,6 +326,15 @@ if (@($travelItems | Where-Object { $_.Link.Visible }).Count -lt 3) { throw 'Tra
 $travelTexts = @($travelRow.Tag.Elements | Where-Object { $_.Kind -in @('text', 'notice') } | ForEach-Object Control)
 if ($travelTexts.Count -lt 3 -or @($travelTexts | Where-Object { $_ -isnot [System.Windows.Forms.TextBox] -or -not $_.ReadOnly -or $null -eq $_.ContextMenuStrip }).Count -gt 0) {
     throw 'Structured travel text is not selectable and copyable.'
+}
+$renderedTravelText = @($travelRow.Tag.Elements | ForEach-Object {
+    foreach ($property in @('Control', 'Title', 'Details')) {
+        if ($_.PSObject.Properties[$property] -and $_.$property) { [string]$_.$property.Text }
+    }
+}) -join "`n"
+if ($renderedTravelText -match '[\uFE0E\uFE0F\u200D\uD83C-\uD83E]' -or
+    $renderedTravelText -notmatch '上海南 10:43 → 杭州东 11:53') {
+    throw 'Structured travel UI retained an unsupported emoji modifier or lost meaningful route text.'
 }
 $travelTexts[0].Select(0, 2)
 if ($travelTexts[0].SelectedText.Length -ne 2) { throw 'Travel summary text cannot be selected.' }

@@ -88,6 +88,20 @@ if (-not $markdownModel.HasImages -or [string]$markdownSections[3].Items[0].Imag
 if (Get-CDriveFlyAiSafeImageUrl 'https://tracking.example.com/photo.jpg') { throw 'Untrusted travel image domain was accepted.' }
 if (Get-CDriveFlyAiSafeHttpsUrl 'http://router.feizhu.com/insecure') { throw 'Insecure travel detail URL was accepted.' }
 if ((Remove-CDriveFlyAiMarkdownDecoration '*当前为体验模式*') -ne '当前为体验模式') { throw 'Markdown notice decoration was not removed.' }
+$calendarEmoji = -join ([char[]]@(0xD83D, 0xDDD3, 0xFE0F))
+$subwayEmoji = -join ([char[]]@(0xD83D, 0xDE87, 0xFE0F))
+$sunEmoji = -join ([char[]]@(0x2600, 0xFE0F))
+$compassEmoji = -join ([char[]]@(0xD83E, 0xDDED))
+if ((Remove-CDriveFlyAiMarkdownDecoration ($calendarEmoji + ' 北京一日游规划')) -ne '北京一日游规划' -or
+    (Remove-CDriveFlyAiMarkdownDecoration ($subwayEmoji + ' 推荐路线')) -ne '推荐路线' -or
+    (Remove-CDriveFlyAiMarkdownDecoration ($sunEmoji + ' 上午行程')) -ne '上午行程' -or
+    (Remove-CDriveFlyAiMarkdownDecoration ('今天适合游览！' + $compassEmoji)) -ne '今天适合游览！') {
+    throw 'FlyAI emoji decoration or orphaned variation selector was retained.'
+}
+$cleanedUnicode = Remove-CDriveFlyAiMarkdownDecoration ($calendarEmoji + ' 北京 → 故宫 ' + $compassEmoji)
+if ($cleanedUnicode -match '[\uFE0E\uFE0F\u200D\uD83C-\uD83E]' -or $cleanedUnicode -ne '北京 → 故宫') {
+    throw 'FlyAI display text retained an unsupported Unicode modifier or lost meaningful route text.'
+}
 $providerSource = Get-Content -LiteralPath (Join-Path $projectRoot 'core\FlyAiTravelProvider.ps1') -Raw -Encoding UTF8
 if ($providerSource -notmatch "ValidateRange\(1, 3\).*MaximumImages" -or
     $providerSource -notmatch 'Select-Object -First \$MaximumImages' -or

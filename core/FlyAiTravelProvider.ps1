@@ -253,6 +253,20 @@ function Invoke-CDriveFlyAiSearch {
     throw '[FLYAI_FAILED] FlyAI travel search failed after retry.'
 }
 
+function Remove-CDriveFlyAiDecorativeUnicode {
+    param([AllowEmptyString()][string]$Text)
+    if ([string]::IsNullOrEmpty($Text)) { return '' }
+
+    # WinForms font fallback can render orphaned emoji modifiers as tofu boxes.
+    $value = [regex]::Replace(
+        $Text,
+        '(?:[#*0-9]\uFE0F?\u20E3|[\uD83C-\uD83E][\uDC00-\uDFFF]|[\u2300-\u23FF\u2600-\u27BF\u2B00-\u2BFF]|[\u00A9\u00AE\u203C\u2049\u2122\u2139])(?:[\uFE0E\uFE0F\u200D\u20E3]*)',
+        ''
+    )
+    $value = $value -replace '[\uFE0E\uFE0F\u200D\u20E3]', ''
+    return ($value -replace '\s{2,}', ' ').Trim()
+}
+
 function Remove-CDriveFlyAiMarkdownDecoration {
     param([AllowEmptyString()][string]$Text)
     if ([string]::IsNullOrWhiteSpace($Text)) { return '' }
@@ -260,9 +274,7 @@ function Remove-CDriveFlyAiMarkdownDecoration {
     $value = [regex]::Replace($value, '\[(?<label>[^\]]+)\]\(https://[^\s\)]+\)', '${label}')
     $value = $value -replace '\*\*|__|`', ''
     $value = $value.Trim('*', '_', ' ')
-    $value = $value -replace '^[\s\u2600-\u27BF]+', ''
-    $value = [regex]::Replace($value, '^[\uD800-\uDBFF][\uDC00-\uDFFF]\s*', '')
-    return ($value -replace '\s{2,}', ' ').Trim()
+    return Remove-CDriveFlyAiDecorativeUnicode $value
 }
 
 function Get-CDriveFlyAiSafeHttpsUrl {
