@@ -96,6 +96,16 @@ if ($footerBottomInset -ne 8) {
 if ($sideFooterHost.Dock -ne [System.Windows.Forms.DockStyle]::Bottom -or $sideFooterHost.Bottom -ne $sideBar.ClientSize.Height) {
     throw 'Version label host is not docked to the bottom of the sidebar.'
 }
+$sidebarPreview = [System.Drawing.Bitmap]::new($sideBar.Width, $sideBar.Height)
+try {
+    $sideBar.DrawToBitmap($sidebarPreview, [System.Drawing.Rectangle]::new(0, 0, $sidebarPreview.Width, $sidebarPreview.Height))
+    $dividerColor = $sidebarPreview.GetPixel($sidebarPreview.Width - 1, $sidebarPreview.Height - 8)
+    if ($dividerColor.ToArgb() -ne $sideDivider.BackColor.ToArgb()) {
+        throw ('Sidebar divider is covered at the footer boundary: expected {0}, actual {1}' -f $sideDivider.BackColor, $dividerColor)
+    }
+} finally {
+    $sidebarPreview.Dispose()
+}
 
 $utf8LogFixturePath = Join-Path $env:TEMP ('cdc-ui-utf8-log-' + [guid]::NewGuid().ToString('N') + '.log')
 try {

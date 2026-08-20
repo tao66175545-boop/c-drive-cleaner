@@ -403,6 +403,8 @@ $sideFooter.Size = New-Object System.Drawing.Size(88, 20)
 $sideFooter.TextAlign = [System.Drawing.ContentAlignment]::MiddleCenter
 $sideFooterHost.Controls.Add($sideFooter)
 $sideBar.Controls.AddRange(@($sideDivider, $sideFooterHost, $navOverview, $navLogs, $navSelection, $navAssistant))
+# Dock 布局按 Z 顺序分配空间；分隔线置底后先占据全高 1px，页脚不会再覆盖其底部。
+$sideDivider.SendToBack()
 
 $workspace = New-Object System.Windows.Forms.Panel
 $workspace.Dock = 'Fill'

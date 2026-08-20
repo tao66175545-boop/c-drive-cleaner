@@ -145,6 +145,15 @@ function Get-CDriveFlyAiFailureCode {
     return 'FLYAI_FAILED'
 }
 
+function Test-CDriveFlyAiPayloadHasDisplayData {
+    param($Payload)
+    if ($null -eq $Payload -or -not $Payload.PSObject.Properties['data']) { return $false }
+    $data = $Payload.data
+    if ($data -is [string]) { return -not [string]::IsNullOrWhiteSpace([string]$data) }
+    if ($null -eq $data -or -not $data.PSObject.Properties['itemList']) { return $false }
+    return @($data.itemList | Where-Object { $null -ne $_ }).Count -gt 0
+}
+
 function Invoke-CDriveFlyAiSearch {
     param(
         [Parameter(Mandatory = $true)][string]$Query,
@@ -220,6 +229,13 @@ function Invoke-CDriveFlyAiSearch {
             if ([string]::IsNullOrWhiteSpace($stdout)) { throw '[FLYAI_EMPTY] FlyAI returned no result.' }
             try { $payload = $stdout | ConvertFrom-Json }
             catch { throw '[FLYAI_JSON] FlyAI returned invalid JSON.' }
+            if (-not (Test-CDriveFlyAiPayloadHasDisplayData $payload)) {
+                if ($attempt -lt $MaxAttempts) {
+                    Start-Sleep -Milliseconds (300 * $attempt)
+                    continue
+                }
+                throw '[FLYAI_EMPTY] FlyAI returned JSON without displayable travel data.'
+            }
             return [PSCustomObject]@{
                 schemaVersion = 1
                 provider = 'FlyAI'
@@ -497,6 +513,9 @@ function ConvertTo-CDriveFlyAiDisplayModel {
     else { $notice += ' 旅行搜索不会自动预订或下单，实时信息以飞猪详情页为准。' }
     $summary = ($summaryLines.ToArray() -join "`r`n")
     if (-not $summary -and $sections.Count -gt 0) { $summary = '已按主题整理本次实时旅行建议。' }
+    if ($Response.PSObject.Properties['fallbackReason'] -and [string]$Response.fallbackReason -eq 'ai-search-empty') {
+        $summary = '完整行程生成暂未返回内容，已自动切换为飞猪实时搜索结果。'
+    }
     return [PSCustomObject]@{
         SchemaVersion = 1
         Title = '飞猪旅行规划'

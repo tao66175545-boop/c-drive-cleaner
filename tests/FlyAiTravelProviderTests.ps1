@@ -33,6 +33,16 @@ if ((Get-CDriveFlyAiFailureCode 'Client network socket disconnected before secur
 if ((Get-CDriveFlyAiFailureCode 'connect ETIMEDOUT') -ne 'FLYAI_NETWORK') {
     throw 'FlyAI network failures are not classified correctly.'
 }
+$emptyPayload = [PSCustomObject]@{ data = ''; message = 'success'; status = 0 }
+$emptyListPayload = [PSCustomObject]@{ data = [PSCustomObject]@{ itemList = @() }; message = 'success'; status = 0 }
+$markdownPayload = [PSCustomObject]@{ data = 'Beijing weekend itinerary'; message = 'success'; status = 0 }
+$itemPayload = [PSCustomObject]@{ data = [PSCustomObject]@{ itemList = @([PSCustomObject]@{ info = [PSCustomObject]@{ title = 'Beijing day tour' } }) }; message = 'success'; status = 0 }
+if ((Test-CDriveFlyAiPayloadHasDisplayData $emptyPayload) -or (Test-CDriveFlyAiPayloadHasDisplayData $emptyListPayload)) {
+    throw 'FlyAI successful-but-empty payload was accepted as displayable.'
+}
+if (-not (Test-CDriveFlyAiPayloadHasDisplayData $markdownPayload) -or -not (Test-CDriveFlyAiPayloadHasDisplayData $itemPayload)) {
+    throw 'FlyAI displayable Markdown or item-list payload was rejected.'
+}
 
 $fixture = [PSCustomObject]@{
     result = [PSCustomObject]@{
@@ -103,7 +113,7 @@ if (marker && !fs.existsSync(marker)) {
   console.error('Client network socket disconnected before secure TLS connection was established (ECONNRESET)');
   process.exit(1);
 }
-console.log(JSON.stringify({ data: { nodeUseEnvProxy: process.env.NODE_USE_ENV_PROXY || '', httpsProxyPresent: Boolean(process.env.HTTPS_PROXY) } }));
+console.log(JSON.stringify({ data: { itemList: [{ info: { title: 'fixture', nodeUseEnvProxy: process.env.NODE_USE_ENV_PROXY || '', httpsProxyPresent: Boolean(process.env.HTTPS_PROXY) } }] } }));
 '@
 try {
     [System.IO.File]::WriteAllText($fixturePath, $fixtureSource, [System.Text.UTF8Encoding]::new($false))
@@ -116,11 +126,60 @@ try {
     if ($retryResult.attempts -ne 2 -or $retryResult.networkRoute -ne 'test-proxy') {
         throw 'FlyAI did not recover from a transient TLS failure with one bounded retry.'
     }
-    if ([string]$retryResult.result.data.nodeUseEnvProxy -ne '1' -or -not [bool]$retryResult.result.data.httpsProxyPresent) {
+    $retryInfo = $retryResult.result.data.itemList[0].info
+    if ([string]$retryInfo.nodeUseEnvProxy -ne '1' -or -not [bool]$retryInfo.httpsProxyPresent) {
         throw 'FlyAI child process did not receive the proxy environment.'
     }
 } finally {
     foreach ($path in @($fixturePath, $markerPath)) {
+        if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue }
+    }
+}
+
+$emptyFixturePath = Join-Path $env:TEMP ('flyai-empty-fixture-' + [guid]::NewGuid().ToString('N') + '.cjs')
+$emptyFixtureSource = "console.log(JSON.stringify({ data: '', message: 'success', status: 0 }));"
+try {
+    [System.IO.File]::WriteAllText($emptyFixturePath, $emptyFixtureSource, [System.Text.UTF8Encoding]::new($false))
+    try {
+        $null = Invoke-CDriveFlyAiSearch -Query 'Beijing day tour' -ExecutablePath $emptyFixturePath -TimeoutSeconds 10 -MaxAttempts 2
+        throw 'FlyAI successful-but-empty process result was accepted.'
+    } catch {
+        if ($_.Exception.Message -notmatch 'FLYAI_EMPTY') { throw }
+    }
+} finally {
+    if (Test-Path -LiteralPath $emptyFixturePath) { Remove-Item -LiteralPath $emptyFixturePath -Force -ErrorAction SilentlyContinue }
+}
+
+$travelHostSource = Get-Content -LiteralPath (Join-Path $projectRoot 'TravelHost.ps1') -Raw -Encoding UTF8
+if ($travelHostSource -notmatch "fallbackReason.*ai-search-empty" -or
+    $travelHostSource -notmatch "Mode 'keyword-search'.*TimeoutSeconds 45") {
+    throw 'Travel Host does not fall back to keyword search when AI search is empty.'
+}
+
+$fallbackFixtureRoot = Join-Path $PSScriptRoot 'fixtures\flyai-empty-fallback'
+$fallbackRequestPath = Join-Path $env:TEMP ('flyai-fallback-request-' + [guid]::NewGuid().ToString('N') + '.json')
+$fallbackOutputPath = Join-Path $env:TEMP ('flyai-fallback-output-' + [guid]::NewGuid().ToString('N') + '.json')
+$previousPath = $env:PATH
+try {
+    [System.IO.File]::WriteAllText(
+        $fallbackRequestPath,
+        ([PSCustomObject]@{ query = 'Beijing weekend day tour'; mode = 'ai-search' } | ConvertTo-Json -Compress),
+        [System.Text.UTF8Encoding]::new($false)
+    )
+    $env:PATH = $fallbackFixtureRoot + ';' + $previousPath
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $projectRoot 'TravelHost.ps1') -RequestPath $fallbackRequestPath -OutputPath $fallbackOutputPath
+    if ($LASTEXITCODE -ne 0) { throw 'Travel Host empty-result fallback fixture failed.' }
+    $fallbackPayload = Get-Content -LiteralPath $fallbackOutputPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $fallbackModel = ConvertTo-CDriveFlyAiDisplayModel $fallbackPayload.response
+    $fallbackSections = [object[]]$fallbackModel.Sections
+    if (-not $fallbackPayload.ok -or [string]$fallbackPayload.response.fallbackReason -ne 'ai-search-empty' -or
+        $fallbackModel.Summary -notmatch '自动切换.*实时搜索' -or $fallbackSections.Count -ne 1 -or
+        [string]$fallbackSections[0].Items[0].Title -ne 'Beijing day-tour fallback result') {
+        throw 'Travel Host did not convert an empty AI result into a displayable keyword fallback.'
+    }
+} finally {
+    $env:PATH = $previousPath
+    foreach ($path in @($fallbackRequestPath, $fallbackOutputPath)) {
         if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue }
     }
 }
