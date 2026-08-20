@@ -1,9 +1,9 @@
 {
     "schemaVersion":  1,
-    "version":  "1.4.4",
-    "baseCommit":  "b0d1adb1323389ad0f280e6821d84c1cf51366b6",
-    "sourceFingerprint":  "b2ea9406c45a5b4ff5d4c821c8a389d7b35a133b331fb6c0361c42cb5214e87f",
-    "generatedAt":  "2026-08-20T00:26:56.1645490Z",
+    "version":  "1.4.5",
+    "baseCommit":  "71f8fc13b4253c0a92568ecdfa412ccf4fd8c5c5",
+    "sourceFingerprint":  "3df1522b2247c6808d410275fd55554aea3e7e75ec45207d0ffffc70973bd803",
+    "generatedAt":  "2026-08-20T01:14:12.2882804Z",
     "files":  [
                   {
                       "path":  ".gitattributes",
@@ -37,9 +37,9 @@
                   },
                   {
                       "path":  ".ui-smoke-test.ps1",
-                      "sha256":  "3089c050940eb5deb259cd7d9ee0ce1c51d4c80e9e0d9aa5bcf3d104bdda4dcc",
-                      "gitBlobSha1":  "4a9054994994d807a69c6024182d285a1f29effd",
-                      "size":  16992
+                      "sha256":  "05138acfddb33c176814c95f59cac1acfa6194904f1743137ae64ea040bd77bc",
+                      "gitBlobSha1":  "7a99111d17742c3dfc22244e5a96407a263019c9",
+                      "size":  16995
                   },
                   {
                       "path":  "AgentHost.ps1",
@@ -88,6 +88,12 @@
                       "sha256":  "f30e4daa9e969b02eb51429e437965d0d949c59103c93b27e8bdf7865746f970",
                       "gitBlobSha1":  "c4d0f2d747efe8946e251bb1d14ea033446a4ee1",
                       "size":  82517
+                  },
+                  {
+                      "path":  "assets/assistant-agent-wave-v2.png",
+                      "sha256":  "1d09b8778c3df9be85a2b9d612ca70f8e53d859ceb0409731d6b970443ec1155",
+                      "gitBlobSha1":  "1505c0d3af810e073f683e1d6fddc4e9147b5057",
+                      "size":  86209
                   },
                   {
                       "path":  "assets/assistant-user-1.png",
@@ -157,9 +163,9 @@
                   },
                   {
                       "path":  "C-Drive-Cleaner-UI.ps1",
-                      "sha256":  "3ac6069a89626be7bb172a534e9596f72689ac89cdddb2cbf4153d46825ae5f2",
-                      "gitBlobSha1":  "a8c8c9da4cab1f471829598aa9042c0afc99d956",
-                      "size":  126861
+                      "sha256":  "e4dbec791bfb66d72e0f5f725c1d723d2b932177b77471f41d3ba326b7239e34",
+                      "gitBlobSha1":  "28a26a47954cb54803462227d4663262be82af35",
+                      "size":  127043
                   },
                   {
                       "path":  "contracts/assistant-tools.json",
@@ -271,8 +277,8 @@
                   },
                   {
                       "path":  "README-使用说明.txt",
-                      "sha256":  "e1e0afa0f6e9621b8f812031833f329e6d790cb378bfadbd59922ae7d72c60a1",
-                      "gitBlobSha1":  "b66de6607b53e0a55cb15a5c75dd04140668693b",
+                      "sha256":  "fb32cfe6b36cfae1d6c880b6df1d1643855165759812c167295e1b17af32bc0c",
+                      "gitBlobSha1":  "e82e1795a86de3bb2613a0fdf488aace927e427b",
                       "size":  3911
                   },
                   {
@@ -340,6 +346,12 @@
                       "sha256":  "d1d5acedb5fb2101fc20d6b4fe780fa44e5f064eac9aeb3b77bd574fc90822b1",
                       "gitBlobSha1":  "95de8d3f99bb37f31a9da8e3685fdd142f065b11",
                       "size":  1138
+                  },
+                  {
+                      "path":  "RELEASE_NOTES_v1.4.5.md",
+                      "sha256":  "99924e00f4729d1c82b83583800592190e166ccb7168ced72845b22b461ea0f9",
+                      "gitBlobSha1":  "d11a976ff991ed574e7b9d3db8905119deb98f1b",
+                      "size":  597
                   },
                   {
                       "path":  "rules/cleanup-rules.json",
@@ -427,9 +439,9 @@
                   },
                   {
                       "path":  "tools/Generate-AssistantAvatars.ps1",
-                      "sha256":  "fada19701559fc8170ce45ce01bcd8878ade4616c7061d4179c56817a630ac43",
-                      "gitBlobSha1":  "d656f9fe38095216c3af0c945c20eea59271c48e",
-                      "size":  7589
+                      "sha256":  "ca7f3a8be625dabdf92201ad1421d05a35e7fab0a2c0ed7ce50eb88bdca5da65",
+                      "gitBlobSha1":  "d1a4c56a3d12aadebbf705dcb36816818bea2321",
+                      "size":  7347
                   },
                   {
                       "path":  "tools/Get-SourceManifest.ps1",
@@ -475,8 +487,8 @@
                   },
                   {
                       "path":  "version.json",
-                      "sha256":  "b303418960b016b65b037f17d1865add0643014f48027489a8d3e8503cf4112b",
-                      "gitBlobSha1":  "d03d4df26a106c4ae4d9d25d590a046cc6955353",
+                      "sha256":  "5402f6bdaf42a50bf7c1983289cf2ef93f83f6759f5a4d8f59f1a6eecb634a63",
+                      "gitBlobSha1":  "eb8c3950e9ca2b47ffc6887b43b3e74b13025c29",
                       "size":  178
                   }
               ]

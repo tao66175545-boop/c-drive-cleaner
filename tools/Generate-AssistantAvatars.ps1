@@ -1,11 +1,17 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$SourcePath,
-    [string]$OutputDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) 'assets')
+    [string]$OutputDirectory = '',
+    [string]$AgentFileName = 'assistant-agent-wave-v2.png',
+    [switch]$AgentOnly
 )
 
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
+$toolDirectory = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
+    $OutputDirectory = Join-Path (Split-Path -Parent $toolDirectory) 'assets'
+}
 
 if (-not (Test-Path -LiteralPath $SourcePath -PathType Leaf)) {
     throw "Avatar source image was not found: $SourcePath"
@@ -29,6 +35,17 @@ function Enable-QualityDrawing {
     $Graphics.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
 }
 
+function Save-PngAtomically {
+    param([System.Drawing.Bitmap]$Bitmap, [string]$DestinationPath)
+    $temporaryPath = Join-Path (Split-Path -Parent $DestinationPath) ('.' + [System.IO.Path]::GetFileNameWithoutExtension($DestinationPath) + '-' + [guid]::NewGuid().ToString('N') + '.png')
+    try {
+        $Bitmap.Save($temporaryPath, [System.Drawing.Imaging.ImageFormat]::Png)
+        [System.IO.File]::Copy($temporaryPath, $DestinationPath, $true)
+    } finally {
+        if (Test-Path -LiteralPath $temporaryPath -PathType Leaf) { Remove-Item -LiteralPath $temporaryPath -Force }
+    }
+}
+
 function Save-AgentAvatar {
     $source = [System.Drawing.Image]::FromFile($SourcePath)
     $bitmap = [System.Drawing.Bitmap]::new(256, 256, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
@@ -40,41 +57,20 @@ function Save-AgentAvatar {
         try {
             $graphics.SetClip($circle)
             $graphics.Clear([System.Drawing.Color]::FromArgb(251, 242, 233))
-            $sourceRect = [System.Drawing.Rectangle]::new(184, 112, 660, 660)
-            $graphics.DrawImage($source, [System.Drawing.Rectangle]::new(0, 0, 256, 256), $sourceRect, [System.Drawing.GraphicsUnit]::Pixel)
-
-            # Recompose a raised arm from the character palette so the small avatar reads as a wave.
-            $skin = [System.Drawing.Color]::FromArgb(246, 195, 143)
-            $skinLight = [System.Drawing.Color]::FromArgb(255, 215, 170)
-            $shirt = [System.Drawing.Color]::FromArgb(190, 37, 31)
-            $armPath = [System.Drawing.Drawing2D.GraphicsPath]::new()
-            try {
-                $armPath.AddBezier(184, 185, 198, 157, 203, 121, 207, 91)
-                $armPath.AddBezier(207, 91, 220, 91, 229, 101, 226, 116)
-                $armPath.AddBezier(226, 116, 220, 151, 215, 181, 207, 204)
-                $armPath.CloseFigure()
-                $shirtBrush = [System.Drawing.SolidBrush]::new($shirt)
-                $skinBrush = [System.Drawing.SolidBrush]::new($skin)
-                try {
-                    $graphics.FillPath($shirtBrush, $armPath)
-                    $graphics.FillEllipse($skinBrush, 194, 66, 39, 48)
-                    $graphics.FillEllipse($skinBrush, 198, 57, 9, 30)
-                    $graphics.FillEllipse($skinBrush, 207, 53, 9, 32)
-                    $graphics.FillEllipse($skinBrush, 216, 56, 9, 30)
-                    $graphics.FillEllipse($skinBrush, 225, 63, 9, 25)
-                    $highlight = [System.Drawing.Pen]::new($skinLight, 2)
-                    try { $graphics.DrawArc($highlight, 199, 70, 27, 24, 205, 105) } finally { $highlight.Dispose() }
-                } finally {
-                    $shirtBrush.Dispose()
-                    $skinBrush.Dispose()
-                }
-            } finally { $armPath.Dispose() }
+            $cropSize = [Math]::Min($source.Width, $source.Height)
+            $cropSize = [Math]::Floor($cropSize * 0.86)
+            $cropX = [Math]::Max(0, [Math]::Floor(($source.Width - $cropSize) * 0.45))
+            $cropY = [Math]::Max(0, [Math]::Floor(($source.Height - $cropSize) * 0.54))
+            if ($cropX + $cropSize -gt $source.Width) { $cropX = $source.Width - $cropSize }
+            if ($cropY + $cropSize -gt $source.Height) { $cropY = $source.Height - $cropSize }
+            $sourceRect = [System.Drawing.Rectangle]::new($cropX, $cropY, $cropSize, $cropSize)
+            $graphics.DrawImage($source, [System.Drawing.Rectangle]::new(4, 4, 248, 248), $sourceRect, [System.Drawing.GraphicsUnit]::Pixel)
             $graphics.ResetClip()
         } finally { $circle.Dispose() }
 
         $border = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(225, 216, 207), 3)
         try { $graphics.DrawEllipse($border, 5, 5, 246, 246) } finally { $border.Dispose() }
-        $bitmap.Save((Join-Path $OutputDirectory 'assistant-agent-wave.png'), [System.Drawing.Imaging.ImageFormat]::Png)
+        Save-PngAtomically $bitmap (Join-Path $OutputDirectory $AgentFileName)
     } finally {
         $graphics.Dispose()
         $bitmap.Dispose()
@@ -119,7 +115,7 @@ function Save-UserAvatar {
         }
         $border = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(220, 226, 231), 2)
         try { $graphics.DrawEllipse($border, 3, 3, 122, 122) } finally { $border.Dispose() }
-        $bitmap.Save((Join-Path $OutputDirectory ("assistant-user-{0}.png" -f $Index)), [System.Drawing.Imaging.ImageFormat]::Png)
+        Save-PngAtomically $bitmap (Join-Path $OutputDirectory ("assistant-user-{0}.png" -f $Index))
     } finally {
         $graphics.Dispose()
         $bitmap.Dispose()
@@ -135,11 +131,13 @@ $palettes = @(
     @([System.Drawing.Color]::FromArgb(244, 241, 232), [System.Drawing.Color]::FromArgb(129, 105, 76), [System.Drawing.Color]::FromArgb(190, 137, 102)),
     @([System.Drawing.Color]::FromArgb(232, 240, 244), [System.Drawing.Color]::FromArgb(73, 112, 139), [System.Drawing.Color]::FromArgb(224, 177, 139))
 )
-for ($index = 0; $index -lt $palettes.Count; $index++) {
-    Save-UserAvatar ($index + 1) $palettes[$index][0] $palettes[$index][1] $palettes[$index][2]
+if (-not $AgentOnly) {
+    for ($index = 0; $index -lt $palettes.Count; $index++) {
+        Save-UserAvatar ($index + 1) $palettes[$index][0] $palettes[$index][1] $palettes[$index][2]
+    }
 }
 
 Write-Output ([PSCustomObject]@{
-    AgentAvatar = (Join-Path $OutputDirectory 'assistant-agent-wave.png')
-    UserAvatars = 1..$palettes.Count | ForEach-Object { Join-Path $OutputDirectory ("assistant-user-{0}.png" -f $_) }
+    AgentAvatar = (Join-Path $OutputDirectory $AgentFileName)
+    UserAvatars = if ($AgentOnly) { @() } else { 1..$palettes.Count | ForEach-Object { Join-Path $OutputDirectory ("assistant-user-{0}.png" -f $_) } }
 })
