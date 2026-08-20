@@ -12,7 +12,21 @@
 function Test-CDriveTravelIntent {
     param([string]$Text)
     if ([string]::IsNullOrWhiteSpace($Text)) { return $false }
-    return $Text -match '(?i)\u65c5\u884c|\u65c5\u6e38|\u51fa\u884c|\u5ea6\u5047|\u884c\u7a0b|\u653b\u7565|\u9152\u5e97|\u4f4f\u5bbf|\u6c11\u5bbf|\u673a\u7968|\u822a\u73ed|\u706b\u8f66|\u9ad8\u94c1|\u666f\u70b9|\u95e8\u7968|\u7b7e\u8bc1|\u90ae\u8f6e|\u79df\u8f66|trip|travel|hotel|flight|train|itinerary|vacation'
+
+    $travelSubjectPattern = '(?i)\u65c5\u884c|\u65c5\u6e38|\u51fa\u884c|\u5ea6\u5047|\u884c\u7a0b|\u653b\u7565|\u9152\u5e97|\u4f4f\u5bbf|\u6c11\u5bbf|\u673a\u7968|\u822a\u73ed|\u706b\u8f66|\u9ad8\u94c1|\u666f\u70b9|\u95e8\u7968|\u7b7e\u8bc1|\u90ae\u8f6e|\u79df\u8f66|(?:[\u4e00-\u5341\d]+\u65e5\u6e38|\u5468\u672b\u6e38|\u81ea\u7531\u884c|\u8ddf\u56e2\u6e38|\u81ea\u9a7e\u6e38)|trip|travel|hotel|flight|train|itinerary|vacation'
+    $cleanupPattern = '(?i)\u6e05\u7406|\u626b\u63cf|\u5220\u9664|\u52fe\u9009|\u53d6\u6d88\u52fe\u9009|\u7f13\u5b58|\u5783\u573e|C\s*\u76d8|\u56de\u6536\u7ad9|clean|scan|delete|cache|recycle\s*bin'
+    $hasTravelSubject = $Text -match $travelSubjectPattern
+
+    # Provider-name-only cleanup commands belong to the cleaner, not the travel host.
+    if ($Text -match $cleanupPattern -and -not $hasTravelSubject) { return $false }
+    if ($Text -match '(?i)\u98de\u732a|flyai|fliggy') { return $true }
+    return $hasTravelSubject
+}
+
+function Resolve-CDriveAssistantProviderRoute {
+    param([string]$Text)
+    if (Test-CDriveTravelIntent $Text) { return 'travel' }
+    return 'assistant'
 }
 
 function Test-CDriveTravelQueryComplete {

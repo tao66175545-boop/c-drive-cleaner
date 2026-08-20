@@ -45,11 +45,14 @@ if ($uiSource -notmatch 'Test-AssistantCleanupCommand' -or $uiSource -notmatch '
     $uiSource -notmatch 'Invoke-SelectedCleanupConfirmation' -or $uiSource -notmatch "RecommendationLevel -eq 'Recommended'") {
     throw 'Conversational cleanup regression: stable recommendation selection or native confirmation bridge is missing.'
 }
-if ($uiSource -notmatch 'Test-CDriveTravelIntent' -or $uiSource -notmatch 'Invoke-AssistantTravelQuery' -or
+if ($uiSource -notmatch 'Resolve-CDriveAssistantProviderRoute' -or $uiSource -notmatch 'Invoke-AssistantTravelQuery' -or
     $uiSource -notmatch 'TravelHost\.ps1' -or
     $uiSource -notmatch 'FLYAI.*SEARCHING' -or $uiSource -notmatch 'FLYAI_TLS' -or
     $uiSource -notmatch 'FLYAI_NETWORK' -or $uiSource -notmatch '超过 90 秒') {
     throw 'FlyAI regression: travel routing, isolation host, or consent boundary is missing.'
+}
+if ($uiSource -notmatch '(?s)Resolve-CDriveAssistantProviderRoute\s+\$question.*?if\s*\(\$providerRoute\s+-eq\s+''travel''\).*?Invoke-AssistantTravelQuery\s+\$question.*?Invoke-AssistantLocalControl') {
+    throw 'FlyAI dispatch regression: travel routing must run before local and cloud assistant handling.'
 }
 if ($uiSource -match '旅行问题将发送给飞猪 FlyAI|启用飞猪旅行建议|\$travelState\.Consent') {
     throw 'FlyAI interaction regression: travel search must not show a modal enable prompt.'
@@ -212,6 +215,14 @@ if (-not (Test-AssistantCleanupCommand '请帮我清理低风险缓存')) { thro
 if (Test-AssistantCleanupCommand '不要清理 C盘') { throw 'Negated cleanup request was incorrectly treated as execution approval.' }
 if (-not (Test-CDriveTravelIntent 'plan a weekend trip to Hangzhou')) { throw 'Travel request was not routed to the isolated provider.' }
 if (Test-CDriveTravelIntent 'clean recommended cache') { throw 'Cleanup request leaked into travel routing.' }
+$reportedTravelQuery = -join ([char[]]@(0x98DE, 0x732A, 0x89C4, 0x5212, 0x5317, 0x4EAC, 0x5468, 0x672B, 0x4E00, 0x65E5, 0x6E38))
+if ((Resolve-CDriveAssistantProviderRoute $reportedTravelQuery) -ne 'travel' -or -not (Test-CDriveTravelQueryComplete $reportedTravelQuery)) {
+    throw 'Reported FlyAI day-tour query did not reach the complete travel dispatch path.'
+}
+if ((Resolve-CDriveAssistantProviderRoute '周末整理一下桌面') -ne 'assistant' -or
+    (Resolve-CDriveAssistantProviderRoute '飞猪清理 C盘缓存') -ne 'assistant') {
+    throw 'Travel routing accepted an unrelated weekend or cleanup command.'
+}
 $travelRowsBefore = @($assistantChatSurface.Controls).Count
 Invoke-AssistantTravelQuery '飞猪规划一次旅行'
 if ($travelState.Process -or -not $travelState.PendingDetails -or @($assistantChatSurface.Controls).Count -ne ($travelRowsBefore + 1)) {

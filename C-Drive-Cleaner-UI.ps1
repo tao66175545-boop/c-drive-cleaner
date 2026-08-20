@@ -2287,7 +2287,8 @@ function Invoke-OfflineAssistantQuery {
         Add-AssistantMessage '你' $question
         $assistantInput.Clear()
     }
-    if (Test-CDriveTravelIntent $question) {
+    $providerRoute = Resolve-CDriveAssistantProviderRoute $question
+    if ($providerRoute -eq 'travel') {
         Invoke-AssistantTravelQuery $question
         return
     }
@@ -2873,7 +2874,8 @@ function Invoke-AssistantQuery {
         Invoke-AssistantTravelQuery $combinedQuestion
         return
     }
-    if (Test-CDriveTravelIntent $question) {
+    $providerRoute = Resolve-CDriveAssistantProviderRoute $question
+    if ($providerRoute -eq 'travel') {
         Invoke-AssistantTravelQuery $question
         return
     }

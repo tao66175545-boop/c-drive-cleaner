@@ -4,6 +4,16 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 
 if (-not (Test-CDriveTravelIntent 'find a hotel in Shanghai')) { throw 'English travel intent was not detected.' }
 if (Test-CDriveTravelIntent 'clean recommended cache') { throw 'Cleanup intent leaked into the travel provider.' }
+$reportedTravelQuery = -join ([char[]]@(0x98DE, 0x732A, 0x89C4, 0x5212, 0x5317, 0x4EAC, 0x5468, 0x672B, 0x4E00, 0x65E5, 0x6E38))
+if (-not (Test-CDriveTravelIntent $reportedTravelQuery)) { throw 'Explicit FlyAI day-tour request was not detected.' }
+if (-not (Test-CDriveTravelQueryComplete $reportedTravelQuery)) { throw 'Explicit FlyAI day-tour request was incorrectly treated as incomplete.' }
+if ((Resolve-CDriveAssistantProviderRoute $reportedTravelQuery) -ne 'travel') { throw 'Reported FlyAI request did not route to the travel provider.' }
+foreach ($tourVariant in @('北京一日游', '杭州周末游', '云南自由行', '成都跟团游', '川西自驾游')) {
+    if ((Resolve-CDriveAssistantProviderRoute $tourVariant) -ne 'travel') { throw ('Tour form was not routed to travel: ' + $tourVariant) }
+}
+foreach ($nonTravelText in @('周末整理一下桌面', '飞猪清理 C盘缓存', '扫描并勾选建议清理项')) {
+    if ((Resolve-CDriveAssistantProviderRoute $nonTravelText) -ne 'assistant') { throw ('Non-travel request leaked into travel routing: ' + $nonTravelText) }
+}
 if (Test-CDriveTravelQueryComplete 'plan a trip') { throw 'Underspecified travel request was sent to FlyAI instead of requesting details.' }
 $genericChineseTravel = -join ([char[]]@(0x98DE, 0x732A, 0x89C4, 0x5212, 0x4E00, 0x6B21, 0x65C5, 0x884C))
 if (Test-CDriveTravelQueryComplete $genericChineseTravel) { throw 'Underspecified Chinese travel request was sent to FlyAI instead of requesting details.' }

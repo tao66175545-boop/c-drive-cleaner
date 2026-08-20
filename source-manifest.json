@@ -2,8 +2,8 @@
     "schemaVersion":  1,
     "version":  "1.4.9",
     "baseCommit":  "4ab91f26212b44d5ecca572cf80325c6ea528469",
-    "sourceFingerprint":  "92ada7c3da434fb4a6783c3ad0df94c00aaab9b5ad455f0fd2d2a2a577f34210",
-    "generatedAt":  "2026-08-20T07:16:43.5027620Z",
+    "sourceFingerprint":  "e82c8868e784bacaa768aadbd1ee7897b59580135e42bdf3abb4762ad0febf47",
+    "generatedAt":  "2026-08-20T07:35:32.7781564Z",
     "files":  [
                   {
                       "path":  ".gitattributes",
@@ -37,9 +37,9 @@
                   },
                   {
                       "path":  ".ui-smoke-test.ps1",
-                      "sha256":  "a17370a6f948ce609f6d40b8a3f3c53d9619e0bd1448cc1dd20ccaa9e4ffb8b3",
-                      "gitBlobSha1":  "cc7b64009f95e2c45f5f8328800e3dcf1888c13e",
-                      "size":  27447
+                      "sha256":  "30946d21f6105e7eaf13ac3a0a6850fe2b9f9036d08df4789fd15733d601ad30",
+                      "gitBlobSha1":  "8b7771730b8f079ed29ad6ce01b177fe9e94933f",
+                      "size":  28393
                   },
                   {
                       "path":  "AGENTS.md",
@@ -73,9 +73,9 @@
                   },
                   {
                       "path":  "C-Drive-Cleaner-UI.ps1",
-                      "sha256":  "61c85bfaeedd5b39051556664e70b5a7f423d4e449de5437a091b0e7fa19997a",
-                      "gitBlobSha1":  "663ea3682006849b0df736d3d93730ff06d89161",
-                      "size":  157475
+                      "sha256":  "a1960ee6045ad24187432abde5e24654610b0acd27fc50919d55543147b01f38",
+                      "gitBlobSha1":  "ad3a317c7f701793ba5ee54ac971ef82dc2543f0",
+                      "size":  157599
                   },
                   {
                       "path":  "C-Drive-Cleaner.ps1",
@@ -109,9 +109,9 @@
                   },
                   {
                       "path":  "README.md",
-                      "sha256":  "e4b29b182c01f6afac8271f9fd11314e9a149679637f5b8cb27b409a32799da7",
-                      "gitBlobSha1":  "dac14ea2fe05889b987d602844ec6164980f39ca",
-                      "size":  8769
+                      "sha256":  "9dafb96a6f0b35437527e2218ad3b00e7b0acb679802b8c12c884a30f6b5a8a5",
+                      "gitBlobSha1":  "9f50fc5d959e0d864beec634dca87d78066c7c65",
+                      "size":  8984
                   },
                   {
                       "path":  "RELEASE_NOTES_v1.0.0.md",
@@ -205,9 +205,9 @@
                   },
                   {
                       "path":  "RELEASE_NOTES_v1.4.9.md",
-                      "sha256":  "2f3d48340f88a29c52575ec02cd0c98adabae42c7cdd4cd2b91358973f0a18b9",
-                      "gitBlobSha1":  "febbe99ebfcc948d6955eb0a2f8ab31bd642cf15",
-                      "size":  1348
+                      "sha256":  "65220ca6ab7a823c8f0c1ae36e64183a2398f61955e65041c15e2cd35f531fef",
+                      "gitBlobSha1":  "d2d5e67ba259d7ef5fa5f1bfdc494231686ff568",
+                      "size":  1598
                   },
                   {
                       "path":  "TravelHost.ps1",
@@ -361,9 +361,9 @@
                   },
                   {
                       "path":  "core/FlyAiTravelProvider.ps1",
-                      "sha256":  "6093d662848a4ffda2e9e4190c2548cef540d4ec164dfdd747e0fa013e3c9485",
-                      "gitBlobSha1":  "6fbd8d1a4e4fa835d30f12f8a12ef2fa5d49c6a4",
-                      "size":  26125
+                      "sha256":  "e86f9a524facb5fb464c14a699027f44091cd37eb680afead2dce8dbf6b3f36a",
+                      "gitBlobSha1":  "87dce0d9b94d9c1e0692d29e43132326837e4f2a",
+                      "size":  26928
                   },
                   {
                       "path":  "core/IncrementalScanIndex.ps1",
@@ -463,9 +463,9 @@
                   },
                   {
                       "path":  "tests/FlyAiTravelProviderTests.ps1",
-                      "sha256":  "9f470b1d8003ce1e9dd8db74ed2b0629214dad131fd96f90d204eeb9f5fffe0e",
-                      "gitBlobSha1":  "d9c429a298bd17c041a3d66f8559c295883c3e7e",
-                      "size":  7576
+                      "sha256":  "34629438a081a235e2b4f050aaa8e0a12f0d44cf51b1918ac9c7233ec70b99a8",
+                      "gitBlobSha1":  "674b94812accb74af4afd5c02209ac03b1ec362b",
+                      "size":  8670
                   },
                   {
                       "path":  "tests/IncrementalScanTests.ps1",
