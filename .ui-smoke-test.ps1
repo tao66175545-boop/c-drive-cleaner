@@ -46,10 +46,16 @@ if ($uiSource -notmatch 'Test-AssistantCleanupCommand' -or $uiSource -notmatch '
     throw 'Conversational cleanup regression: stable recommendation selection or native confirmation bridge is missing.'
 }
 if ($uiSource -notmatch 'Test-CDriveTravelIntent' -or $uiSource -notmatch 'Invoke-AssistantTravelQuery' -or
-    $uiSource -notmatch 'TravelHost\.ps1' -or $uiSource -notmatch '\$travelState\.Consent' -or
+    $uiSource -notmatch 'TravelHost\.ps1' -or
     $uiSource -notmatch 'FLYAI.*SEARCHING' -or $uiSource -notmatch 'FLYAI_TLS' -or
     $uiSource -notmatch 'FLYAI_NETWORK' -or $uiSource -notmatch '超过 90 秒') {
     throw 'FlyAI regression: travel routing, isolation host, or consent boundary is missing.'
+}
+if ($uiSource -match '旅行问题将发送给飞猪 FlyAI|启用飞猪旅行建议|\$travelState\.Consent') {
+    throw 'FlyAI interaction regression: travel search must not show a modal enable prompt.'
+}
+if ($uiSource -notmatch '输入旅行问题时，我会在后台仅将本条问题交给飞猪查询') {
+    throw 'FlyAI transparency regression: non-blocking data scope disclosure is missing.'
 }
 if ($uiSource -notmatch "'-SkipProfile'" -or $uiSource -notmatch "'scan\.provider\.selected'" -or $uiSource -notmatch "'scan\.incremental\.completed'") {
     throw 'Incremental scan UI regression: fast scan arguments or provider events are missing.'

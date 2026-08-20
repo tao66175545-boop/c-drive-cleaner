@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "version": "1.4.7",
   "baseCommit": "ee20e5055aab1e34ba8152e0e3aab9435137c7bc",
-  "sourceFingerprint": "9dab1a065df3d5eb13650e2cec3ca779e3e3e8e4b349f3c329c6a76522cf8ead",
-  "generatedAt": "2026-08-20T05:38:39.9660332Z",
+  "sourceFingerprint": "be3be06081fc653f08e788b877ebf1013a9b395f52cdcf2b47a255073834e1e9",
+  "generatedAt": "2026-08-20T05:47:29.9738583Z",
   "files": [
     {
       "path": ".gitattributes",
@@ -37,9 +37,9 @@
     },
     {
       "path": ".ui-smoke-test.ps1",
-      "sha256": "a7281c88d25e234ad8b7b7042291e0b5b94d41bf2290d3c62733d07e141c78f1",
-      "gitBlobSha1": "01409c81c1889b5a3d38541ffc2679c20fb761ae",
-      "size": 22755
+      "sha256": "06d256fe0df8dfb2df721d363837936c37468c15f80eaa4aa189607d2abba4b8",
+      "gitBlobSha1": "6bcf2fc09b4e7119e0b8af75ad4abe5bcb7b3d31",
+      "size": 23109
     },
     {
       "path": "AGENTS.md",
@@ -73,9 +73,9 @@
     },
     {
       "path": "C-Drive-Cleaner-UI.ps1",
-      "sha256": "cfb659b62712ee951d0600cc978c46f192b96fba35ed77f71b38a72df6304643",
-      "gitBlobSha1": "6b5a225bda0ebe875050a16723c8939adc9c9679",
-      "size": 137984
+      "sha256": "487b69c61098aa91e4dae0bba2e1a705c935bd42565351d75b377b0cd2211f2d",
+      "gitBlobSha1": "09913f487bcc3668143e29673f0e85ecb345f075",
+      "size": 137372
     },
     {
       "path": "C-Drive-Cleaner.ps1",
@@ -91,9 +91,9 @@
     },
     {
       "path": "FLYAI-接入调研与架构.md",
-      "sha256": "489b94ee0cffe306f0f6da970242961f892d43ea9ca56f6bc5ff9967506f9538",
-      "gitBlobSha1": "1991eb64d882ec8676053e6a5855189938a24c31",
-      "size": 2301
+      "sha256": "ff5d8eac422782e370eb3bd98a3fb542fabe47b46b84b4c865f3d56c9b056cc4",
+      "gitBlobSha1": "21ae15029282e321b0500f042dd52b4b428a42da",
+      "size": 2424
     },
     {
       "path": "OTA-在线升级方案.md",
@@ -103,15 +103,15 @@
     },
     {
       "path": "README-使用说明.txt",
-      "sha256": "af95aa736d1c4f8d38e65fa3837fac4b8b3bc0c38040da087638dc519a0c6512",
-      "gitBlobSha1": "1c5261a2f83b8fc5a4bc64398681662b8117497e",
-      "size": 4874
+      "sha256": "39c836dd609e2963f0fb63869cc8ef9439f741b660d500fdddfe763b2ad5c907",
+      "gitBlobSha1": "4e0609e1278777cc61a17b09b877c6d895e1e686",
+      "size": 4871
     },
     {
       "path": "README.md",
-      "sha256": "b412789bcaeb1a4da2393e240dc65bc1f7f191a505ac687d94fe71d73daf2ea8",
-      "gitBlobSha1": "35134dfee8a604a869057af71c56a529463a4757",
-      "size": 8086
+      "sha256": "17e3f02c3e731824988eeee0e854e95f120641c9cb353ed3e24fb20b24a9f00c",
+      "gitBlobSha1": "1dd39b015e43f822ceb431ca87fce21baac496e9",
+      "size": 8110
     },
     {
       "path": "RELEASE_NOTES_v1.0.0.md",
@@ -193,9 +193,9 @@
     },
     {
       "path": "RELEASE_NOTES_v1.4.7.md",
-      "sha256": "78124f119508e495c2bbf39d79deb99f942acf2d37799654bdd201ba7f491e01",
-      "gitBlobSha1": "5fd23d6a653450ac2735e4b324a701fe3d988651",
-      "size": 1493
+      "sha256": "1c052abb684b9854b7b25a3e49977e0e0cb1426c17fc5fd804a2344cae5ae761",
+      "gitBlobSha1": "b17ac9e9e3c6ad3ecbfa91b9fc46d01d5f0e7630",
+      "size": 1677
     },
     {
       "path": "TravelHost.ps1",

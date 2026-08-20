@@ -1156,7 +1156,6 @@ $travelState = @{
     RequestFile = ''
     OutputFile = ''
     LogFile = ''
-    Consent = $false
 }
 
 $toolTips = New-Object System.Windows.Forms.ToolTip
@@ -1850,7 +1849,7 @@ function Complete-AssistantDelta {
     $assistantState.ActiveBubble = $null
 }
 
-Add-AssistantMessage '助手' '你好，我是你的智能助手。你可以让我扫描并清理低风险缓存；想换个心情时，也可以让我用飞猪规划一次旅行。最终清理和旅行预订都由你确认。'
+Add-AssistantMessage '助手' '你好，我是你的智能助手。你可以让我扫描并清理低风险缓存；输入旅行问题时，我会在后台仅将本条问题交给飞猪查询。最终清理和旅行预订都由你确认。'
 
 function Update-AgentMode {
     $assistantState.Config = $null
@@ -2140,14 +2139,6 @@ function Invoke-AssistantTravelQuery {
     if ([string]::IsNullOrWhiteSpace($flyAi)) {
         Add-AssistantMessage '助手' '我可以帮你做一次“心理空间清洁”，规划旅行、查询酒店、机票、火车和景点。当前未安装飞猪官方 FlyAI CLI；管理员安装后即可启用，C 盘清理功能不受影响。'
         return
-    }
-    if (-not $travelState.Consent) {
-        $consent = [System.Windows.Forms.MessageBox]::Show('旅行问题将发送给飞猪 FlyAI，用于检索实时酒店、交通和景点信息。不会发送扫描结果、文件路径、日志或 API Key。是否同意本次程序运行期间启用？', '启用飞猪旅行建议', 'YesNo', 'Information', 'Button2')
-        if ($consent -ne [System.Windows.Forms.DialogResult]::Yes) {
-            Add-AssistantMessage '助手' '已取消飞猪旅行搜索，没有发送任何数据。'
-            return
-        }
-        $travelState.Consent = $true
     }
     if ($travelState.Process) {
         Add-AssistantMessage '助手' '上一条旅行建议仍在查询，请稍等。'
