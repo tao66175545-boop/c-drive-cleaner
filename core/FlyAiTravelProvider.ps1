@@ -145,6 +145,15 @@ function Get-CDriveFlyAiFailureCode {
     return 'FLYAI_FAILED'
 }
 
+function Test-CDriveFlyAiPayloadHasDisplayData {
+    param($Payload)
+    if ($null -eq $Payload -or -not $Payload.PSObject.Properties['data']) { return $false }
+    $data = $Payload.data
+    if ($data -is [string]) { return -not [string]::IsNullOrWhiteSpace([string]$data) }
+    if ($null -eq $data -or -not $data.PSObject.Properties['itemList']) { return $false }
+    return @($data.itemList | Where-Object { $null -ne $_ }).Count -gt 0
+}
+
 function Invoke-CDriveFlyAiSearch {
     param(
         [Parameter(Mandatory = $true)][string]$Query,
@@ -220,6 +229,13 @@ function Invoke-CDriveFlyAiSearch {
             if ([string]::IsNullOrWhiteSpace($stdout)) { throw '[FLYAI_EMPTY] FlyAI returned no result.' }
             try { $payload = $stdout | ConvertFrom-Json }
             catch { throw '[FLYAI_JSON] FlyAI returned invalid JSON.' }
+            if (-not (Test-CDriveFlyAiPayloadHasDisplayData $payload)) {
+                if ($attempt -lt $MaxAttempts) {
+                    Start-Sleep -Milliseconds (300 * $attempt)
+                    continue
+                }
+                throw '[FLYAI_EMPTY] FlyAI returned JSON without displayable travel data.'
+            }
             return [PSCustomObject]@{
                 schemaVersion = 1
                 provider = 'FlyAI'
@@ -237,6 +253,20 @@ function Invoke-CDriveFlyAiSearch {
     throw '[FLYAI_FAILED] FlyAI travel search failed after retry.'
 }
 
+function Remove-CDriveFlyAiDecorativeUnicode {
+    param([AllowEmptyString()][string]$Text)
+    if ([string]::IsNullOrEmpty($Text)) { return '' }
+
+    # WinForms font fallback can render orphaned emoji modifiers as tofu boxes.
+    $value = [regex]::Replace(
+        $Text,
+        '(?:[#*0-9]\uFE0F?\u20E3|[\uD83C-\uD83E][\uDC00-\uDFFF]|[\u2300-\u23FF\u2600-\u27BF\u2B00-\u2BFF]|[\u00A9\u00AE\u203C\u2049\u2122\u2139])(?:[\uFE0E\uFE0F\u200D\u20E3]*)',
+        ''
+    )
+    $value = $value -replace '[\uFE0E\uFE0F\u200D\u20E3]', ''
+    return ($value -replace '\s{2,}', ' ').Trim()
+}
+
 function Remove-CDriveFlyAiMarkdownDecoration {
     param([AllowEmptyString()][string]$Text)
     if ([string]::IsNullOrWhiteSpace($Text)) { return '' }
@@ -244,9 +274,7 @@ function Remove-CDriveFlyAiMarkdownDecoration {
     $value = [regex]::Replace($value, '\[(?<label>[^\]]+)\]\(https://[^\s\)]+\)', '${label}')
     $value = $value -replace '\*\*|__|`', ''
     $value = $value.Trim('*', '_', ' ')
-    $value = $value -replace '^[\s\u2600-\u27BF]+', ''
-    $value = [regex]::Replace($value, '^[\uD800-\uDBFF][\uDC00-\uDFFF]\s*', '')
-    return ($value -replace '\s{2,}', ' ').Trim()
+    return Remove-CDriveFlyAiDecorativeUnicode $value
 }
 
 function Get-CDriveFlyAiSafeHttpsUrl {
@@ -497,6 +525,9 @@ function ConvertTo-CDriveFlyAiDisplayModel {
     else { $notice += ' 旅行搜索不会自动预订或下单，实时信息以飞猪详情页为准。' }
     $summary = ($summaryLines.ToArray() -join "`r`n")
     if (-not $summary -and $sections.Count -gt 0) { $summary = '已按主题整理本次实时旅行建议。' }
+    if ($Response.PSObject.Properties['fallbackReason'] -and [string]$Response.fallbackReason -eq 'ai-search-empty') {
+        $summary = '完整行程生成暂未返回内容，已自动切换为飞猪实时搜索结果。'
+    }
     return [PSCustomObject]@{
         SchemaVersion = 1
         Title = '飞猪旅行规划'
