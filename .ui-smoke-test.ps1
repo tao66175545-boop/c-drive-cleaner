@@ -29,7 +29,7 @@ if ($uiSource -notmatch 'Invoke-CDriveAssistantTool' -or $uiSource -notmatch '\$
     throw 'Assistant UI regression: constrained tool routing or confirmation boundary is missing.'
 }
 if ($uiSource -notmatch '\$assistantChatSurface' -or $uiSource -notmatch 'New-AssistantChatRow' -or
-    $uiSource -notmatch 'assistant-agent-wave\.png' -or $uiSource -notmatch 'assistant-user-\{0\}\.png') {
+    $uiSource -notmatch 'assistant-agent-wave-v2\.png' -or $uiSource -notmatch 'assistant-user-\{0\}\.png') {
     throw 'Assistant chat regression: bubble renderer or avatar assets are missing.'
 }
 if ($uiSource -notmatch "'-SkipProfile'" -or $uiSource -notmatch "'scan\.provider\.selected'" -or $uiSource -notmatch "'scan\.incremental\.completed'") {

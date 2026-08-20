@@ -209,7 +209,10 @@ $spriteSheetPath = Join-Path $scriptDir 'assets\cleaning-sprite-source.png'
 $logoSvgPath = Join-Path $scriptDir 'assets\logo-animated.svg'
 $logoSpritePath = Join-Path $scriptDir 'assets\logo-animated-sprite.png'
 $logoFallbackPath = Join-Path $scriptDir 'assets\sugon-cloud-logo-red.png'
-$assistantAgentAvatarPath = Join-Path $scriptDir 'assets\assistant-agent-wave.png'
+$assistantAgentAvatarPaths = @(
+    (Join-Path $scriptDir 'assets\assistant-agent-wave-v2.png'),
+    (Join-Path $scriptDir 'assets\assistant-agent-wave.png')
+)
 $assistantUserAvatarPaths = @(1..6 | ForEach-Object { Join-Path $scriptDir ("assets\assistant-user-{0}.png" -f $_) })
 
 if (-not (Test-Path -LiteralPath $mainScript)) {
@@ -1018,8 +1021,9 @@ $assistantShell.Controls.Add($assistantChatSurface)
 $assistantAgentAvatarImage = $null
 $assistantUserAvatarImage = $null
 try {
-    if (Test-Path -LiteralPath $assistantAgentAvatarPath -PathType Leaf) {
-        $assistantAgentAvatarImage = [System.Drawing.Image]::FromFile($assistantAgentAvatarPath)
+    $availableAgentAvatar = @($assistantAgentAvatarPaths | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf }) | Select-Object -First 1
+    if ($availableAgentAvatar) {
+        $assistantAgentAvatarImage = [System.Drawing.Image]::FromFile([string]$availableAgentAvatar)
     }
     $availableUserAvatars = @($assistantUserAvatarPaths | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf })
     if ($availableUserAvatars.Count -gt 0) {
