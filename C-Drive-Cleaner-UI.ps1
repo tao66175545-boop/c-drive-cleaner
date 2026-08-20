@@ -966,18 +966,24 @@ $selectionSummary.Text = '请先完成扫描'
 $selectionSummary.Font = New-Object System.Drawing.Font('Microsoft YaHei UI', 9, [System.Drawing.FontStyle]::Bold)
 $selectionSummary.ForeColor = [System.Drawing.Color]::FromArgb(69, 83, 94)
 $selectionSummary.Location = New-Object System.Drawing.Point(14, 13)
-$selectionSummary.AutoSize = $true
+$selectionSummary.Size = New-Object System.Drawing.Size(320, 22)
+$selectionSummary.AutoEllipsis = $true
 
 $btnSelectSuggested = New-Object CDriveRoundedButton
 $btnSelectSuggested.Text = '勾选建议项'
 $btnSelectSuggested.Size = New-Object System.Drawing.Size(104, 30)
 Set-ActionButtonStyle $btnSelectSuggested ([System.Drawing.Color]::FromArgb(251, 229, 231)) ([System.Drawing.Color]::FromArgb(181, 30, 40)) ([System.Drawing.Color]::FromArgb(247, 210, 214)) ([System.Drawing.Color]::FromArgb(252, 236, 237)) ([System.Drawing.Color]::FromArgb(247, 220, 223))
 
+$btnSelectAll = New-Object CDriveRoundedButton
+$btnSelectAll.Text = '全选'
+$btnSelectAll.Size = New-Object System.Drawing.Size(72, 30)
+Set-ActionButtonStyle $btnSelectAll ([System.Drawing.Color]::White) ([System.Drawing.Color]::FromArgb(69, 83, 94)) ([System.Drawing.Color]::FromArgb(214, 222, 228)) ([System.Drawing.Color]::FromArgb(244, 247, 249)) ([System.Drawing.Color]::FromArgb(235, 240, 243))
+
 $btnClearSelection = New-Object CDriveRoundedButton
 $btnClearSelection.Text = '清空选择'
 $btnClearSelection.Size = New-Object System.Drawing.Size(88, 30)
 Set-ActionButtonStyle $btnClearSelection ([System.Drawing.Color]::White) ([System.Drawing.Color]::FromArgb(97, 112, 123)) ([System.Drawing.Color]::FromArgb(214, 222, 228)) ([System.Drawing.Color]::FromArgb(244, 247, 249)) ([System.Drawing.Color]::FromArgb(235, 240, 243))
-$selectionActionBar.Controls.AddRange(@($selectionSummary, $btnSelectSuggested, $btnClearSelection))
+$selectionActionBar.Controls.AddRange(@($selectionSummary, $btnSelectSuggested, $btnSelectAll, $btnClearSelection))
 
 $selectionItemsPanel = New-Object System.Windows.Forms.FlowLayoutPanel
 $selectionItemsPanel.Dock = 'Fill'
@@ -1170,6 +1176,7 @@ $toolTips.SetToolTip($navOverview, '概览：统计、磁盘状态和清理对�
 $toolTips.SetToolTip($navSelection, '清理清单：查看扫描到的候选项并自行选择')
 $toolTips.SetToolTip($navLogs, '日志：专注查看实时输出')
 $toolTips.SetToolTip($navAssistant, '智能助手：用对话控制扫描、页面和可撤销的清理选择')
+$toolTips.SetToolTip($btnSelectAll, '选中本次扫描的全部候选项，包括默认未勾选的谨慎项')
 $toolTips.SetToolTip($btnScan, '扫描可安全清理项，不会删除文件')
 $toolTips.SetToolTip($btnReport, '打开最新的 HTML 诊断报告')
 $toolTips.SetToolTip($btnClean, '清理缓存和临时文件，执行前会再次确认')
@@ -1193,8 +1200,11 @@ function Update-SelectionActionLayout {
     $right = $selectionActionBar.ClientSize.Width - 14
     $btnClearSelection.Left = [Math]::Max(14, $right - $btnClearSelection.Width)
     $btnClearSelection.Top = [Math]::Max(0, [int][Math]::Floor(($selectionActionBar.ClientSize.Height - $btnClearSelection.Height) / 2))
-    $btnSelectSuggested.Left = [Math]::Max(14, $btnClearSelection.Left - 8 - $btnSelectSuggested.Width)
+    $btnSelectAll.Left = [Math]::Max(14, $btnClearSelection.Left - 8 - $btnSelectAll.Width)
+    $btnSelectAll.Top = $btnClearSelection.Top
+    $btnSelectSuggested.Left = [Math]::Max(14, $btnSelectAll.Left - 8 - $btnSelectSuggested.Width)
     $btnSelectSuggested.Top = [Math]::Max(0, [int][Math]::Floor(($selectionActionBar.ClientSize.Height - $btnSelectSuggested.Height) / 2))
+    $selectionSummary.Width = [Math]::Max(80, $btnSelectSuggested.Left - $selectionSummary.Left - 12)
 }
 
 function Update-AssistantComposerLayout {
@@ -1316,6 +1326,7 @@ function Update-CleanupSelectionSummary {
     $btnClean.Text = if ($selected.Count -gt 0) { '执行所选项' } else { '清理安全项' }
     $btnClean.Enabled = $canClean
     $btnSelectSuggested.Enabled = (-not $jobState.Process) -and $available -gt 0
+    $btnSelectAll.Enabled = (-not $jobState.Process) -and $available -gt 0 -and $selected.Count -lt $available
     $btnClearSelection.Enabled = (-not $jobState.Process) -and $selected.Count -gt 0
 }
 
@@ -1598,6 +1609,7 @@ function Set-UiBusy([bool]$Busy) {
     foreach ($b in @($btnScan, $btnReport)) { $b.Enabled = (-not $Busy) }
     $btnClean.Enabled = $false
     $btnSelectSuggested.Enabled = -not $Busy
+    $btnSelectAll.Enabled = $false
     $btnClearSelection.Enabled = $false
     $btnExit.Enabled = $true
     $btnExit.Text = if ($Busy) { '取消任务' } else { '退出' }
@@ -2934,6 +2946,11 @@ $btnSelectSuggested.Add_Click({
     foreach ($choice in @($dashboardState.SelectionCheckboxes)) {
         $choice.Checked = $choice.Tag.RecommendationLevel -eq 'Recommended'
     }
+    Update-CleanupSelectionSummary
+})
+
+$btnSelectAll.Add_Click({
+    foreach ($choice in @($dashboardState.SelectionCheckboxes)) { $choice.Checked = $true }
     Update-CleanupSelectionSummary
 })
 
