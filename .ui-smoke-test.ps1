@@ -1,4 +1,4 @@
-$uiScriptPath = Join-Path $PSScriptRoot 'C-Drive-Cleaner-UI.ps1'
+﻿$uiScriptPath = Join-Path $PSScriptRoot 'C-Drive-Cleaner-UI.ps1'
 $uiSource = [System.IO.File]::ReadAllText($uiScriptPath, [System.Text.Encoding]::UTF8)
 if ($uiSource -match 'CDriveRoundedButton\s*:\s*Button|\.FlatStyle|\.FlatAppearance|UseVisualStyleBackColor') {
     throw 'Button regression: detected WinForms Button rendering residue.'
@@ -29,8 +29,17 @@ if ($uiSource -notmatch 'Invoke-CDriveAssistantTool' -or $uiSource -notmatch '\$
     throw 'Assistant UI regression: constrained tool routing or confirmation boundary is missing.'
 }
 if ($uiSource -notmatch '\$assistantChatSurface' -or $uiSource -notmatch 'New-AssistantChatRow' -or
-    $uiSource -notmatch 'assistant-agent-wave-v2\.png' -or $uiSource -notmatch 'assistant-user-\{0\}\.png') {
+    $uiSource -notmatch 'assistant-agent-wave-v2\.png' -or $uiSource -notmatch 'assistant-user-custom\.png') {
     throw 'Assistant chat regression: bubble renderer or avatar assets are missing.'
+}
+if ($uiSource -notmatch 'Test-AssistantCleanupCommand' -or $uiSource -notmatch 'Invoke-AssistantCleanupWorkflow' -or
+    $uiSource -notmatch 'Invoke-SelectedCleanupConfirmation' -or $uiSource -notmatch "RecommendationLevel -eq 'Recommended'") {
+    throw 'Conversational cleanup regression: stable recommendation selection or native confirmation bridge is missing.'
+}
+if ($uiSource -notmatch 'Test-CDriveTravelIntent' -or $uiSource -notmatch 'Invoke-AssistantTravelQuery' -or
+    $uiSource -notmatch 'TravelHost\.ps1' -or $uiSource -notmatch '\$travelState\.Consent' -or
+    $uiSource -notmatch 'FLYAI.*SEARCHING') {
+    throw 'FlyAI regression: travel routing, isolation host, or consent boundary is missing.'
 }
 if ($uiSource -notmatch "'-SkipProfile'" -or $uiSource -notmatch "'scan\.provider\.selected'" -or $uiSource -notmatch "'scan\.incremental\.completed'") {
     throw 'Incremental scan UI regression: fast scan arguments or provider events are missing.'
@@ -143,7 +152,12 @@ if ($dashboardState.SelectedIds.ContainsKey('user-wechat-media')) { throw 'Sugge
 Set-DashboardView 'assistant'
 $initialChatRows = @($assistantChatSurface.Controls)
 if ($initialChatRows.Count -lt 1 -or [string]$initialChatRows[0].Tag.Role -ne 'assistant') { throw 'Assistant greeting bubble was not created.' }
-if ($null -eq $assistantAgentAvatarImage -or $null -eq $assistantUserAvatarImage) { throw 'Assistant or random user avatar did not load.' }
+if ($null -eq $assistantAgentAvatarImage -or $null -eq $assistantUserAvatarImage) { throw 'Assistant or fixed user avatar did not load.' }
+if ([System.IO.Path]::GetFileName([string]$availableUserAvatars[0]) -ne 'assistant-user-custom.png') { throw 'Uploaded custom user avatar is not the first fixed avatar source.' }
+if (-not (Test-AssistantCleanupCommand '请帮我清理低风险缓存')) { throw 'Explicit conversational cleanup command was not recognized.' }
+if (Test-AssistantCleanupCommand '不要清理 C盘') { throw 'Negated cleanup request was incorrectly treated as execution approval.' }
+if (-not (Test-CDriveTravelIntent 'plan a weekend trip to Hangzhou')) { throw 'Travel request was not routed to the isolated provider.' }
+if (Test-CDriveTravelIntent 'clean recommended cache') { throw 'Cleanup request leaked into travel routing.' }
 if ($initialChatRows[0].Tag.Avatar.Left -ne 0 -or $initialChatRows[0].Tag.Bubble.Left -le $initialChatRows[0].Tag.Avatar.Right) { throw 'Assistant message is not left aligned.' }
 $assistantState.Config = $null
 $assistantInput.Text = 'recommend safe cleanup'

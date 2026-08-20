@@ -3,8 +3,8 @@
   "objective": "A safe, modular, responsive C-drive cleaner with an optional constrained AI copilot.",
   "objectiveStatus": "completed",
   "completedAt": "2026-08-19",
-  "currentPhase": "P13-agent-hardening",
-  "iteration": 14,
+  "currentPhase": "P14-conversational-cleanup-and-travel",
+  "iteration": 15,
   "phases": [
     {
       "id": "P0-contracts",
@@ -80,6 +80,11 @@
       "id": "P13-agent-hardening",
       "status": "completed",
       "exitCriteria": ["prompt_injection_corpus", "privacy_zero_leak", "provider_compatibility_tiers", "rate_and_cost_limits", "credential_removal", "full_project_validation"]
+    },
+    {
+      "id": "P14-conversational-cleanup-and-travel",
+      "status": "completed",
+      "exitCriteria": ["explicit_cleanup_intent", "recommended_stable_ids_only", "native_confirmation_boundary", "fixed_user_avatar", "flyai_isolated_readonly_search", "travel_privacy_consent", "full_project_validation"]
     }
   ]
 }
